@@ -308,7 +308,7 @@ Có thể bổ sung sự kiện khác (03, K15).
 | **Khuyến nghị** | ✅ **P0** | P1 | P2 | P2 |
 
 **Phụ thuộc then chốt:**
-- Loại A cho biến Giovanni cần **cube HOSS** (04, T-4, đang tải từ 13/11).
+- Loại A cho biến Giovanni cần **cube HOSS** (04, T-4): ✅ đã có từ 13/11.
 - Biến MODIS cần **point request AppEEARS trên lưới**.
 - Nếu HOSS bị chặn: loại A vẫn chạy bằng `compare_regions` trên vùng người dùng chọn, nhưng mất phần "tự tìm" toàn cầu cho lượng mưa (04, mục 6).
 

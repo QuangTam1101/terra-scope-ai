@@ -87,7 +87,7 @@ Code của từng bước ở **03**, chi tiết adapter ở **02**, thuật to�
    - IMERG nằm trong nhóm `Grid`, chiều gốc (time, lon, lat), được chuyển về (time, lat, lon).
    - GLDAS và MERRA-2 là file phẳng (time, lat, lon). ✅ file thật 13/11.
    - IMERG ghi `time` theo lịch julian (cftime); `build_cube` lấy nguyên ngày trên nhãn rồi đưa về đầu tháng.
-2. **AppEEARS area:** `xr.open_dataset(nc)` để lấy giá trị đã decode. Mở thêm một lần với `mask_and_scale=False` để lấy layer QA và giá trị ET thô.
+2. **AppEEARS area:** mở một lần bằng `xr.open_dataset(nc, mask_and_scale=False)` (số thô), rồi tự decode fill / scale / QA (`decode_layer`), để tránh bẫy QC fill.
 3. **AppEEARS point:** `pd.read_csv`, mỗi layer một cột ⚠️.
 4. **Giovanni area-average:** metadata kết thúc ở dòng chỉ có `,`, phần sau là CSV `time, mean_<VAR>`.
 
@@ -108,7 +108,7 @@ Code của từng bước ở **03**, chi tiết adapter ở **02**, thuật to�
 
 1. NDVI: `_1_km_monthly_VI_Quality` bit 0–1 == 0.
 2. LST ngày / đêm: `QC_Day` / `QC_Night` bit 0–1 == 0, **hoặc** bit 0–1 == 1 và bit 6–7 ≤ 1 (sai số ≤ 2 K).
-3. ET / PET: `ET_QC_500m` theo bảng bit ở 03 §D.
+3. ET / PET: không lọc QA thêm (`et_valid_only`), vì MOD16A2GF là bản gap-filled (03, K5); chỉ bỏ mã đặc biệt > 32700 ở S3.
 4. Không bao giờ lọc QA theo fill value: `QC_Day` / `QC_Night` khai fill = 0, nhưng 0 là chất lượng tốt nhất.
 
 **Kiểm tra đầu ra:** in tỷ lệ pixel giữ lại cho mỗi request (khoảng 20–95%).
@@ -146,7 +146,7 @@ Code của từng bước ở **03**, chi tiết adapter ở **02**, thuật to�
    - Ẩm đất GLDAS 0–10 cm: kg/m² ÷ 100 → m³/m³.
    - Evap GLDAS: kg/m²/s × 86400 → mm/ngày.
 3. Cube gắn thuộc tính `units`, `source`, `dataset`, `source_variable`, `grid = 1deg_block_mean`.
-4. Vùng mẫu: `validate()` (02 §2) rồi ghi Parquet.
+4. Vùng mẫu: `validate()` (02 §2) rồi ghi Parquet (`build_regions.py`).
 
 **Kiểm tra đầu ra:** sanity range toàn cầu từng biến (03 §I); vùng mẫu so với ô lưới trùng vị trí (03 §I2).
 
@@ -270,6 +270,8 @@ data/
 | `web/data/contradictions_<biến>.json` | S9 | `find_contradictions()` mặc định (05, mục 6) |
 
 Các truy vấn khác (vùng vẽ tay, khoảng thời gian khác, so sánh hai vùng) được tính khi gọi, không lưu file.
+
+**Bản chia sẻ cho team:** `data/` không lên git. Bản sao của `data/processed/` (cube nén zlib, không mất dữ liệu) nằm ở `data-pipeline/processed_data/` trên GitHub, kèm README mô tả tính chất dữ liệu, các bước xử lý và cách dùng. Mỗi lần `data/processed/` thay đổi thì cập nhật cả hai.
 
 `trend_map_precip.json` (rút gọn):
 

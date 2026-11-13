@@ -213,14 +213,14 @@ Task JSON mẫu (point, một đợt grid):
 |---|---|---|
 | 1. Mở file | `xr.open_dataset(path, mask_and_scale=False)`. Đọc **số thô**, tự decode để kiểm soát bẫy QC fill. ✅ File thật (R4, 13/11): lưới `native` có chiều `xdim`/`ydim` (mét), CRS sinusoidal nằm trong **biến** `crs` (phải `set_coords("crs")` thì rioxarray mới đọc được); `time` dùng **lịch julian** (cftime), lấy nguyên ngày ghi trên nhãn | 03, mục B |
 | 2. Fill | Che theo fill của **layer giá trị** (NDVI -3000, LST 0, ET/PET > 32700). Không che QA theo fill | 03, mục B |
-| 3. Scale | `ensure_scaled()`: tự phát hiện file đã nhân scale hay chưa (⚠️ chưa biết AppEEARS NetCDF đã scale sẵn chưa) | 03, mục C |
+| 3. Scale | `ensure_scaled()`: tự phát hiện file đã nhân scale hay chưa. ✅ R1/R2 (13/11): số nguyên thô (NDVI int16, LST int32), `scale_factor` 0,0001 / 0,02 nằm trong thuộc tính | 03, mục C |
 | 4. QA | NDVI: `modland_good` (bit 0–1 = 00). LST: `modland_good_or_lst_err_le_2k`. ET/PET: `et_valid_only` (giải mã qua `/api/quality/MOD16A2GF.061/ET_QC_500m`) | 03, mục D |
 | 5. Trung bình vùng | Mỗi `.nc` ứng với một feature → map sang `region_id`. ✅ Tên file là `<dataset>_<độ phân giải>_aid<NNNN>.nc`, `NNNN` = **thứ tự feature** (1, 2…) trong GeoJSON gửi đi; tên **không** chứa id vùng (`nc_files_for`). Lưới `native` có diện tích bằng nhau nên trọng số = 1. `n_valid` = số pixel còn lại; `valid_frac = n_valid / n_pixel_trong_vùng` | 01, S2–S6 |
-| 6. Về tháng | NDVI: đã là tháng. LST: trung bình các composite 8 ngày có ngày bắt đầu trong tháng (`min_composites=2`). ET/PET: **cộng theo ngày** (`composites_to_monthly(how="sum")`), vì ET là tổng lượng nước cho 8 ngày chứ không phải giá trị tức thời | 03, mục F |
+| 6. Về tháng | NDVI: đã là tháng. LST: mỗi composite 8 ngày trải đều cho các ngày nó phủ, tháng = trung bình theo ngày (`min_composites=2`). ET/PET: **cộng theo ngày** (`composites_to_monthly(how="sum")`), vì ET là tổng lượng nước cho 8 ngày chứ không phải giá trị tức thời. ✅ R2 (13/11): AppEEARS trả thêm composite **26/12/2000** dù request bắt đầu 01-01-2001 → dòng tháng 12/2000 (NaN); `build_regions.py` cắt về 2001–2024 | 03, mục F |
 | 7. Đơn vị | NDVI giữ nguyên; LST K → °C (−273.15); ET/PET → mm/tháng; `et_pet_ratio = et / pet` tính sau cùng | 03, mục G |
 | 8. Cột | `source="appeears"`, `geom_type="polygon"`, `agg="area_mean"`, `qa_policy` theo biến, `request_ref = task_id`; `valid_frac < 0.3` → `value = NaN` | mục 2 |
 
-**Code:** [`pipeline/appeears_adapter.py`](../pipeline/appeears_adapter.py) → `normalize_area()`, `nc_files_for()` (test: `tests/test_aggregate.py`)
+**Code:** [`pipeline/appeears_adapter.py`](../pipeline/appeears_adapter.py) → `normalize_area()`, `nc_files_for()` (test: `tests/test_aggregate.py`); chạy trên thư mục thô R1–R3 → `observations.parquet`: [`build_regions.py`](../build_regions.py)
 
 **Kiểm tra chéo `*-Statistics.csv`:** AppEEARS tự tính mean theo từng feature × ngày, nhưng **chưa lọc QA**. Tắt QA trong adapter, rồi so trung bình vùng tự tính với cột `Mean`: lệch < 1% là đường decode và trung bình vùng đúng. Bật QA lại thì chênh lệch phản ánh đúng phần mây đã bị loại.
 
@@ -230,7 +230,7 @@ Task JSON mẫu (point, một đợt grid):
 
 - Task `point` trả về 1 CSV, mỗi dòng là 1 điểm × 1 ngày composite. ⚠️ Tên cột dạng `{PRODUCT}_{VERSION}_{layer}` (ví dụ `MOD13A3_061__1_km_monthly_NDVI`). Cần xác nhận trên file thật, kể cả giá trị đã scale hay chưa (T-5 trong 04).
 - **Điểm lưới:**
-  - Tâm các ô 1° có giá trị trong cube GLDAS (GLDAS chỉ có đất liền, từ 60°S lên), ghi CSV `id,latitude,longitude` theo đợt bằng `write_grid_points(land, path, batch_size)`. Khoảng 15.000 điểm (⚠️ ước tính).
+  - Tâm các ô 1° có giá trị trong cube GLDAS (GLDAS chỉ có đất liền, từ 60°S lên), ghi CSV `id,latitude,longitude` theo đợt bằng `write_grid_points(land, path, batch_size)`. 17.284 điểm (đếm trên cube thật, 13/11).
   - Không cần task MCD12Q1 riêng để lọc biển.
 - ⚠️ **AppEEARS không công bố giới hạn số điểm mỗi request.** Gửi G1 nhỏ trước; nếu bị từ chối thì giảm `batch_size`.
 - Quy tắc decode/QA giống đường area (kể cả bẫy QC fill). Về tháng: `series_to_monthly()` cho từng điểm (bên trong gọi `composites_to_monthly`).
@@ -361,7 +361,18 @@ CSV của Giovanni có **phần đầu là metadata**: tên biến, đơn vị, 
 - ✅ Lỗi `403` trước đó là do tài khoản chưa authorize app GES DISC. Earthdata báo rõ khi gọi thẳng file trên `data.gesdisc.earthdata.nasa.gov`: *"Pre authorization required for this application"*, kèm link https://urs.earthdata.nasa.gov/approve_app?client_id=e2WVk8Pw6weeLUKZYOxvTQ. Authorize xong là chạy được.
 - ✅ Job 1 tháng mất 50–85 s. File tháng nặng 7 MB (IMERG), 0,8 MB (GLDAS), 0,5 MB (MERRA-2), nên cả 288 tháng × 5 biến ≈ 3 GB.
 - ✅ `build_cube` chạy trên file thật tháng 7/2010: mưa ĐBSCL 241 mm, nam Sahara 16 mm; ẩm đất ĐBSCL 0,36, Sahara 0,09 m³/m³.
-- ⚠️ GLDAS gán ẩm đất **100 kg/m² cố định** (= 1,0 m³/m³) cho ô phủ băng (Greenland, Patagonia, Alaska…), vượt khoảng sanity 0–0,6. Chuỗi không đổi nên xu hướng = 0; chưa che (03, K22).
+- ⚠️ GLDAS gán ẩm đất **100 kg/m² cố định** (= 1,0 m³/m³) cho ô phủ băng (Greenland, Patagonia, Alaska…), vượt khoảng sanity 0–0,6. Chuỗi không đổi nên xu hướng = 0; chưa che. Trên cube đủ 24 năm: 563 ô 1° = 1,0 cố định (3,3% ô đất liền) và 391 ô ven băng có giá trị trộn ~0,77 (03, K22).
+- ✅ **Tải đủ 288 tháng × 5 biến (13/11).** Cube nào cũng có 288 tháng liên tục, 2001-01 → 2024-12, lưới 180 × 360, float32 75 MB. Giá trị trung bình 24 năm tại vài ô:
+
+  | Cube | Hà Nội | Sahara | Amazon | Ô có dữ liệu |
+  |---|---|---|---|---|
+  | `precip` (mm/tháng) | 148 | 1,5 | 205 | 100% |
+  | `t2m` (°C) | 22,9 | 23,6 | 27,1 | 100% |
+  | `tair_land` (°C) | 23,3 | 23,6 | 26,8 | 27% (chỉ đất liền) |
+  | `soil_moisture` (m³/m³) | 0,27 | 0,08 | 0,35 | 27% |
+  | `evap_gldas` (mm/ngày) | 2,2 | 0,05 | 4,0 | 27% |
+
+- ✅ API chạy trên cube thật: `trend_map("t2m")` 64.800 ô, trung vị xu hướng +0,16 °C/thập kỷ, 4 s; `find_contradictions("precip")` 16 s. Ô có chuỗi hằng (mưa = 0 ở sa mạc, ô băng GLDAS) làm `pymannkendall` in `RuntimeWarning` và cho NaN; các ô này bị loại khỏi heatmap.
 
 ### 4.7 Lỗi thường gặp
 

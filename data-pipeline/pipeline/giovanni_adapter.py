@@ -131,7 +131,8 @@ def build_cube(files, var_id):
     cube["time"] = pd.to_datetime(cube["time"].dt.strftime("%Y-%m-01").values)
     cube, unit = convert_cube(var_id, cube, first.attrs.get("units", ""))
     name, dataset = VARIABLES[var_id]
-    return cube.rename(name).assign_attrs(units=unit, source="giovanni_harmony_hoss", dataset=dataset,
+    # float32: ~75 MB/cube thay vì 149 MB (05 §1); grid_trend tự đổi sang float64 khi tính
+    return cube.rename(name).astype("float32").assign_attrs(units=unit, source="giovanni_harmony_hoss", dataset=dataset,
                                           source_variable=var_id, grid="1deg_block_mean")
 
 
