@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import type { FeatureCollection, Geometry, Position } from 'geojson';
-import { Layers3, RotateCcw, Target, ZoomIn, ZoomOut, Check, MapPin, Square, Shapes, HelpCircle, X } from 'lucide-react';
+import { Layers3, RotateCcw, Target, ZoomIn, ZoomOut, MapPin, Square, Shapes, HelpCircle, X } from 'lucide-react';
 import { findGridCell, normalizeLongitude, projectGlobe, unprojectGlobe } from '../lib/globeMath.ts';
 import { REGION_META, VARIABLE_META, type GeographicSelection, type RegionId } from '../lib/types.ts';
 import { generateSmoothedRaster } from '../lib/heatmapRenderer.ts';
@@ -855,12 +855,12 @@ export function GlobeMap(props: TerraMapProps) {
           <div className={`h-2.5 rounded-full shadow-inner ${mode === 'trend' ? 'legend-trend' : 'legend-value'}`} />
 
           {/* Numerical Legend Scale */}
-          <div className="mt-1.5 flex justify-between text-[10px] font-medium text-[#446654]">
+          <div className="mt-1.5 flex justify-between text-[10px] font-medium text-[#4e4860]">
             {mode === 'trend' ? (
               <>
-                <span className="text-[#be571f] font-bold">-{meta.range} {meta.slopeUnit.split('/')[0]}</span>
-                <span className="text-[#64816f]">0.0 (Neutral)</span>
-                <span className="text-[#166534] font-bold">+{meta.range} {meta.slopeUnit.split('/')[0]}</span>
+                <span className="text-[#2f6fb3] font-bold">↓ decreasing (-{meta.range})</span>
+                <span className="text-[#5e5872]">0.0 (Neutral)</span>
+                <span className="text-[#c4621a] font-bold">increasing ↑ (+{meta.range})</span>
               </>
             ) : (
               <>
@@ -871,12 +871,12 @@ export function GlobeMap(props: TerraMapProps) {
             )}
           </div>
 
-          <div className="mt-2 flex items-center justify-between text-[9px] text-[#71877b] border-t border-[#e2ece5] pt-1.5">
-            <span className="flex items-center gap-1">
-              <Check size={10} className="text-[#16804a]" />
-              <span>Continuous orthographic raster</span>
+          <div className="mt-2 flex items-center justify-between text-[9px] text-[#4e4860] border-t border-[#ece3d3] pt-1.5">
+            <span className="flex items-center gap-1 font-semibold">
+              <span className="w-2.5 h-2.5 rounded-xs border border-[#4e4860] dot-hatch inline-block" />
+              <span>Hatch = not significant (FDR)</span>
             </span>
-            <span className="font-semibold text-[#16804a]">Click cell to inspect data</span>
+            <span className="font-bold text-[#2b2540]">1° global data · click to inspect</span>
           </div>
         </div>
       )}

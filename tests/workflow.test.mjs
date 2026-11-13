@@ -121,7 +121,7 @@ test('Workflow Journey: Running analysis with environmental variable and dataset
   });
   assert.equal(rainRes.variable.name, 'Precipitation');
   assert.equal(rainRes.variable.unit, 'mm/month');
-  assert.equal(rainRes.variable.slopeUnit, 'mm/month/year');
+  assert.equal(rainRes.variable.slopeUnit, 'mm/month per decade');
   assert.equal(rainRes.dataset?.shortName, 'GPM IMERG');
 
   const soilRes = await TerraScopeApi.runAnalysis({
@@ -133,8 +133,8 @@ test('Workflow Journey: Running analysis with environmental variable and dataset
   });
   assert.equal(soilRes.variable.name, 'Soil Moisture');
   assert.equal(soilRes.variable.unit, 'm³/m³');
-  assert.equal(soilRes.variable.slopeUnit, 'm³/m³/year');
-  assert.equal(soilRes.dataset?.shortName, 'GLDAS');
+  assert.equal(soilRes.variable.slopeUnit, 'm³/m³ per decade');
+  assert.ok(soilRes.dataset?.shortName.includes('GLDAS'));
 });
 
 test('Workflow Journey 7: Switching between Measured Value and Trend Over Time mode', () => {

@@ -22,47 +22,34 @@ interface ColorStop {
   a: number;
 }
 
-// Trend Over Time diverging scientific color ramp:
-// Decreasing (Rich Amber/Orange) -> Neutral (Soft Ivory/Sand) -> Increasing (Deep Forest Emerald)
-const TREND_RAMP_RAIN: ColorStop[] = [
-  { t: 0.0, r: 180, g: 83, b: 9, a: 0.92 },     // Strong decrease (amber-700)
-  { t: 0.25, r: 217, g: 119, b: 6, a: 0.85 },   // Moderate decrease (amber-600)
-  { t: 0.42, r: 245, g: 158, b: 11, a: 0.75 },  // Slight decrease (amber-500)
-  { t: 0.50, r: 245, g: 245, b: 240, a: 0.65 }, // Neutral zero trend (ivory)
-  { t: 0.58, r: 74, g: 222, b: 128, a: 0.75 },  // Slight increase (green-400)
-  { t: 0.75, r: 22, g: 163, b: 74, a: 0.85 },   // Moderate increase (green-600)
-  { t: 1.0, r: 20, g: 83, b: 45, a: 0.92 },     // Strong increase (green-900)
+// Mandated v4 Cute Color System:
+// Decreasing (Blue: #2f6fb3) -> Neutral (#fbf6ec) -> Increasing (Orange: #c4621a)
+// Color-blind safe, universally applied across all environmental variables.
+const TREND_RAMP_V4: ColorStop[] = [
+  { t: 0.0, r: 47, g: 111, b: 179, a: 0.94 },    // #2f6fb3 bold decreasing
+  { t: 0.22, r: 127, g: 178, b: 229, a: 0.88 },  // #7fb2e5 mid decreasing
+  { t: 0.38, r: 207, g: 225, b: 244, a: 0.78 },  // #cfe1f4 pale decreasing
+  { t: 0.50, r: 251, g: 246, b: 236, a: 0.65 },  // #fbf6ec neutral center
+  { t: 0.62, r: 251, g: 224, b: 196, a: 0.78 },  // #fbe0c4 pale increasing
+  { t: 0.78, r: 242, g: 166, b: 90, a: 0.88 },   // #f2a65a mid increasing
+  { t: 1.0, r: 196, g: 98, b: 26, a: 0.94 },     // #c4621a bold increasing
 ];
 
-const TREND_RAMP_SOIL: ColorStop[] = [
-  { t: 0.0, r: 194, g: 65, b: 12, a: 0.92 },    // Drying trend (orange-700)
-  { t: 0.25, r: 234, g: 88, b: 12, a: 0.85 },   // Moderate drying
-  { t: 0.42, r: 251, g: 146, b: 60, a: 0.75 },  // Slight drying
-  { t: 0.50, r: 248, g: 245, b: 238, a: 0.65 }, // Neutral zero
-  { t: 0.58, r: 56, g: 189, b: 248, a: 0.75 },  // Slight moistening
-  { t: 0.75, r: 14, g: 165, b: 233, a: 0.85 },  // Moderate moistening
-  { t: 1.0, r: 12, g: 74, b: 110, a: 0.92 },    // Strong moistening (sky-900)
+// Sequential Values ramp from v4 Cute:
+// #fff4c2 -> #c8ecc0 -> #7fd1c2 -> #4aa6c4 -> #5a6fb8 -> #4b3a8c
+const VALUE_RAMP_V4: ColorStop[] = [
+  { t: 0.0, r: 255, g: 244, b: 194, a: 0.70 },   // #fff4c2 pale yellow
+  { t: 0.20, r: 200, g: 236, b: 192, a: 0.78 },  // #c8ecc0 soft light green
+  { t: 0.40, r: 127, g: 209, b: 194, a: 0.84 },  // #7fd1c2 aqua/quality
+  { t: 0.60, r: 74, g: 166, b: 196, a: 0.88 },   // #4aa6c4 cyan blue
+  { t: 0.80, r: 90, g: 111, b: 184, a: 0.92 },   // #5a6fb8 periwinkle
+  { t: 1.0, r: 75, g: 58, b: 140, a: 0.95 },     // #4b3a8c deep purple-blue
 ];
 
-// Measured Value sequential scientific color ramps:
-// Precipitation: Light azure -> Cyan -> Rich Ocean Teal
-const VALUE_RAMP_RAIN: ColorStop[] = [
-  { t: 0.0, r: 224, g: 242, b: 254, a: 0.70 },
-  { t: 0.2, r: 125, g: 211, b: 252, a: 0.78 },
-  { t: 0.45, r: 56, g: 189, b: 248, a: 0.84 },
-  { t: 0.7, r: 14, g: 165, b: 233, a: 0.90 },
-  { t: 0.88, r: 2, g: 132, b: 199, a: 0.93 },
-  { t: 1.0, r: 15, g: 76, b: 129, a: 0.95 },
-];
-
-// Soil Moisture: Soft Sand -> Chartreuse -> Deep Aqua
-const VALUE_RAMP_SOIL: ColorStop[] = [
-  { t: 0.0, r: 254, g: 249, b: 195, a: 0.70 },
-  { t: 0.25, r: 217, g: 249, b: 157, a: 0.78 },
-  { t: 0.5, r: 132, g: 204, b: 22, a: 0.84 },
-  { t: 0.75, r: 20, g: 184, b: 166, a: 0.90 },
-  { t: 1.0, r: 19, g: 78, b: 74, a: 0.95 },
-];
+const TREND_RAMP_RAIN = TREND_RAMP_V4;
+const TREND_RAMP_SOIL = TREND_RAMP_V4;
+const VALUE_RAMP_RAIN = VALUE_RAMP_V4;
+const VALUE_RAMP_SOIL = VALUE_RAMP_V4;
 
 function sampleRamp(ramp: ColorStop[], t: number): [number, number, number, number] {
   const clampedT = Math.max(0, Math.min(1, t));
@@ -141,8 +128,8 @@ export function generateSmoothedRaster(
       missingMatrix[yi][xi] = true;
     } else {
       matrix[yi][xi] = mode === 'trend' ? m.slope : m.value;
-      // Rule R4: Grid significance is determined by significant_fdr (False Discovery Rate)
-      sigFdrMatrix[yi][xi] = m.significantFdr ?? m.significant;
+      // Rule R4: Grid significance is strictly determined by significant_fdr (False Discovery Rate)
+      sigFdrMatrix[yi][xi] = m.significantFdr === true;
     }
   }
 

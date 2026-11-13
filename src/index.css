@@ -3,10 +3,9 @@
 @tailwind utilities;
 
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #16362a;
-  background-color: #f7faf8;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  font-family: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #2b2540;
+  background-color: #fbf6ec;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -18,20 +17,27 @@
 body {
   margin: 0;
   min-width: 320px;
-  background-color: #f7faf8;
-  color: #16362a;
+  background-color: #fbf6ec;
+  color: #2b2540;
+  font-family: 'Nunito', system-ui, sans-serif;
 }
 
-button, select, input {
-  font: inherit;
+a {
+  color: #2b2540;
+  text-decoration: none;
+}
+a:hover {
+  color: #1d4f86;
 }
 
-button {
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
+/* Accessible Global Focus Rings */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #2b2540;
+  outline-offset: 2px;
 }
 
 /* Custom Scrollbars */
@@ -43,146 +49,259 @@ button:disabled {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbdcd0;
+  background: #ece3d3;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #a4c2ad;
+  background: #d8cebc;
 }
 
-/* Micro-utilities */
-.eyebrow {
+/* Typography Helpers */
+.fd {
+  font-family: 'Fredoka', 'Baloo 2', 'Nunito', system-ui, sans-serif;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Design Tokens & Utility Classes from v4 Cute */
+.card-cute {
+  background: #ffffff;
+  border-radius: 28px;
+  box-shadow: 0 10px 26px rgba(90, 70, 40, .09), 0 1px 0 rgba(90, 70, 40, .06);
+}
+
+.nav-cute {
+  min-height: 48px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: #16804a;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  gap: 12px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font: 800 15px 'Nunito', sans-serif;
+  color: #4e4860;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.nav-cute:hover {
+  background: #f6f1e8;
+  color: #2b2540;
+}
+.nav-cute.on {
+  background: #ede6fb;
+  color: #2b2540;
 }
 
-.page-title {
-  color: #16362a;
-  font-size: clamp(22px, 2.5vw, 28px);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.25;
-}
-
-.page-description {
-  margin-top: 6px;
-  max-width: 720px;
-  color: #617b6c;
-  font-size: 13.5px;
-  line-height: 1.6;
-}
-
-.field-label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: #2c4d3c;
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-/* Premium Segmented Controls */
-.segmented-control-track {
+.btn-cute {
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 0;
+  background: #2b2540;
+  color: #ffffff;
+  font: 800 15px 'Nunito', sans-serif;
+  cursor: pointer;
   display: inline-flex;
-  align-items: center;
-  background-color: #eef4f0;
-  padding: 3px;
-  border-radius: 12px;
-  border: 1px solid #dbe7df;
-}
-
-.segmented-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 9px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #557563;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
-}
-
-.segmented-tab:hover:not(.segmented-tab-active) {
-  color: #16362a;
-  background-color: rgba(255, 255, 255, 0.5);
-}
-
-.segmented-tab-active {
-  background-color: #ffffff;
-  color: #16804a;
-  box-shadow: 0 1px 4px rgba(22, 54, 42, 0.08), 0 0 1px rgba(22, 54, 42, 0.1);
-}
-
-/* Map Floating Controls */
-.map-control {
-  display: flex;
-  height: 30px;
-  width: 30px;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.95);
-  color: #1e4533;
-  font-size: 16px;
-  font-weight: 600;
+  text-decoration: none;
   transition: all 0.15s ease;
-  border: 1px solid rgba(215, 230, 220, 0.7);
+}
+.btn-cute:hover {
+  background: #3c3459;
+  color: #ffffff;
+}
+.btn-cute:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.map-control:hover {
-  background-color: #f0f7f3;
-  color: #16804a;
-  border-color: #bfe0cc;
-  transform: translateY(-0.5px);
+.btn-cute.soft {
+  background: #ede6fb;
+  color: #2b2540;
+}
+.btn-cute.soft:hover {
+  background: #e2d7f8;
 }
 
-.map-control:active {
-  transform: translateY(0.5px);
+/* Segmented Controls */
+.seg-cute {
+  display: inline-flex;
+  background: #efe7d8;
+  border-radius: 999px;
+  padding: 4px;
+  gap: 2px;
+}
+.seg-cute button {
+  min-height: 38px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: 800 14px 'Nunito', sans-serif;
+  color: #4e4860;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.seg-cute button.on {
+  background: #ffffff;
+  color: #2b2540;
+  box-shadow: 0 3px 8px rgba(90, 70, 40, .12);
 }
 
-/* Color Legend Gradients */
+/* Badges */
+.badge-cute {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font: 800 12px 'Nunito', sans-serif;
+  white-space: nowrap;
+}
+.badge-cute.bsig {
+  background: #d8ecff;
+  color: #1d4f86;
+}
+.badge-cute.bnp {
+  background: #fff1c9;
+  color: #6b4e00;
+}
+.badge-cute.bie {
+  background: #f1eef5;
+  color: #4e4860;
+  border: 2px dotted #8d86a0;
+}
+.badge-cute.bcon {
+  background: #2b2540;
+  color: #ffffff;
+}
+
+/* Stat Chips */
+.sc-cute {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  border-radius: 18px;
+  background: #f3eefe;
+  line-height: 1.25;
+}
+.sc-cute b {
+  font: 800 17px 'Nunito';
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: #2b2540;
+}
+.sc-cute small {
+  font: 700 11.5px 'Nunito';
+  color: #4e4860;
+}
+
+/* Cited number pill in AI Detective */
+.pt-cute {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: middle;
+  padding: 4px 12px 5px;
+  border-radius: 16px;
+  background: #d8ecff;
+  color: #1d4f86;
+  line-height: 1.2;
+  margin: 2px 0;
+}
+.pt-cute b {
+  font: 800 14px 'Nunito';
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pt-cute small {
+  font: 700 10.5px 'Nunito';
+  color: #2b4a70;
+}
+
+/* Step Number Badge */
+.step-num {
+  font-style: normal;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #2b2540;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 800 12px 'Nunito';
+  flex: none;
+}
+
+/* Step Selection Option */
+.opt-cute {
+  min-height: 44px;
+  width: 100%;
+  border: 2px solid #ece3d3;
+  border-radius: 18px;
+  background: #ffffff;
+  padding: 8px 14px;
+  text-align: left;
+  font: 800 14px 'Nunito', sans-serif;
+  color: #2b2540;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.opt-cute small {
+  font: 600 11.5px 'Nunito';
+  color: #4e4860;
+}
+.opt-cute.on {
+  border-color: #2b2540;
+  background: #f6f1ff;
+}
+.opt-cute:disabled {
+  color: #6f6980;
+  background: #f4f1ea;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+/* Chip */
+.chip-cute {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 2px solid #ece3d3;
+  background: #ffffff;
+  color: #2b2540;
+  font: 800 13.5px 'Nunito', sans-serif;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.chip-cute:hover {
+  background: #fcf9f2;
+  border-color: #d8cebc;
+}
+.chip-cute.on {
+  background: #2b2540;
+  border-color: #2b2540;
+  color: #ffffff;
+}
+
+/* Hatch Pattern for FDR Non-Significant Grid Cells */
+.dot-hatch {
+  background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, .85) 0 1px, transparent 1px 3px);
+}
+
 .legend-trend {
-  background: linear-gradient(
-    to right,
-    #cf6a35 0%,
-    #e9a883 25%,
-    #f5efe6 50%,
-    #b2e3c1 75%,
-    #16804a 100%
-  );
+  background: linear-gradient(90deg, #2f6fb3 0%, #cfe1f4 35%, #fbf6ec 50%, #fbe0c4 65%, #c4621a 100%);
 }
 
 .legend-value {
-  background: linear-gradient(
-    to right,
-    #ebf9ee 0%,
-    #bde8cb 25%,
-    #69cca0 50%,
-    #219e68 75%,
-    #0f6643 100%
-  );
-}
-
-/* MapLibre Styling Overrides */
-.maplibregl-popup-content {
-  border-radius: 12px;
-  font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  box-shadow: 0 10px 25px -5px rgba(22, 54, 42, 0.15);
-  border: 1px solid #dce8e0;
-}
-
-.maplibregl-ctrl-attrib {
-  font-size: 10px !important;
-  background-color: rgba(255, 255, 255, 0.85) !important;
-  backdrop-filter: blur(4px);
-  border-radius: 6px !important;
+  background: linear-gradient(90deg, #fff4c2 0%, #c8ecc0 20%, #7fd1c2 40%, #4aa6c4 60%, #5a6fb8 80%, #4b3a8c 100%);
 }
