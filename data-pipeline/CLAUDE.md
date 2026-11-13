@@ -1,34 +1,41 @@
-# Terra-scope AI (NASA Space Apps 2026): data pipeline
+# Terra-scope AI (NASA Space Apps 2026): data pipeline, lưu vực Mekong
 
-Web app phân tích xu hướng môi trường cho **bất kỳ vùng nào trên thế giới**. 3 vùng Việt Nam trong `config/regions.geojson` chỉ là **vùng mẫu để kiểm chứng**, không phải phạm vi phân tích. Bức tranh chung và trạng thái: [docs/README.md](docs/README.md).
+Phạm vi: bbox 94–110°E, 8–35°N, giai đoạn 2001–2024, trọng tâm mưa + độ ẩm đất. Tổng quan, nguồn, cách chạy:
+[README.md](README.md). Mỗi `data/raw/<nguồn>/README.md` mô tả dữ liệu của nguồn đó.
 
-## Quy ước tài liệu
-- Tài liệu bằng tiếng Việt, nằm ở `docs/00`–`05` và `docs/README.md`. Người dùng yêu cầu **không tạo tài liệu mới**; thay đổi thì sửa các file hiện có.
-- Tài liệu chỉ trỏ tới code qua dòng **Code:**. Code nằm ở `pipeline/` (bảng file → mục tài liệu: [pipeline/README.md](pipeline/README.md)), test ở `tests/`.
-- Sau mỗi quyết định, rà lại **mọi** tài liệu và code liên quan để chúng khớp nhau.
+## Quy ước
+- Tài liệu bằng tiếng Việt. Người dùng không muốn file code thừa: mỗi nguồn một script trong `download/`, phần dùng
+  chung ở `download/common.py`. Đổi quyết định nào thì rà lại mọi README và code liên quan cho khớp.
+- `data/raw/` chỉ chứa giá trị gốc đã cắt theo bbox (ô có tâm trong bbox). Đổi đơn vị, QA, nội suy thuộc bước sau.
+- Chạy từ thư mục gốc bằng `.venv/bin/python download/<script>.py`. Script bỏ qua file kết quả đã có, nên chạy lại
+  là tiếp tục.
+- Tài khoản Earthdata nằm trong `.env` (`EARTHDATA_USER`, `EARTHDATA_PASS`), đọc qua `appeears.load_env()`. Người
+  dùng tự điền; không in, không hỏi nội dung. Duyệt app Earthdata, tạo tài khoản (EODMS cho RCM…) là việc của người dùng.
+- Repo nhóm: `terra-scope-ai/` (checkout riêng), branch `data-pipeline`, thư mục `data-pipeline/`. Chỉ push khi người
+  dùng đồng ý. `.gitignore` chỉ cho commit `data/raw/*/README.md` trong `data/`.
 
-## Chạy
-- Luôn chạy từ thư mục gốc dự án bằng `.venv/bin/python`. `pipeline/api.py` đọc cube theo đường dẫn tương đối `data/processed/grid/cube_<biến>.nc`.
-- Test không gọi mạng: `.venv/bin/python -m pytest -q tests`.
-- Tài khoản Earthdata nằm trong `.env` (`EARTHDATA_USER`, `EARTHDATA_PASS`), đọc bằng `appeears.load_env()`. Người dùng tự điền; không in, không hỏi nội dung file này.
-- Task AppEEARS chạy nhiều giờ. Nếu tiến trình chờ bị chết, tiếp tục bằng `appeears.py fetch TASK_ID OUT_DIR` (task ID lưu trong `data/raw/appeears/<tên>/task_id.txt`), đừng gửi lại request.
-
-## Ràng buộc dễ sai (đã kiểm chứng)
-- **File area NetCDF thật của AppEEARS** (R4, 13/11/2026):
-  - Tên file là `<dataset>_<độ phân giải>_aid<NNNN>.nc`, đánh số theo **thứ tự feature** đã gửi, không theo id vùng.
-  - Lưới `native` có CRS nằm trong biến `crs`; phải `set_coords("crs")` thì rioxarray mới đọc được.
-  - `time` dùng lịch julian (cftime).
-  - Sản phẩm 8 ngày (MOD11A2) có thêm composite 26/12/2000 dù request bắt đầu 2001; `build_regions.py` cắt về 2001–2024.
-
-  Code đã xử lý ở `nc_files_for` và `raster_to_series`. Chi tiết: docs/02 §3.5.
-- **Harmony:**
-  - Request có `average` thì Harmony dùng dịch vụ trung bình của Giovanni.
-  - Request có `variables` mà không có `average` thì Harmony dùng HOSS. Không truyền bbox nghĩa là lấy cả lưới toàn cầu.
-  - Tên biến HOSS khác ID biến Giovanni (`HOSS_VARIABLES` trong `pipeline/giovanni_adapter.py`).
-  - Đừng dùng `client.wait_for_processing` của harmony-py cho job dài: nó hỏi `/jobs/status`, và Harmony thỉnh thoảng trả 400 `Invalid format for Job ID 'status'`. Dùng `wait_job()`.
-- **HOSS `403`:** nghĩa là tài khoản chưa authorize app GES DISC. Cách chẩn đoán: gọi thẳng một file trên `data.gesdisc.earthdata.nasa.gov`; Earthdata trả về `error_msg` kèm `resolution_url` (13/11/2026: https://urs.earthdata.nasa.gov/approve_app?client_id=e2WVk8Pw6weeLUKZYOxvTQ). Chỉ người dùng authorize được.
-- **File HOSS thật** (13/11/2026):
-  - IMERG ghi `time` theo lịch julian (cftime), giống AppEEARS.
-  - GLDAS chỉ có từ 60°S; `build_cube` reindex về lưới 180 × 360.
-  - Ẩm đất GLDAS = 1,0 m³/m³ cố định trên ô băng (docs/03 K22).
-- `pymannkendall` in `RuntimeWarning: invalid value encountered in sqrt` khi chạy `trend_map` / `find_contradictions` trên cube thật. Đây là các ô có chuỗi hằng (mưa = 0 ở sa mạc, ô băng): kết quả NaN, bị loại khỏi heatmap. Không phải lỗi.
+## Ràng buộc dễ sai (đã kiểm chứng 13/11/2026)
+- **Hydrology Data Rods đã ngừng** (sau 31/10/2025). Thay bằng API
+  `https://api.giovanni.earthdata.nasa.gov/timeseries` (Bearer token từ
+  `POST https://urs.earthdata.nasa.gov/api/users/find_or_create_token`); danh sách biến ở `/configured-variables/`.
+- **Harmony/HOSS:** request có `variables` mà không có `average` thì chạy HOSS; phải truyền `spatial=BBox(...)`,
+  nếu không sẽ nhận cả lưới toàn cầu. Biến IMERG trong HOSS là `Grid/precipitation` (file trả về có group `Grid`).
+  Đừng dùng `client.wait_for_processing` (hỏi `/jobs/status`, đôi khi bị 400); dùng `wait_job()` trong
+  `download/giovanni_hoss.py`. Lỗi `403` nghĩa là tài khoản chưa duyệt app NASA GESDISC DATA ARCHIVE.
+- **Lịch julian:** IMERG (HOSS) và mọi NetCDF của AppEEARS ghi `time` bằng `cftime.DatetimeJulian`. Đổi sang pandas
+  bằng `to_datetimeindex(unsafe=True, time_unit="ns")`, giữ nguyên ngày/tháng/năm.
+- **AppEEARS area NetCDF:** tên `<dataset>_<res>_aid<NNNN>.nc` đánh số theo thứ tự feature gửi lên; lưới MODIS
+  sinusoidal, CRS trong biến `crs`; QC = 0 là tốt nhất nhưng bị khai báo `_FillValue` (mở QC với
+  `mask_and_scale=False`); sản phẩm 8 ngày có thêm kỳ 26/12/2000. Yêu cầu quá nhiều file bị từ chối ("exceeds
+  maximum"): tách theo lớp (SMAP tách AM/PM). Task chạy nhiều giờ; nếu tiến trình chờ chết, dùng
+  `appeears.py fetch TASK_ID OUT_DIR`, đừng gửi lại.
+- **GLDAS `RootMoist` có độ sâu vùng rễ thay đổi theo lớp thực vật**: ô nông nghiệp = đúng tổng 0–100 cm, ô rừng
+  ≈ 0,93 × tổng 0–200 cm (so với tổng các tầng `SoilMoi*`). Không chia cho độ dày cố định để ra m³/m³.
+- **KNMI Climate Explorer** bắt xác minh người thật: không tự động hoá, không vượt. CRU/GPCC tải từ nơi phát hành gốc.
+- **SeaWiFS (CMR `SeaWiFS_L3m_CHL`):** dùng link có `rel` kết thúc bằng `/data#` (obdaac-tea). Link `service#` là
+  OPeNDAP, trả 429 khi tải nhiều file.
+- **SWOT:** RiverSP chứa mọi đoạn sông của lượt quét, kể cả đoạn không quan sát được (`time_str == "no_data"`, fill
+  `-1e12`). Hình đoạn sông lặp y hệt ở mọi lượt (~95 % dung lượng) nên `download/swot.py` lưu riêng một lần. Một số lượt
+  được NASA phát hành lại (`_PGD0_01` → `_02`, giờ bắt đầu trong tên lệch 1 giây, giá trị trùng): khử trùng theo
+  (chu kỳ, lượt, châu lục), giữ số đếm lớn nhất (`latest()`).
+- WebFetch ở máy này lỗi SSL ("unable to get local issuer certificate"); đọc trang web bằng built-in browser.

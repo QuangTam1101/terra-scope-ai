@@ -1,15 +1,7 @@
 requests
 harmony-py
-numpy
 pandas
-pyarrow
 xarray
 netCDF4
-rioxarray
-rasterio
 geopandas
-shapely
-pymannkendall
-scipy
-scikit-learn
-pytest
+pyarrow
