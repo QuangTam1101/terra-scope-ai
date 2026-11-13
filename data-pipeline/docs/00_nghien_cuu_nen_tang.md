@@ -11,7 +11,8 @@ Tài liệu này tóm tắt kiến thức cần có trước khi xây pipeline c
 
 **Là gì:** AppEEARS (Application for Extracting and Exploring Analysis Ready Samples) là công cụ của LP DAAC để **cắt** dữ liệu vệ tinh theo vị trí, thời gian và layer. Nó không phải một dataset mà là "cái kéo" cho khoảng 193 product (MODIS, VIIRS, ECOSTRESS, HLS, SRTM…).
 
-**Tại sao quan trọng:** dữ liệu MODIS gốc chia thành các "tile" 10°×10° ở phép chiếu sinusoidal, file định dạng HDF4 cũ, phủ cả hành tinh. Tự tải và ghép tile, dù chỉ cho một vùng nhỏ như Việt Nam, trong 24 năm đã tốn hàng chục GB và nhiều giờ code. AppEEARS làm việc ghép, cắt, đổi định dạng trên máy chủ NASA, ta chỉ nhận phần cần.
+**Tại sao quan trọng:** dữ liệu MODIS gốc chia thành các "tile" 10°×10° ở phép chiếu **sinusoidal**, file định dạng **HDF4 cũ**, phủ cả hành tinh. Tự tải và ghép tile, dù chỉ cho một vùng nhỏ như Việt Nam, trong 24 năm đã tốn hàng chục GB và nhiều giờ code. AppEEARS làm việc ghép, cắt, đổi định dạng trên máy chủ NASA, ta chỉ nhận phần cần.
+- **HDFE 4 cũ** kiểu dữ liệu
 
 **Hai kiểu request:**
 
@@ -22,7 +23,7 @@ Tài liệu này tóm tắt kiến thức cần có trước khi xây pipeline c
 | Tốc độ | Nhanh (vài phút) | Chậm (vài phút đến vài giờ) |
 | Dùng khi | Có trạm/điểm cụ thể, cần chuỗi thời gian nhanh | Cần trung bình vùng, cần bản đồ |
 
-**Quy trình:** đăng nhập Earthdata → gửi task → chờ (`pending` → `processing` → `done`) → tải bundle. Script `appeears.py` đã làm việc này.
+**Quy trình:** đăng nhập Earthdata → gửi task → chờ (`pending` → `processing` → `done`) → tải bundle ( `appeears.py` )
 
 **Bundle của area request gồm** (theo trang Help chính thức ✅):
 - File dữ liệu (`.tif` hoặc `.nc`). Tên GeoTIFF dạng `{product}.{version}_{layer}_doy{YYYYDDDHHMMSS}_{feature_id}.tif`, nên **ngày tháng nằm trong tên file**.

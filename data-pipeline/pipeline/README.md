@@ -5,6 +5,7 @@ Mọi code từng nằm trong `docs/02`, `docs/03`, `docs/05` đã chuyển ra �
 Script ở gốc dự án:
 - `appeears.py`: client AppEEARS (gửi task, poll bằng `task_status`, tải). `appeears_adapter.py` gọi nó.
 - `download_appeears.sh`: gửi các request vùng mẫu R1–R4.
+- `build_regions.py`: thư mục thô AppEEARS R1–R3 → `normalize_area` → `validate` → `data/processed/regions/observations.parquet`, in sanity, `trend_ready` và kiểm tra chéo LST với cube GLDAS Tair (02 §3.5). Request chưa tải xong thì bỏ qua; chạy lại được.
 - `download_grid.py`: tải lưới toàn cầu qua Harmony HOSS → `data/raw/harmony_grid/<VAR_ID>/` → `data/processed/grid/cube_<biến>.nc` (02 §4.6). Cần tài khoản đã authorize app GES DISC (docs/04, T-1; xong 13/11).
 
 Luồng chính của web: **cube lưới 1° toàn cầu** (`grid.py`) → `api.py` (hàm cho backend và cho AI) → `report.py`. Bảng `observations` (`schema.py`) dùng cho vùng mẫu và dữ liệu point trước khi thành cube.
@@ -37,7 +38,7 @@ Reprojection: không có hàm riêng. Đường area xin AppEEARS lưới `nativ
 ## Chưa làm
 
 - Template câu giải thích cho cặp mâu thuẫn (`explanation_vi`, docs/04 CH-5).
-- Lưới điểm MODIS thật (`write_grid_points` → AppEEARS point → `points_to_cube`): chờ cube GLDAS và kết quả thử batch (T-5).
+- Lưới điểm MODIS thật (`write_grid_points` → AppEEARS point → `points_to_cube`): cube GLDAS đã có (13/11, 17.284 ô đất liền); chờ kết quả thử batch (T-5).
 - Backend HTTP bọc `api.py`: thuộc phần web, không nằm trong `pipeline/`.
 - Contradiction loại D (giữa các biến): P2.
 - Vòng kiểm định hoán vị (đếm cặp thật so với cặp khi xáo năm): mới có các khối `permute_years` + `sen_slope_per_year`, chưa có hàm chạy cả vòng.

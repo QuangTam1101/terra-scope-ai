@@ -90,9 +90,10 @@ Mỗi nguồn có một adapter "hấp thụ" sự phức tạp đó. Nhờ vậ
 - Output area request: `file_type` là `geotiff` hoặc `netcdf4`; projection có `native`, `geographic`… (tài liệu API chính thức).
 - Bẫy QC của MOD11A2: FillValue = 0 cho `QC_Day`/`QC_Night`, nhưng QC = 0 là **chất lượng tốt nhất** → không bao giờ lọc QC theo fill value.
 - AppEEARS **không có** GPM, GLDAS, MERRA-2, và không có sản phẩm MODIS lưới thô CMG (MOD13C2, MOD11C3).
-- Request có quá nhiều file đầu ra bị từ chối (R2 vượt 31,4% → tách R2a/R2b). R1–R4 vùng mẫu đã gửi 13/11; **R4 (lớp phủ đất + độ cao) đã tải xong**.
+- Request có quá nhiều file đầu ra bị từ chối (R2 vượt 31,4% → tách R2a/R2b). R1–R4 vùng mẫu đã gửi 13/11; **R1, R2a, R2b, R4 đã tải xong**, R3 (ET/PET) đang xử lý.
 - File area NetCDF thật (R4): tên `<dataset>_<độ phân giải>_aid<NNNN>.nc` theo **thứ tự feature**, không theo id vùng; lưới `native` có chiều `xdim`/`ydim`, CRS nằm trong biến `crs`; `time` lịch julian. Ba điểm này từng làm hỏng code đọc vùng (không tìm thấy file, mask rỗng, lỗi đổi ngày) → đã sửa, có test hồi quy.
 - Mask vùng của ta khớp số pixel trong `Statistics.csv` của AppEEARS (lệch 0,2–0,9%).
+- Đường vùng mẫu chạy trên R1 NDVI + R2a/R2b LST thật (13/11, `build_regions.py` → `observations.parquet`): 288 tháng mỗi vùng × biến, validate và sanity đạt. LST ngày khớp nhịp GLDAS Tair (r = 0,77–0,94; LST > Tair 100% số tháng). Mây mùa mưa làm ĐBSCL còn 56% / 42% tháng LST ngày / đêm, nên chưa đủ để chạy xu hướng (03, K2).
 
 *Giovanni / Harmony*
 - Mọi ID biến trong tài liệu có trong `/configured-variables/`; chlorophyll chỉ có `NOBM_DAY_R2017_chl`.
@@ -101,13 +102,14 @@ Mỗi nguồn có một adapter "hấp thụ" sự phức tạp đó. Nhờ vậ
 - Concept ID collection: GPM_3IMERGM v07 = `C2723754851-GES_DISC`, GLDAS_NOAH025_M v2.1 = `C1342986036-GES_DISC`, M2IMNXASM v5.12.4 = `C1276812823-GES_DISC`.
 - Đăng nhập Harmony bằng tài khoản trong `.env` thành công (job HOSS được tạo).
 - Job HOSS 1 tháng chạy được cho cả 3 collection (50–85 s). Cấu trúc file khớp `read_grid_file`. IMERG dùng lịch julian; GLDAS chỉ từ 60°S. `build_cube` trên file thật cho giá trị hợp lý (02 §4.6).
+- Lưới toàn cầu đã tải xong (13/11): 5 cube 2001–2024 (288 tháng × 180 × 360 ô). Giá trị hợp lý (02 §4.6); 4 hàm API chạy được trên cube thật.
 - Ẩm đất GLDAS = 1,0 m³/m³ cố định trên ô băng (03, K22).
 
 *Pipeline*
 - `grid_trend` khớp `pymannkendall.seasonal_test` từng ô; toàn cầu 1° × 24 năm ~4 s, 12 năm ~1 s; chuỗi vùng 4 ms; nhiễu thuần cho 0 ô significant sau FDR.
 - 55 test đạt (`pytest`, dữ liệu giả, không gọi mạng).
 
-**⛔ Đang bị chặn:** không còn. Lỗi HOSS `403` được gỡ ngày 13/11 sau khi authorize app GES DISC (04, T-1); lưới toàn cầu đang tải (T-4).
+**⛔ Đang bị chặn:** không còn. Lỗi HOSS `403` được gỡ ngày 13/11 sau khi authorize app GES DISC (04, T-1); lưới toàn cầu đã tải xong (T-4).
 
 **⚠️ Chưa kiểm chứng:**
 - Output AppEEARS đã nhân scale factor sẵn hay chưa → pipeline **tự phát hiện** khi đọc file (03, mục C).

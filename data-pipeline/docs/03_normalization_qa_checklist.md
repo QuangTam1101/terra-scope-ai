@@ -56,7 +56,7 @@
 | ☐ | Lưới Giovanni (HOSS): tên biến lấy từ `HOSS_VARIABLES` (khớp `/capabilities`), **không truyền bbox**, không `average` | Có `average` thì Harmony chọn dịch vụ trung bình chứ không phải HOSS; có bbox thì mất phần còn lại của Trái Đất (02 §4.6) |
 | ✅ | Tài khoản Earthdata đã authorize app GES DISC (https://urs.earthdata.nasa.gov/approve_app?client_id=e2WVk8Pw6weeLUKZYOxvTQ) | Chưa authorize → HOSS `403`, area-average `Failed validating bearer token` (04, T-1). Xong 13/11 |
 | ☐ | Area request AppEEARS: `netcdf4` ✅ + projection `native` | `native` tránh nội suy lại pixel |
-| ☐ | Lưới điểm AppEEARS (P1): tâm các ô đất liền 1° lấy từ cube GLDAS (~15.000 điểm ⚠️), chia thành **nhiều batch** (`write_grid_points`); gửi thử **1 batch nhỏ** trước | ⚠️ Số điểm tối đa mỗi point request chưa có trong tài liệu API |
+| ☐ | Lưới điểm AppEEARS (P1): tâm các ô đất liền 1° lấy từ cube GLDAS (17.284 điểm, đếm trên cube thật 13/11), chia thành **nhiều batch** (`write_grid_points`); gửi thử **1 batch nhỏ** trước | ⚠️ Số điểm tối đa mỗi point request chưa có trong tài liệu API |
 | ☐ | Giovanni: gọi `/quota` trước; **dừng nếu ≥ 0.95** | Hết quota giữa chừng = thiếu dữ liệu đúng lúc cần |
 | ☐ | Giai đoạn 01/2001 – 12/2024 cho mọi biến | Trend của các biến phải cùng giai đoạn mới so sánh được |
 | ☐ | Lưu request (JSON / tham số Giovanni) vào `data/raw/.../manifest.json` | Tái tạo được, trích dẫn được |
@@ -67,7 +67,7 @@
 |---|---|---|
 | ☐ | AppEEARS: MOD13A3 có 288 tháng; MOD11A2 và MOD16A2GF có ~46 composite/năm × 24 | Phát hiện bundle thiếu trước khi xử lý |
 | ☐ | Giovanni area-average: mỗi (vùng, biến) có **288 dòng** sau phần header | Giovanni bỏ qua tháng thiếu mà không báo |
-| ☐ | HOSS: mỗi biến đủ **288 file tháng** trong `data/raw/harmony_grid/<VAR_ID>/`; cube ra đúng `(288, 180, 360)` | Thiếu một tháng giữa chuỗi thì `grid_trend` lệch mùa. Chạy lại `download_grid.py` không tải lại file đã có |
+| ✅ | HOSS: mỗi biến đủ **288 file tháng** trong `data/raw/harmony_grid/<VAR_ID>/`; cube ra đúng `(288, 180, 360)` (13/11: cả 5 biến đạt, 288 tháng không trùng, tăng dần) | Thiếu một tháng giữa chuỗi thì `grid_trend` lệch mùa. Chạy lại `download_grid.py` không tải lại file đã có |
 | ☐ | Point request: mỗi điểm có đủ ngày; `id` khớp file điểm đã gửi | Điểm rơi xuống biển hoặc ra ngoài phạm vi product sẽ trả toàn fill |
 | ☐ | Checksum SHA-256 khớp (AppEEARS có cung cấp) | Phát hiện file tải hỏng |
 | ☐ | Mở được 1 file; in `ds`, `.attrs`, **dtype** từng layer; in phần header CSV Giovanni | Xác nhận tên chiều, attrs, dtype (cần cho mục C) và **khoá chứa đơn vị** của Giovanni (cần cho mục G) |
@@ -197,7 +197,7 @@
 | ☐ | Mọi vùng có `n_total > 0` | Không có tâm pixel nào trong vùng = sai polygon hoặc CRS |
 | ☐ | Kiểm tra chéo với `*-Statistics.csv` của AppEEARS (QA tắt), sai lệch < 1% | Chứng minh đọc file, decode, clip đều đúng. ✅ Số pixel (R4 MCD12Q1, 13/11): mask tâm-pixel của ta lấy 99,8% / 99,7% / 99,1% số pixel AppEEARS đếm cho ĐBSCL / Tây Nguyên / Hà Nội; còn kiểm tra giá trị trung bình trên R1–R3 |
 | ☐ | `bin_to_grid` bảo toàn trung bình một khối và bỏ qua NaN | ✅ test. Coi NaN là 0 thì ô ven biển của GLDAS bị kéo về 0 |
-| ☐ | Bản đồ "số tháng có dữ liệu" của mỗi cube: GLDAS NaN trên biển và Nam Cực; IMERG, MERRA-2 phủ cả biển | Lộ lỗi đảo lat/lon, lệch kinh độ 0–360 / −180–180, hoặc đọc nhầm nhóm |
+| ✅ | Bản đồ "số tháng có dữ liệu" của mỗi cube: GLDAS NaN trên biển và Nam Cực; IMERG, MERRA-2 phủ cả biển (13/11: GLDAS có dữ liệu ở 27% ô, không có ô nào ở 75°S; IMERG, MERRA-2 100%) | Lộ lỗi đảo lat/lon, lệch kinh độ 0–360 / −180–180, hoặc đọc nhầm nhóm |
 | ☐ | Lưới điểm AppEEARS: điểm rơi vào pixel nước, đô thị hoặc lớp đặc biệt ET → NaN cho ô đó (ghi lại số ô) | Điểm lấy từ ô đất liền GLDAS, nhưng tâm ô ven biển vẫn có thể rơi xuống nước |
 | ☐ | Điểm ngoài phạm vi SRTM (~60°N – 56°S ⚠️) → độ cao = NaN, có cờ | Không gán độ cao 0 cho Siberia |
 
@@ -299,17 +299,17 @@ Khoảng kỳ vọng **thô** để bắt lỗi lớn, không phải chuẩn kho
 | `pet` | 0 … 700 mm/tháng | |
 | `et_pet_ratio` | 0 … 1.2 | > 1.2 nhiều nơi → sai công thức tổng tháng |
 | `precip` | 0 … 3000 mm/tháng | ~0.1–1 cả năm → quên × 24 × số ngày (vẫn là mm/hr) |
-| `soil_moisture` | 0 … 0.6 m³/m³ | ~20–40 → quên ÷ 100. Đúng 1,0 ở ô băng là giá trị cố định của GLDAS (K22), không phải lỗi đơn vị |
-| `tair_land`, `t2m` | -70 … 50 °C | ~250–310 → quên đổi K |
-| `evap_gldas` | 0 … 12 mm/ngày | ~10⁻⁵ → quên × 86400 |
+| `soil_moisture` | 0 … 0.6 m³/m³ | ~20–40 → quên ÷ 100. Đúng 1,0 ở ô băng là giá trị cố định của GLDAS (K22), không phải lỗi đơn vị. Ô 1° ven băng có giá trị trộn 0,6–1,0 |
+| `tair_land`, `t2m` | -70 … 50 °C | ~250–310 → quên đổi K. `t2m` tới −74 °C trên cao nguyên Nam Cực vào mùa đông là thật (13/11: 313 ô-tháng, đều ở nam 72°S) |
+| `evap_gldas` | 0 … 12 mm/ngày | ~10⁻⁵ → quên × 86400. Âm nhẹ (tới −0,3) là **ngưng tụ / đóng sương giá**, có thật: 13/11 thấy 3% ô-tháng âm, 99% ở vĩ độ > 50°, nhiều nhất vào mùa đông |
 
 **Code:** [`pipeline/checks.py`](../pipeline/checks.py) → `SANITY`, `sanity_report()`. Khoá theo tên biến docs/01: `tair_land`, `evap_gldas`, `et_pet_ratio` (test: `tests/test_trends.py`). Với cube: so `cube.min()`, `cube.max()` với cùng bảng `SANITY`.
 
 | ☐ | Kiểm tra |
 |---|---|
-| ☐ | `sanity_report` rỗng, hoặc mọi dòng được giải thích |
+| ✅ | `sanity_report` rỗng, hoặc mọi dòng được giải thích (13/11, 5 cube HOSS: `precip`, `tair_land` không có ô ngoài khoảng; `t2m`, `evap_gldas`, `soil_moisture` đã giải thích ở bảng trên và K22) |
 | ☐ | Vẽ chuỗi từng (vùng, biến), nhìn bằng mắt: chu kỳ mùa có đúng hướng không? |
-| ☐ | Vẽ bản đồ trung bình nhiều năm của mỗi cube: mưa nhiều ở dải hội tụ nhiệt đới, ít ở Sahara; nhiệt độ giảm dần về hai cực |
+| ✅ | Vẽ bản đồ trung bình nhiều năm của mỗi cube: mưa nhiều ở dải hội tụ nhiệt đới, ít ở Sahara; nhiệt độ giảm dần về hai cực (13/11, kiểm bằng trung bình theo đới vĩ độ: mưa 123 mm/tháng ở xích đạo, 1,5 ở Sahara; `t2m` 26 °C ở xích đạo, −10 °C ở 75°N, −30 °C ở 75°S) |
 | ☐ | **Bán cầu:** điểm ở Bắc bán cầu có LST/T2M đỉnh khoảng tháng 6–8, Nam bán cầu khoảng tháng 12–2. Ngược lại thì nghi đảo lat/lon |
 | ☐ | Không có bước nhảy đột ngột trùng mốc đổi sản phẩm hoặc cảm biến |
 
@@ -324,8 +324,8 @@ Khoảng kỳ vọng **thô** để bắt lỗi lớn, không phải chuẩn kho
 
 | ☐ | Kiểm tra | Kỳ vọng | Nếu không đạt |
 |---|---|---|---|
-| ☐ | r(LST ngày, Tair hoặc T2M) theo tháng, mỗi vùng | > 0.7 ở vùng có mùa rõ (nhiệt đới có thể thấp hơn) | Kiểm tra nhãn tháng, vùng, đơn vị |
-| ☐ | Tỷ lệ tháng LST ngày > nhiệt độ không khí | > 0.8 (ngoại lệ: vùng tuyết, rừng rậm) | Kiểm tra đổi K → °C |
+| ✅ | r(LST ngày, Tair hoặc T2M) theo tháng, mỗi vùng | > 0.7 ở vùng có mùa rõ (nhiệt đới có thể thấp hơn). **13/11 (GLDAS Tair):** ĐBSCL 0,88 · Tây Nguyên 0,77 · Hà Nội 0,94 | Kiểm tra nhãn tháng, vùng, đơn vị |
+| ✅ | Tỷ lệ tháng LST ngày > nhiệt độ không khí | > 0.8 (ngoại lệ: vùng tuyết, rừng rậm). **13/11:** 1,0 cả ba vùng | Kiểm tra đổi K → °C |
 | ☐ | r(ET MODIS, Evap GLDAS) | > 0.5 | Kiểm tra cách cộng ET tháng (mục F) |
 | ☐ | `region_series(cube, bbox vùng mẫu)` so với Giovanni area-average cùng bbox | Cùng nhịp, chênh nhỏ (do lưới 1° và K9) | Kiểm tra `bin_to_grid`, lệch kinh độ, đơn vị cube |
 | ☐ | Trung vị tỷ số ET MODIS / Evap GLDAS | ~0.5 – 2 | Lệch 4–8 lần → lỗi trung bình/tổng hoặc mm/8 ngày |
@@ -357,7 +357,7 @@ Mỗi mục là một **lựa chọn có tính khoa học** mà pipeline đang d
 | # | Lựa chọn | Mặc định hiện tại | Lý do / rủi ro |
 |---|---|---|---|
 | K1 | Ngưỡng `valid_frac` loại tháng | 0.3 | Đánh đổi giữa số tháng giữ lại và độ đại diện |
-| K2 | Mức chặt của QA cho NDVI/LST | NDVI: chỉ "good"; LST: good hoặc sai số ≤ 2 K | Chặt quá mất dữ liệu mùa mưa; lỏng quá lẫn mây |
+| K2 | Mức chặt của QA cho NDVI/LST | NDVI: chỉ "good"; LST: good hoặc sai số ≤ 2 K | Chặt quá mất dữ liệu mùa mưa; lỏng quá lẫn mây. **13/11, R1 thật (cùng K1 = 0.3):** ĐBSCL mất 88/288 tháng, Hà Nội 86, Tây Nguyên 4. Hai vùng đầu chỉ còn ~69% tháng, dưới ngưỡng 70%, nên `insufficient_data = True`. **R2 LST:** ĐBSCL còn 56% (ngày) / 42% (đêm), tháng 5–10 gần như trống; Hà Nội 84% / 89%; Tây Nguyên 96% / 84% |
 | K3 | Loại pixel nước khỏi NDVI (bit 11–13)? | Đề xuất có | Vùng nhiều sông, đầm phá: NDVI nước âm kéo trung bình xuống |
 | K4 | LST tháng = trung bình theo số ngày phủ, cần ≥ 2 composite | Có | Có nên đòi nhiều composite hơn ở vùng nhiều mây? |
 | K5 | ET tháng = tổng theo ngày; composite cuối năm 5–6 ngày; ET không lọc mây (bản gap-filled) | Như mục C2, D, F | Cộng sai cho số sai khoảng 4 lần; lọc mây trên bản gap-filled có thể bỏ đúng phần đã sửa |
@@ -377,4 +377,4 @@ Mỗi mục là một **lựa chọn có tính khoa học** mà pipeline đang d
 | K19 | **Chọn rồi mới kiểm định:** điểm nóng được chọn **vì** significant, nên p_diff của cặp tăng × giảm gần như luôn nhỏ | Báo cáo kèm CI, độ ổn định hai nửa giai đoạn và baseline hoán vị (P2) (05, mục 2) | Tránh trình bày p_diff như bằng chứng độc lập |
 | K20 | **Định nghĩa điểm nóng:** ô có q < 0.05, cùng chiều, liền kề 8 hướng, ≥ 4 ô | `hotspot_regions(q=0.05, min_cells=4)` | Ngưỡng nhỏ thì nhiều điểm nóng nhiễu; lớn thì mất vùng nhỏ có thật |
 | K21 | `grid_trend` **không hiệu chỉnh giá trị trùng** (ties) trong phương sai MK | Bỏ, vì làm p lớn hơn (thận trọng hơn) | Ảnh hưởng ô sa mạc có nhiều tháng mưa = 0 |
-| K22 | **Ẩm đất GLDAS trên băng:** ô phủ băng có giá trị cố định 100 kg/m² (= 1,0 m³/m³), khoảng 1% ô đất liền (tháng 7/2010) | Giữ nguyên (xu hướng = 0) | Có nên che các ô này khỏi heatmap và trung bình vùng không? |
+| K22 | **Ẩm đất GLDAS trên băng:** ô gốc phủ băng có giá trị cố định 100 kg/m² (= 1,0 m³/m³). Trên cube 1° (13/11): **563 ô = 1,0 suốt 24 năm (3,3% ô đất liền)**, thêm **391 ô ven băng** (63–82°N) có giá trị trộn ~0,77 | Giữ nguyên | Ô = 1,0: xu hướng = 0, thực chất là không có số liệu. Ô ven băng: xu hướng chỉ đến từ phần không phủ băng nên bị pha loãng (độ dốc nhỏ hơn thật). Có nên che các ô này khỏi heatmap và trung bình vùng không? |

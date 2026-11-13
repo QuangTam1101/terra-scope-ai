@@ -18,6 +18,7 @@ Web app phân tích xu hướng môi trường cho **bất kỳ vùng nào trên
   - Tên file là `<dataset>_<độ phân giải>_aid<NNNN>.nc`, đánh số theo **thứ tự feature** đã gửi, không theo id vùng.
   - Lưới `native` có CRS nằm trong biến `crs`; phải `set_coords("crs")` thì rioxarray mới đọc được.
   - `time` dùng lịch julian (cftime).
+  - Sản phẩm 8 ngày (MOD11A2) có thêm composite 26/12/2000 dù request bắt đầu 2001; `build_regions.py` cắt về 2001–2024.
 
   Code đã xử lý ở `nc_files_for` và `raster_to_series`. Chi tiết: docs/02 §3.5.
 - **Harmony:**
@@ -30,3 +31,4 @@ Web app phân tích xu hướng môi trường cho **bất kỳ vùng nào trên
   - IMERG ghi `time` theo lịch julian (cftime), giống AppEEARS.
   - GLDAS chỉ có từ 60°S; `build_cube` reindex về lưới 180 × 360.
   - Ẩm đất GLDAS = 1,0 m³/m³ cố định trên ô băng (docs/03 K22).
+- `pymannkendall` in `RuntimeWarning: invalid value encountered in sqrt` khi chạy `trend_map` / `find_contradictions` trên cube thật. Đây là các ô có chuỗi hằng (mưa = 0 ở sa mạc, ô băng): kết quả NaN, bị loại khỏi heatmap. Không phải lỗi.
