@@ -342,7 +342,7 @@ CSV của Giovanni có **phần đầu là metadata**: tên biến, đơn vị, 
 1. **Request:** `Request(collection=Collection(id=CONCEPT_IDS[dataset]), temporal={start, stop}, variables=[HOSS_VARIABLES[var_id]], format="application/x-netcdf4")`.
    - **Không truyền `spatial`**, nghĩa là cả Trái Đất.
    - Không `average`, nên Harmony chọn HOSS thay vì dịch vụ trung bình của Giovanni.
-2. **Tải:** `download_all(job, directory=data/raw/harmony_grid/<VAR_ID>/, overwrite=False)`. Mỗi tháng một file, 288 file mỗi biến. Ghi `job_id.txt`.
+2. **Chờ + tải:** ghi `job_id.txt` ngay khi gửi; `wait_job()` hỏi trạng thái mỗi 30 s; rồi `download_all(job, directory=data/raw/harmony_grid/<VAR_ID>/, overwrite=False)`. Mỗi tháng một file, 288 file mỗi biến.
 3. **Đọc:** `read_grid_file()` → `(time, lat, lon)`.
    - IMERG nằm trong nhóm `Grid` với chiều gốc `(time, lon, lat)`, `units = mm/hr`, `time` theo **lịch julian** (cftime).
    - GLDAS phẳng `(time, lat, lon)`, `units = kg m-2`, lưới 600 × 1440 (chỉ từ 60°S); MERRA-2 phẳng, `units = K`, lưới 361 × 576 (gồm cả ±90°).
@@ -370,7 +370,7 @@ CSV của Giovanni có **phần đầu là metadata**: tên biến, đơn vị, 
 | `401` | Token hết hạn / sai tài khoản | Gọi lại `edl_token()` |
 | HOSS: `WorkItem failed … 403 error retrieving … opendap.earthdata.nasa.gov` | Tài khoản chưa authorize app GES DISC (✅ nguyên nhân thật 13/11) | Mở https://urs.earthdata.nasa.gov/approve_app?client_id=e2WVk8Pw6weeLUKZYOxvTQ → Authorize (04, T-1) |
 | Area-average: `Unauthorized: Failed validating bearer token` | Như trên ⚠️ | Như trên, rồi chạy lại |
-| `harmony-py`: `Invalid format for Job ID 'status'` | Lỗi tạm thời khi gửi job (gặp 1 lần 13/11) | Gửi lại; chạy lại `download_grid.py` an toàn |
+| `harmony-py`: `Invalid format for Job ID 'status'` | `wait_for_processing` / `download_all` của harmony-py hỏi endpoint `/jobs/status`, Harmony thỉnh thoảng trả 400 (13/11: cả 5 job 288 tháng đều dính sau ~15 phút). Job trên máy chủ vẫn chạy tiếp | Đã sửa: `wait_job()` tự hỏi `client.status()` (`/jobs/<id>`); `job_id.txt` ghi ngay khi gửi, chạy lại `download_grid.py` sẽ nối tiếp job cũ |
 | `FileNotFoundError … .harmony-xxxx` khi tải | Thư mục đích chưa tồn tại | Tạo thư mục trước (`download_grid.py` đã làm) |
 | Job Harmony `failed` | Sai ID biến, bbox ngoài phạm vi (ví dụ GLDAS dưới 60°S) | Đọc message trong job |
 | Assert đơn vị lỗi | Giovanni đổi đơn vị | Cập nhật `UNIT_RULES` sau khi Đăng duyệt |
