@@ -10,9 +10,9 @@ from fastapi import APIRouter, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-from . import bridge, catalog, config, errors, service
+from . import bridge, catalog, chat, config, errors, service
 from .errors import ApiError
-from .schemas import (CompareRequest, CompareResponse, ExplainRequest, ExplainResponse, GridResponse,
+from .schemas import (ChatRequest, ChatResponse, CompareRequest, CompareResponse, ExplainRequest, ExplainResponse, GridResponse,
                       HealthResponse, RegionsResponse, SeriesRequest, SeriesResponse, TrendRequest, TrendResponse,
                       ValueGridResponse, VariablesResponse)
 
@@ -102,6 +102,11 @@ def compare(req: CompareRequest):
 @api.post("/explain", response_model=ExplainResponse)
 def explain(req: ExplainRequest):
     return service.explain(req)
+
+
+@api.post("/chat", response_model=ChatResponse, response_model_exclude_unset=True)
+def chat_response(req: ChatRequest):
+    return chat.respond(req)
 
 
 @api.get("/jobs/{job_id}")

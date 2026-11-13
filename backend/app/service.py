@@ -285,6 +285,12 @@ def trends(req: TrendRequest) -> dict:
     return _compute_trend(v, region, bbox, req.start, req.end, req.alpha, warnings)[0]
 
 
+def stored_trend(trend_id: str) -> dict | None:
+    """Read an existing analysis for chat; never create an ID without a computed result."""
+    result = _STORE.get(trend_id)
+    return result if result is not None and "slope_per_decade" in result else None
+
+
 # ---------------------------------------------------------------- /trends/grid
 def _parse_bbox(text: str | None) -> tuple | None:
     if not text:

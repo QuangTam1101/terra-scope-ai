@@ -48,6 +48,30 @@ export interface ExplainResponse {
   actions: { type: string; params: Record<string, unknown> }[]; disclaimer: string; model: string; warnings: string[];
 }
 
+export interface ChatContext {
+  variable_id?: string; dataset_id?: string; region?: RegionRef; start?: string; end?: string; trend_id?: string;
+}
+export interface ChatHistoryTurn { role: "user" | "assistant"; content: string }
+export interface ChatRequest { message: string; context: ChatContext; history: ChatHistoryTurn[] }
+export interface ChatWarning {
+  code: "TEMPLATE_MODE" | "ANALYSIS_WARNING" | "CONTEXT_REQUIRED" | "UNSUPPORTED_QUESTION";
+  message: string;
+}
+export interface ChatAction {
+  type: "navigate"; page: "explore"; label: string;
+  params: { variable_id: string; region: RegionRef; start: string; end: string };
+}
+export interface ChatEvidence {
+  trend: TrendResponse & {
+    method: string; slope_method: string; ci_level: number; alpha: number; autocorrelation_adjusted: boolean;
+  };
+  cited_numbers: ExplainResponse["cited_numbers"];
+}
+export interface ChatResponse {
+  answer: string; mode: "template"; evidence: ChatEvidence[]; warnings: ChatWarning[];
+  actions: ChatAction[]; disclaimer: string; analysis_id?: string;
+}
+
 export class ApiError extends Error {
   constructor(public code: string, message: string, public status?: number, public retryable = false) { super(message); }
 }
@@ -93,6 +117,7 @@ export const api = {
   compare: (variable_id: string, region_a: RegionRef, region_b: RegionRef, start: string, end: string) =>
     post<CompareResponse>("/compare", { variable_id, region_a, region_b, start, end, method: "seasonal_mk", alpha: 0.05 }),
   explain: (question: string, context: Record<string, unknown>) => post<ExplainResponse>("/explain", { question, context }),
+  chat: (request: ChatRequest) => post<ChatResponse>("/chat", request),
 };
 
 // Friendly copy for each error code (contract §4.11).
