@@ -24,6 +24,7 @@ Web app phân tích xu hướng môi trường cho **bất kỳ vùng nào trên
   - Request có `average` thì Harmony dùng dịch vụ trung bình của Giovanni.
   - Request có `variables` mà không có `average` thì Harmony dùng HOSS. Không truyền bbox nghĩa là lấy cả lưới toàn cầu.
   - Tên biến HOSS khác ID biến Giovanni (`HOSS_VARIABLES` trong `pipeline/giovanni_adapter.py`).
+  - Đừng dùng `client.wait_for_processing` của harmony-py cho job dài: nó hỏi `/jobs/status`, và Harmony thỉnh thoảng trả 400 `Invalid format for Job ID 'status'`. Dùng `wait_job()`.
 - **HOSS `403`:** nghĩa là tài khoản chưa authorize app GES DISC. Cách chẩn đoán: gọi thẳng một file trên `data.gesdisc.earthdata.nasa.gov`; Earthdata trả về `error_msg` kèm `resolution_url` (13/11/2026: https://urs.earthdata.nasa.gov/approve_app?client_id=e2WVk8Pw6weeLUKZYOxvTQ). Chỉ người dùng authorize được.
 - **File HOSS thật** (13/11/2026):
   - IMERG ghi `time` theo lịch julian (cftime), giống AppEEARS.
