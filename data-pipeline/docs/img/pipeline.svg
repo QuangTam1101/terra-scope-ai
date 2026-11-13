@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1220 1250" width="1220" height="1250" font-family="-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4A5568"/>
+    </marker>
+    <style>
+      .t  { font-size: 15px; font-weight: 700; fill: #1A202C; }
+      .h  { font-size: 18px; font-weight: 700; }
+      .s  { font-size: 12px; fill: #4A5568; }
+      .x  { font-size: 12px; fill: #2D3748; }
+      .b  { font-size: 12px; font-weight: 700; fill: #FFFFFF; text-anchor: middle; }
+      .f  { font-size: 13px; font-weight: 600; fill: #2D3748; font-family: Menlo, Consolas, monospace; }
+      .c  { text-anchor: middle; }
+      .ln { stroke: #4A5568; stroke-width: 1.6; fill: none; }
+      .card { fill: #FFFFFF; stroke-width: 1.2; }
+      .skip { fill: #F7FAFC; stroke: #CBD5E0; stroke-dasharray: 4 3; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1220" height="1250" fill="#FFFFFF"/>
+
+  <!-- S0 config -->
+  <rect x="40" y="24" width="1140" height="84" rx="14" fill="#FFF8EB" stroke="#B7791F" stroke-width="1.4"/>
+  <circle cx="74" cy="66" r="16" fill="#B7791F"/><text x="74" y="70" class="b">S0</text>
+  <text x="100" y="62" class="t">Config</text>
+  <text x="100" y="80" class="s">phạm vi: toàn thế giới</text>
+  <rect x="330" y="44" width="270" height="44" rx="8" class="card" stroke="#D69E2E"/>
+  <text x="345" y="63" class="f">grid 1°</text><text x="345" y="80" class="s">180 × 360 ô, 2001-01 → 2024-12</text>
+  <rect x="620" y="44" width="270" height="44" rx="8" class="card" stroke="#D69E2E"/>
+  <text x="635" y="63" class="f">variables</text><text x="635" y="80" class="s">10 biến chuỗi + 2 biến tĩnh</text>
+  <rect x="910" y="44" width="250" height="44" rx="8" class="card" stroke="#D69E2E"/>
+  <text x="925" y="63" class="f">regions.geojson</text><text x="925" y="80" class="s">vùng mẫu để kiểm chứng</text>
+  <path d="M315 108 V138" class="ln" marker-end="url(#a)"/>
+  <path d="M905 108 V138" class="ln" marker-end="url(#a)"/>
+
+  <!-- Giovanni / Harmony lane -->
+  <rect x="40" y="140" width="550" height="414" rx="14" fill="#F0FFF4" stroke="#2F855A" stroke-width="1.4"/>
+  <text x="60" y="168" class="h" fill="#2F855A">Giovanni qua Harmony (P0)</text>
+  <text x="60" y="188" class="s">GPM IMERG · GLDAS · MERRA-2: mưa, ẩm đất, nhiệt độ không khí, bốc hơi</text>
+  <rect x="60" y="205" width="510" height="44" rx="8" class="card" stroke="#9AE6B4"/>
+  <circle cx="84" cy="227" r="13" fill="#2F855A"/><text x="84" y="231" class="b">S1</text>
+  <text x="108" y="222" class="t">Fetch + cache</text><text x="108" y="240" class="x">HOSS: lưới gốc toàn cầu · area-average: bbox (tuỳ chọn, vùng mẫu)</text>
+  <rect x="60" y="261" width="510" height="44" rx="8" class="card" stroke="#9AE6B4"/>
+  <circle cx="84" cy="283" r="13" fill="#2F855A"/><text x="84" y="287" class="b">S2</text>
+  <text x="108" y="278" class="t">Read raw</text><text x="108" y="296" class="x">NetCDF mỗi tháng một file (IMERG: nhóm Grid) · CSV area-average</text>
+  <rect x="60" y="317" width="510" height="44" rx="8" class="card" stroke="#9AE6B4"/>
+  <circle cx="84" cy="339" r="13" fill="#2F855A"/><text x="84" y="343" class="b">S3</text>
+  <text x="108" y="334" class="t">Fill</text><text x="108" y="352" class="x">fill / sentinel còn sót (≤ −9999, ≥ 1e19) → NaN</text>
+  <rect x="60" y="373" width="510" height="44" rx="8" class="skip"/>
+  <circle cx="84" cy="395" r="13" fill="#A0AEC0"/><text x="84" y="399" class="b">S4</text>
+  <text x="108" y="390" class="t" fill="#718096">QA mask: bỏ qua</text><text x="108" y="408" class="s">sản phẩm cấp 3 / mô hình, không có bit QA từng pixel</text>
+  <rect x="60" y="429" width="510" height="44" rx="8" class="card" stroke="#9AE6B4"/>
+  <circle cx="84" cy="451" r="13" fill="#2F855A"/><text x="84" y="455" class="b">S5</text>
+  <text x="108" y="446" class="t">Gộp không gian</text><text x="108" y="464" class="x">bin_to_grid: trung bình khối về ô 1° (0.1° / 0.25° / 0.5°)</text>
+  <rect x="60" y="485" width="510" height="44" rx="8" class="card" stroke="#9AE6B4"/>
+  <circle cx="84" cy="507" r="13" fill="#2F855A"/><text x="84" y="511" class="b">S6</text>
+  <text x="108" y="502" class="t">Gộp thời gian</text><text x="108" y="520" class="x">đã theo tháng → chuẩn hoá nhãn về đầu tháng</text>
+
+  <!-- AppEEARS lane -->
+  <rect x="630" y="140" width="550" height="414" rx="14" fill="#EBF4FF" stroke="#2B6CB0" stroke-width="1.4"/>
+  <text x="650" y="168" class="h" fill="#2B6CB0">AppEEARS</text>
+  <text x="650" y="188" class="s">MODIS MOD13A3 · MOD11A2 · MOD16A2GF (+ MCD12Q1, SRTM tĩnh): raster thô</text>
+  <rect x="650" y="205" width="510" height="44" rx="8" class="card" stroke="#90CDF4"/>
+  <circle cx="674" cy="227" r="13" fill="#2B6CB0"/><text x="674" y="231" class="b">S1</text>
+  <text x="698" y="222" class="t">Fetch + cache</text><text x="698" y="240" class="x">point: tâm ô đất liền 1° (P1) · area: vùng mẫu 1 km</text>
+  <rect x="650" y="261" width="510" height="44" rx="8" class="card" stroke="#90CDF4"/>
+  <circle cx="674" cy="283" r="13" fill="#2B6CB0"/><text x="674" y="287" class="b">S2</text>
+  <text x="698" y="278" class="t">Read raw</text><text x="698" y="296" class="x">CSV point · NetCDF area (mở thêm 1 lần đọc QA dạng số thô)</text>
+  <rect x="650" y="317" width="510" height="44" rx="8" class="card" stroke="#90CDF4"/>
+  <circle cx="674" cy="339" r="13" fill="#2B6CB0"/><text x="674" y="343" class="b">S3</text>
+  <text x="698" y="334" class="t">Scale / fill</text><text x="698" y="352" class="x">fill → NaN · ×0.0001 / ×0.02 / ×0.1 · ET raw &gt; 32700 → NaN</text>
+  <rect x="650" y="373" width="510" height="44" rx="8" class="card" stroke="#90CDF4"/>
+  <circle cx="674" cy="395" r="13" fill="#2B6CB0"/><text x="674" y="399" class="b">S4</text>
+  <text x="698" y="390" class="t">QA mask</text><text x="698" y="408" class="x">MODLAND bit 0–1 · sai số LST ≤ 2 K · ET_QC · QC = 0 là tốt nhất</text>
+  <rect x="650" y="429" width="510" height="44" rx="8" class="card" stroke="#90CDF4"/>
+  <circle cx="674" cy="451" r="13" fill="#2B6CB0"/><text x="674" y="455" class="b">S5</text>
+  <text x="698" y="446" class="t">Gộp không gian</text><text x="698" y="464" class="x">point → ô 1° (points_to_cube) · area → TB vùng + valid_frac</text>
+  <rect x="650" y="485" width="510" height="44" rx="8" class="card" stroke="#90CDF4"/>
+  <circle cx="674" cy="507" r="13" fill="#2B6CB0"/><text x="674" y="511" class="b">S6</text>
+  <text x="698" y="502" class="t">Gộp thời gian</text><text x="698" y="520" class="x">LST: TB composite 8 ngày · ET / PET: chia theo ngày rồi cộng tháng</text>
+
+  <path d="M315 554 V588" class="ln" marker-end="url(#a)"/>
+  <path d="M905 554 V588" class="ln" marker-end="url(#a)"/>
+
+  <!-- shared: S7 -->
+  <rect x="40" y="590" width="1140" height="104" rx="14" fill="#FAF5FF" stroke="#6B46C1" stroke-width="1.4"/>
+  <circle cx="74" cy="624" r="16" fill="#6B46C1"/><text x="74" y="628" class="b">S7</text>
+  <text x="100" y="620" class="t">Đơn vị + validate</text>
+  <text x="100" y="638" class="s">assert đơn vị nguồn rồi mới đổi: mm/giờ → mm/tháng · K → °C · kg/m² → m³/m³</text>
+  <rect x="100" y="650" width="520" height="34" rx="8" class="card" stroke="#B794F4"/>
+  <text x="115" y="672" class="f">cube_&lt;biến&gt;.nc</text><text x="290" y="672" class="s">lưới toàn cầu: time 288 × lat 180 × lon 360</text>
+  <rect x="640" y="650" width="520" height="34" rx="8" class="card" stroke="#B794F4"/>
+  <text x="655" y="672" class="f">observations.parquet</text><text x="840" y="672" class="s">vùng mẫu: đối chiếu với lưới</text>
+  <path d="M610 694 V724" class="ln" marker-end="url(#a)"/>
+
+  <!-- S8 -->
+  <rect x="40" y="726" width="1140" height="110" rx="14" fill="#FAF5FF" stroke="#6B46C1" stroke-width="1.4"/>
+  <circle cx="74" cy="760" r="16" fill="#6B46C1"/><text x="74" y="764" class="b">S8</text>
+  <text x="100" y="756" class="t">Trends</text>
+  <text x="100" y="774" class="s">tính khi được gọi, cho khoảng thời gian người dùng chọn</text>
+  <rect x="100" y="784" width="520" height="42" rx="8" class="card" stroke="#B794F4"/>
+  <text x="115" y="801" class="f">grid_trend</text><text x="115" y="818" class="x">heatmap: Seasonal MK + Sen mọi ô · FDR · ~4 s toàn cầu</text>
+  <rect x="640" y="784" width="520" height="42" rx="8" class="card" stroke="#B794F4"/>
+  <text x="655" y="801" class="f">region_series + trend_one</text><text x="655" y="818" class="x">vùng bất kỳ: TB cos(vĩ độ) · Sen · MK · Hamed-Rao · OLS ± CI 95%</text>
+  <path d="M610 836 V866" class="ln" marker-end="url(#a)"/>
+
+  <!-- S8b -->
+  <rect x="40" y="868" width="1140" height="110" rx="14" fill="#FAF5FF" stroke="#6B46C1" stroke-width="1.4"/>
+  <circle cx="74" cy="902" r="16" fill="#6B46C1"/><text x="74" y="906" class="b" style="font-size:10px">S8b</text>
+  <text x="100" y="898" class="t">Contradiction Hunter</text>
+  <text x="100" y="916" class="s">tự tìm vùng có xu hướng ngược nhau, rồi kiểm định khác biệt</text>
+  <rect x="100" y="926" width="520" height="42" rx="8" class="card" stroke="#B794F4"/>
+  <text x="115" y="943" class="f">hunt_global</text><text x="115" y="960" class="x">ô significant liền kề cùng chiều → điểm nóng tăng / giảm → cặp</text>
+  <rect x="640" y="926" width="520" height="42" rx="8" class="card" stroke="#B794F4"/>
+  <text x="655" y="943" class="f">pair_difference_test</text><text x="655" y="960" class="x">hiệu anomaly A − B · Hamed-Rao · CI bootstrap · ổn định · FDR</text>
+  <path d="M610 978 V1008" class="ln" marker-end="url(#a)"/>
+
+  <!-- S9 -->
+  <rect x="40" y="1010" width="1140" height="216" rx="14" fill="#FFF5F7" stroke="#B83280" stroke-width="1.4"/>
+  <circle cx="74" cy="1044" r="16" fill="#B83280"/><text x="74" y="1048" class="b">S9</text>
+  <text x="100" y="1040" class="t">Lớp phân tích pipeline/api.py</text>
+  <text x="100" y="1058" class="s">mỗi hàm trả JSON: số liệu + nguồn NASA + phương pháp + giới hạn → backend bọc thành endpoint</text>
+  <g>
+    <rect x="60" y="1072" width="208" height="70" rx="8" class="card" stroke="#F687B3"/>
+    <text x="164" y="1094" class="t c">① Bản đồ</text><text x="164" y="1112" class="s c">heatmap xu hướng</text><text x="164" y="1130" class="f c">trend_map()</text>
+    <rect x="283" y="1072" width="208" height="70" rx="8" class="card" stroke="#F687B3"/>
+    <text x="387" y="1094" class="t c">② Engine trend</text><text x="387" y="1112" class="s c">vùng bất kỳ, p, CI</text><text x="387" y="1130" class="f c">analyze_region()</text>
+    <rect x="506" y="1072" width="208" height="70" rx="8" class="card" stroke="#F687B3"/>
+    <text x="610" y="1094" class="t c">③ Contradiction</text><text x="610" y="1112" class="s c">find_contradictions()</text><text x="610" y="1130" class="f c">compare_regions()</text>
+    <rect x="729" y="1072" width="208" height="70" rx="8" class="card" stroke="#F687B3"/>
+    <text x="833" y="1094" class="t c">④ AI Detective</text><text x="833" y="1112" class="s c">LLM gọi ①②③ làm tool</text><text x="833" y="1130" class="s c">không tự bịa số</text>
+    <rect x="952" y="1072" width="208" height="70" rx="8" class="card" stroke="#F687B3"/>
+    <text x="1056" y="1094" class="t c">⑤ Evidence report</text><text x="1056" y="1112" class="s c">nguồn, phương pháp, giới hạn</text><text x="1056" y="1130" class="f c">evidence_report()</text>
+  </g>
+  <rect x="60" y="1160" width="1100" height="50" rx="10" fill="#B83280"/>
+  <text x="610" y="1182" class="t c" style="fill:#FFFFFF">Web Terra-scope AI</text>
+  <text x="610" y="1200" class="s c" style="fill:#FED7E2">MapLibre / deck.gl · biểu đồ chuỗi thời gian · khung hỏi AI · xuất báo cáo</text>
+</svg>
