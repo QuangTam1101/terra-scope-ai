@@ -302,6 +302,335 @@ textarea:focus-visible {
   background: linear-gradient(90deg, #2f6fb3 0%, #cfe1f4 35%, #fbf6ec 50%, #fbe0c4 65%, #c4621a 100%);
 }
 
-.legend-value {
-  background: linear-gradient(90deg, #fff4c2 0%, #c8ecc0 20%, #7fd1c2 40%, #4aa6c4 60%, #5a6fb8 80%, #4b3a8c 100%);
+/* Reference CSS Class Aliases from Cute HTML Specifications */
+.card {
+  background: #ffffff;
+  border-radius: 28px;
+  box-shadow: 0 10px 26px rgba(90, 70, 40, .09), 0 1px 0 rgba(90, 70, 40, .06);
+}
+
+.nav {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font: 800 15px 'Nunito', sans-serif;
+  color: #4e4860;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.nav:hover {
+  background: #f6f1e8;
+  color: #2b2540;
+}
+.nav.on {
+  background: #ede6fb;
+  color: #2b2540;
+}
+
+.btn {
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 999px;
+  border: 0;
+  background: #2b2540;
+  color: #ffffff;
+  font: 800 15px 'Nunito', sans-serif;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.btn:hover {
+  background: #3c3459;
+  color: #ffffff;
+}
+.btn.soft {
+  background: #ede6fb;
+  color: #2b2540;
+}
+.btn.soft:hover {
+  background: #e2d7f8;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 800 14px 'Nunito', sans-serif;
+}
+.step i {
+  font-style: normal;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #2b2540;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: 800 12px 'Nunito';
+  flex: none;
+}
+
+.opt {
+  min-height: 44px;
+  width: 100%;
+  border: 2px solid #ece3d3;
+  border-radius: 18px;
+  background: #ffffff;
+  padding: 8px 14px;
+  text-align: left;
+  font: 800 14px 'Nunito', sans-serif;
+  color: #2b2540;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.opt small {
+  font: 600 11.5px 'Nunito';
+  color: #4e4860;
+}
+.opt.on {
+  border-color: #2b2540;
+  background: #f6f1ff;
+}
+.opt:disabled {
+  color: #6f6980;
+  background: #f4f1ea;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.seg {
+  display: inline-flex;
+  background: #efe7d8;
+  border-radius: 999px;
+  padding: 4px;
+  gap: 2px;
+}
+.seg button {
+  min-height: 38px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: 800 14px 'Nunito', sans-serif;
+  color: #4e4860;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.seg button.on {
+  background: #ffffff;
+  color: #2b2540;
+  box-shadow: 0 3px 8px rgba(90, 70, 40, .12);
+}
+
+.sel {
+  min-height: 44px;
+  border: 2px solid #ece3d3;
+  border-radius: 999px;
+  padding: 0 12px;
+  font: 700 14px 'Nunito';
+  color: #2b2540;
+  background: #ffffff;
+  width: 100%;
+}
+
+.sc {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: #f3eefe;
+  line-height: 1.2;
+}
+.sc b {
+  font: 800 15px 'Nunito';
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: #2b2540;
+}
+.sc small {
+  font: 700 11px 'Nunito';
+  color: #4e4860;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font: 800 13px 'Nunito', sans-serif;
+  white-space: nowrap;
+}
+.bsig {
+  background: #d8ecff;
+  color: #1d4f86;
+}
+.bnp {
+  background: #fff1c9;
+  color: #6b4e00;
+}
+.bie {
+  background: #f1eef5;
+  color: #4e4860;
+  border: 2px dotted #8d86a0;
+}
+.bcon {
+  background: #2b2540;
+  color: #ffffff;
+}
+
+.chip {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 2px solid #ece3d3;
+  background: #ffffff;
+  color: #2b2540;
+  font: 800 13.5px 'Nunito', sans-serif;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.chip:hover {
+  background: #fcf9f2;
+  border-color: #d8cebc;
+}
+.chip.on {
+  background: #2b2540;
+  border-color: #2b2540;
+  color: #ffffff;
+}
+
+.pair {
+  width: 100%;
+  min-height: 76px;
+  border: 2px solid transparent;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(90, 70, 40, .08);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Nunito', sans-serif;
+  color: #2b2540;
+  transition: all 0.15s ease;
+}
+.pair.on {
+  border-color: #2b2540;
+  background: #fdfbff;
+}
+
+.pt {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: middle;
+  padding: 4px 12px 5px;
+  border-radius: 16px;
+  background: #d8ecff;
+  color: #1d4f86;
+  line-height: 1.2;
+  margin: 2px 0;
+}
+.pt b {
+  font: 800 14px 'Nunito';
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pt small {
+  font: 700 10.5px 'Nunito';
+  color: #2b4a70;
+}
+
+.pc {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: #f3eefe;
+  font: 700 13.5px 'Nunito';
+}
+
+.ai {
+  font: 800 10.5px 'Nunito';
+  letter-spacing: .05em;
+  background: #2b2540;
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 999px;
+  align-self: flex-start;
+}
+
+.tb {
+  width: 100%;
+  border-collapse: collapse;
+  font: 600 14px 'Nunito';
+  min-width: 620px;
+}
+.tb th {
+  text-align: left;
+  font: 800 12px 'Nunito';
+  color: #4e4860;
+  padding: 8px 10px;
+  border-bottom: 2px solid #ece3d3;
+}
+.tb td {
+  padding: 10px;
+  border-bottom: 1px dashed #ece3d3;
+  font-variant-numeric: tabular-nums;
+  vertical-align: top;
+}
+.tb td:not(:first-child), .tb th:not(:first-child) {
+  white-space: nowrap;
+}
+.tb td:first-child {
+  min-width: 200px;
+  white-space: normal;
+}
+
+.chk {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  font: 700 14px 'Nunito';
+  cursor: pointer;
+}
+.chk input {
+  width: 18px;
+  height: 18px;
+  accent-color: #2b2540;
+}
+
+.sec {
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sec h2 {
+  font: 600 19px 'Fredoka', 'Nunito', sans-serif;
+  margin: 0;
+  color: #2b2540;
+}
+.sec p {
+  margin: 0;
+  font: 600 14.5px/1.55 'Nunito';
+  color: #3d3752;
 }

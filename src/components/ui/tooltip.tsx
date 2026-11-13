@@ -1,84 +1,76 @@
-import React, { useState, useRef, useEffect, useId } from 'react';
-import { HelpCircle, Info, X } from 'lucide-react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { Info, HelpCircle, X } from 'lucide-react';
 
-interface InfoTooltipProps {
+export interface InfoTooltipProps {
   title: string;
   content?: string;
-  formula?: string;
-  icon?: 'help' | 'info';
-  children?: React.ReactNode;
   metadata?: Array<{ label: string; value: string }>;
-  details?: React.ReactNode;
+  formula?: string;
+  details?: ReactNode;
+  icon?: 'info' | 'help';
+  children?: ReactNode;
 }
 
 export function InfoTooltip({
   title,
   content,
+  metadata,
   formula,
+  details,
   icon = 'info',
   children,
-  metadata,
-  details,
 }: InfoTooltipProps) {
   const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [placement, setPlacement] = useState<{
     vertical: 'top' | 'bottom';
-    horizontal: 'left' | 'center' | 'right';
+    horizontal: 'center' | 'left' | 'right';
   }>({ vertical: 'bottom', horizontal: 'center' });
-  const containerRef = useRef<HTMLDivElement>(null);
-  const leaveTimeoutRef = useRef<number | null>(null);
-  const hoverOpenedAtRef = useRef<number>(0);
-  const tooltipId = useId();
 
-  // Position calculation to completely prevent clipping on viewport edges
-  useEffect(() => {
-    if (!open || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    // If element is within 360px of top of viewport, flip to render downward
-    const vertical = rect.top < 360 ? 'bottom' : 'top';
-    // If element is within 200px of right edge of viewport, align to right
-    // If element is within 140px of left edge of viewport, align to left
-    let horizontal: 'left' | 'center' | 'right' = 'center';
-    if (window.innerWidth - rect.right < 200) {
-      horizontal = 'right';
-    } else if (rect.left < 140) {
-      horizontal = 'left';
-    }
-    setPlacement({ vertical, horizontal });
-  }, [open]);
+  const tooltipId = useRef(`tooltip-${Math.random().toString(36).slice(2, 9)}`).current;
 
-  const handleMouseEnter = () => {
-    if (leaveTimeoutRef.current) {
-      window.clearTimeout(leaveTimeoutRef.current);
-      leaveTimeoutRef.current = null;
-    }
-    hoverOpenedAtRef.current = Date.now();
-    setOpen(true);
-  };
-
-  const handleMouseLeave = () => {
-    leaveTimeoutRef.current = window.setTimeout(() => {
-      setOpen(false);
-    }, 180);
-  };
-
-  const handleButtonClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (leaveTimeoutRef.current) {
-      window.clearTimeout(leaveTimeoutRef.current);
-      leaveTimeoutRef.current = null;
-    }
-    // If opened via mouseEnter in last 400ms, keep it pinned/open
-    const elapsed = Date.now() - hoverOpenedAtRef.current;
-    if (elapsed < 400 && open) {
-      return;
-    }
-    setOpen((prev) => !prev);
-  };
-
-  // Close on Click-Outside or Escape key
   useEffect(() => {
     if (!open) return;
+
+    const computePlacement = () => {
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const popoverWidth = 280;
+      const popoverHeight = 160;
+
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const vertical: 'top' | 'bottom' =
+        spaceBelow < popoverHeight && rect.top > popoverHeight ? 'top' : 'bottom';
+
+      let horizontal: 'center' | 'left' | 'right' = 'center';
+      const centerPos = rect.left + rect.width / 2;
+      if (centerPos + popoverWidth / 2 > window.innerWidth - 16) {
+        horizontal = 'right';
+      } else if (centerPos - popoverWidth / 2 < 16) {
+        horizontal = 'left';
+      }
+
+      setPlacement({ vertical, horizontal });
+    };
+
+    computePlacement();
+    window.addEventListener('resize', computePlacement);
+    window.addEventListener('scroll', computePlacement, true);
+    return () => {
+      window.removeEventListener('resize', computePlacement);
+      window.removeEventListener('scroll', computePlacement, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -86,27 +78,31 @@ export function InfoTooltip({
       }
     };
 
-    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-
+    document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
-
     return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-      if (leaveTimeoutRef.current) {
-        window.clearTimeout(leaveTimeoutRef.current);
-      }
     };
   }, [open]);
 
-  const verticalClass = placement.vertical === 'top' ? 'bottom-full mb-2' : 'top-full mt-2';
+  const handleMouseEnter = () => {
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) return;
+    setOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) return;
+    setOpen(false);
+  };
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpen((prev) => !prev);
+  };
+
+  const verticalClass =
+    placement.vertical === 'top' ? 'bottom-full mb-2' : 'top-full mt-2';
   const horizontalClass =
     placement.horizontal === 'right'
       ? 'right-0 translate-x-0'
@@ -116,8 +112,8 @@ export function InfoTooltip({
 
   const arrowVerticalClass =
     placement.vertical === 'top'
-      ? 'top-full -mt-px border-t-[#16362a]'
-      : 'bottom-full -mb-px border-b-[#16362a]';
+      ? 'top-full -mt-px border-t-[#2b2540]'
+      : 'bottom-full -mb-px border-b-[#2b2540]';
   const arrowHorizontalClass =
     placement.horizontal === 'right'
       ? 'right-3'
@@ -134,12 +130,12 @@ export function InfoTooltip({
     >
       <button
         type="button"
-        className="inline-flex items-center text-[#71877b] hover:text-[#16804a] transition-colors focus:outline-none focus:ring-1 focus:ring-[#16804a]/40 rounded p-0.5 cursor-pointer"
+        className="inline-flex items-center text-[#4e4860] hover:text-[#2b2540] transition-colors focus:outline-none focus:ring-2 focus:ring-[#2b2540] rounded-full p-0.5 cursor-pointer"
         onClick={handleButtonClick}
         onFocus={() => setOpen(true)}
         aria-expanded={open}
         aria-describedby={open ? tooltipId : undefined}
-        aria-label={`Scientific note about ${title}`}
+        aria-label={`Note about ${title}`}
       >
         {children ? (
           children
@@ -154,31 +150,30 @@ export function InfoTooltip({
         <div
           id={tooltipId}
           role="tooltip"
-          className={`absolute ${verticalClass} ${horizontalClass} z-50 w-64 sm:w-72 max-w-[calc(100vw-32px)] rounded-xl border border-[#2b5944]/50 bg-[#16362a] p-3 text-xs text-white shadow-xl animate-in fade-in zoom-in-95`}
+          className={`absolute ${verticalClass} ${horizontalClass} z-50 w-64 sm:w-72 max-w-[calc(100vw-32px)] rounded-[18px] border border-[#4e4860] bg-[#2b2540] p-3 text-xs text-white shadow-card animate-in fade-in zoom-in-95 font-nunito`}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-start justify-between gap-2 mb-1">
-            <div className="font-semibold text-[#86efac] flex items-center gap-1.5 text-xs">
-              <Info size={13} className="text-[#36ca89] shrink-0" />
+            <div className="font-extrabold text-[#ede6fb] flex items-center gap-1.5 text-xs">
+              <Info size={13} className="text-[#ede6fb] shrink-0" />
               <span>{title}</span>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="text-[#8ea89a] hover:text-white p-0.5 rounded cursor-pointer"
+              className="text-[#ece3d3] hover:text-white p-0.5 rounded cursor-pointer"
               aria-label="Close tooltip"
             >
               <X size={12} />
             </button>
           </div>
-          {content && <p className="leading-relaxed text-[#e4f1ea] text-[11px]">{content}</p>}
+          {content && <p className="leading-relaxed text-[#fbf6ec] text-[11px] font-semibold">{content}</p>}
 
-          {/* Structured Scientific Metadata Popover (Part 2 & 4) */}
           {metadata && metadata.length > 0 && (
-            <div className="mt-2 divide-y divide-[#23533e] rounded-lg border border-[#23533e] bg-[#0d231a] px-2.5 py-0.5 text-[10px]">
+            <div className="mt-2 divide-y divide-[#3c3454] rounded-xl border border-[#3c3454] bg-[#1f1a2e] px-2.5 py-0.5 text-[10px]">
               {metadata.map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between py-1 gap-2">
-                  <span className="text-[#86efac]/85 font-medium">{item.label}</span>
+                  <span className="text-[#ede6fb] font-semibold">{item.label}</span>
                   <span className="text-white font-mono text-right truncate max-w-[170px]" title={item.value}>
                     {item.value}
                   </span>
@@ -190,11 +185,10 @@ export function InfoTooltip({
           {details && <div className="mt-2">{details}</div>}
 
           {formula && (
-            <div className="mt-1.5 rounded-lg bg-[#0f251d] px-2 py-0.5 font-mono text-[10px] text-[#86e2b6] border border-[#235340]">
+            <div className="mt-1.5 rounded-lg bg-[#1f1a2e] px-2 py-0.5 font-mono text-[10px] text-[#ede6fb] border border-[#3c3454]">
               {formula}
             </div>
           )}
-          {/* Subtle arrow pointer */}
           <div className={`absolute ${arrowVerticalClass} ${arrowHorizontalClass} border-4 border-transparent`} />
         </div>
       )}

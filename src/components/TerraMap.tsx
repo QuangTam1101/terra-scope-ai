@@ -280,8 +280,8 @@ function OfflineMap({
           const [cx, cy] = point(customSelection.coordinates);
           return (
             <g pointerEvents="none">
-              <circle cx={cx} cy={cy} r={box.w / 60} fill="#16804a" fillOpacity={0.3} />
-              <circle cx={cx} cy={cy} r={box.w / 120} fill="#16804a" stroke="#ffffff" strokeWidth={box.w / 400} />
+              <circle cx={cx} cy={cy} r={box.w / 60} fill="#2b2540" fillOpacity={0.3} />
+              <circle cx={cx} cy={cy} r={box.w / 120} fill="#2b2540" stroke="#ffffff" strokeWidth={box.w / 400} />
             </g>
           );
         })()}
@@ -296,8 +296,8 @@ function OfflineMap({
               y={by1}
               width={bx2 - bx1}
               height={by2 - by1}
-              fill="rgba(22, 128, 74, 0.15)"
-              stroke="#16804a"
+              fill="rgba(43, 37, 64, 0.15)"
+              stroke="#2b2540"
               strokeWidth={Math.max(0.12, box.w / 350)}
               strokeDasharray="2 1"
               pointerEvents="none"
@@ -365,7 +365,7 @@ function OfflineMap({
           <RotateCcw size={13} />
         </button>
         <button
-          className={`map-control ${showInstruction ? 'text-[#16804a] bg-[#e8f5ed]' : ''}`}
+          className={`map-control ${showInstruction ? 'text-[#2b2540] bg-[#ede6fb]' : ''}`}
           aria-label="Toggle interaction instructions"
           onClick={() => setShowInstruction(prev => !prev)}
           title="Interaction instructions"
@@ -376,13 +376,13 @@ function OfflineMap({
 
       {/* High-Contrast Opaque Map Instruction Pill */}
       {showInstruction && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-full border border-[#2b5944] bg-[#16362a] px-3.5 py-1.5 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#34d399] animate-pulse" />
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-full border border-[#4e4860] bg-[#2b2540] px-3.5 py-1.5 text-xs font-semibold text-white shadow-card animate-in fade-in slide-in-from-bottom-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#ede6fb] animate-pulse" />
           <span>Drag to explore · Scroll to zoom</span>
           <button
             type="button"
             onClick={() => setShowInstruction(false)}
-            className="ml-1 rounded-full p-0.5 text-[#86e2b6] hover:bg-[#204e38] hover:text-white transition cursor-pointer"
+            className="ml-1 rounded-full p-0.5 text-[#ede6fb] hover:bg-[#3c3454] hover:text-white transition cursor-pointer"
             aria-label="Dismiss instructions"
             title="Dismiss"
           >
@@ -390,7 +390,7 @@ function OfflineMap({
           </button>
         </div>
       )}
-      <span className="absolute left-3 top-3 rounded-full bg-white/90 backdrop-blur-md px-3 py-1.5 text-[11px] font-semibold text-[#16362a] shadow-sm border border-white/60">
+      <span className="absolute left-3 top-3 rounded-full bg-white/90 backdrop-blur-md px-3 py-1.5 text-[11px] font-semibold text-[#2b2540] shadow-sm border border-white/60">
         {draftRegion ? REGION_META[draftRegion].name : customSelection ? 'Custom Selection' : 'Global View'} · Offline SVG Map
       </span>
     </div>
@@ -531,14 +531,14 @@ export function TerraMap(props: TerraMapProps) {
         id: DRAWING_FILL,
         type: 'fill',
         source: DRAWING_SOURCE,
-        paint: { 'fill-color': '#16804a', 'fill-opacity': 0.18 },
+        paint: { 'fill-color': '#2b2540', 'fill-opacity': 0.18 },
       });
       map.addLayer({
         id: DRAWING_LINE,
         type: 'line',
         source: DRAWING_SOURCE,
         paint: {
-          'line-color': '#16804a',
+          'line-color': '#2b2540',
           'line-width': 2.5,
           'line-dasharray': [2, 2],
         },
@@ -550,7 +550,7 @@ export function TerraMap(props: TerraMapProps) {
         filter: ['==', '$type', 'Point'],
         paint: {
           'circle-radius': 7,
-          'circle-color': '#16804a',
+          'circle-color': '#2b2540',
           'circle-stroke-width': 2.5,
           'circle-stroke-color': '#ffffff',
         },
@@ -1009,10 +1009,10 @@ export function TerraMap(props: TerraMapProps) {
       {/* Region Status Pill & Mode Badge */}
       {!fallback && (
         <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2">
-          <span className="rounded-full bg-white/90 backdrop-blur-md px-3 py-1.5 text-[11px] font-semibold text-[#16362a] shadow-sm border border-white/60 flex items-center gap-1.5">
+          <span className="rounded-full bg-white/90 backdrop-blur-md px-3 py-1.5 text-[11px] font-semibold text-[#2b2540] shadow-sm border border-white/60 flex items-center gap-1.5">
             {customSelection ? (
               <>
-                <Target size={12} className="text-[#16804a]" />
+                <Target size={12} className="text-[#c4621a]" />
                 <span>{getSelectionLabel(customSelection)}</span>
               </>
             ) : draftRegion ? (
@@ -1024,14 +1024,14 @@ export function TerraMap(props: TerraMapProps) {
           </span>
 
           {coords && (
-            <span className="hidden sm:inline-block rounded-full bg-[#16362a]/85 backdrop-blur-sm text-white px-2.5 py-1 text-[10px] font-mono shadow-xs">
+            <span className="hidden sm:inline-block rounded-full bg-[#2b2540]/85 backdrop-blur-sm text-white px-2.5 py-1 text-[10px] font-mono shadow-xs">
               {coords.lat >= 0 ? `${coords.lat}°N` : `${Math.abs(coords.lat)}°S`},{' '}
               {coords.lon >= 0 ? `${coords.lon}°E` : `${Math.abs(coords.lon)}°W`}
             </span>
           )}
 
           {drawMode !== 'none' && (
-            <span className="rounded-full bg-[#16804a] text-white px-3 py-1 text-[11px] font-medium shadow-sm flex items-center gap-1 animate-pulse">
+            <span className="rounded-full bg-[#2b2540] text-white px-3 py-1 text-[11px] font-medium shadow-sm flex items-center gap-1 animate-pulse">
               {drawMode === 'point' && <MapPin size={12} />}
               {drawMode === 'rectangle' && <Square size={12} />}
               {drawMode === 'polygon' && <Shapes size={12} />}
@@ -1059,7 +1059,7 @@ export function TerraMap(props: TerraMapProps) {
             <RotateCcw size={13} />
           </button>
           <button
-            className={`map-control ${showInstruction ? 'text-[#16804a] bg-[#e8f5ed]' : ''}`}
+            className={`map-control ${showInstruction ? 'text-[#2b2540] bg-[#ede6fb]' : ''}`}
             aria-label="Toggle interaction instructions"
             onClick={() => setShowInstruction((prev) => !prev)}
             title="Interaction instructions"
@@ -1071,13 +1071,13 @@ export function TerraMap(props: TerraMapProps) {
 
       {/* High-Contrast Opaque Map Instruction Pill (Part 1) */}
       {showInstruction && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-full border border-[#2b5944] bg-[#16362a] px-3.5 py-1.5 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#34d399] animate-pulse" />
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-full border border-[#4e4860] bg-[#2b2540] px-3.5 py-1.5 text-xs font-semibold text-white shadow-card animate-in fade-in slide-in-from-bottom-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#ede6fb] animate-pulse" />
           <span>Drag to explore · Scroll to zoom</span>
           <button
             type="button"
             onClick={() => setShowInstruction(false)}
-            className="ml-1 rounded-full p-0.5 text-[#86e2b6] hover:bg-[#204e38] hover:text-white transition cursor-pointer"
+            className="ml-1 rounded-full p-0.5 text-[#ede6fb] hover:bg-[#3c3454] hover:text-white transition cursor-pointer"
             aria-label="Dismiss instructions"
             title="Dismiss"
           >
@@ -1089,12 +1089,12 @@ export function TerraMap(props: TerraMapProps) {
       {/* Scientifically Calibrated Legend */}
       {grid && meta && (
         <div className="pointer-events-none absolute bottom-3 left-3 w-[min(340px,calc(100%-24px))] rounded-2xl border border-white/70 bg-white/92 backdrop-blur-md p-3.5 shadow-xl">
-          <div className="mb-2 flex items-center justify-between gap-2 text-[11px] font-bold text-[#16362a]">
+          <div className="mb-2 flex items-center justify-between gap-2 text-[11px] font-bold text-[#2b2540]">
             <span className="flex items-center gap-1.5">
-              <Layers3 size={13} className="text-[#16804a]" />
+              <Layers3 size={13} className="text-[#2b2540]" />
               {mode === 'value' ? `Mean ${meta.name}` : `${meta.name} Trend`}
             </span>
-            <span className="font-semibold text-[#16804a] text-[10px] bg-[#edf6f0] px-2 py-0.5 rounded-md border border-[#cce4d4]">
+            <span className="font-semibold text-[#2b2540] text-[10px] bg-[#ede6fb] px-2 py-0.5 rounded-md border border-[#ece3d3]">
               {mode === 'value' ? meta.unit : meta.slopeUnit}
             </span>
           </div>

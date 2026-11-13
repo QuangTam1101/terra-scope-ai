@@ -341,7 +341,7 @@ function paintGlobe(canvas: HTMLCanvasElement, texture: ImageData | null, view: 
         ctx.lineWidth = 3.0 * dpr;
         ctx.stroke();
 
-        ctx.strokeStyle = '#16362a';
+        ctx.strokeStyle = '#2b2540';
         ctx.lineWidth = 1.2 * dpr;
         ctx.stroke();
       }
@@ -365,16 +365,16 @@ function paintGlobe(canvas: HTMLCanvasElement, texture: ImageData | null, view: 
         // Glowing outer ripple ring
         ctx.beginPath();
         ctx.arc(sx, sy, 9 * dpr, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(52, 211, 153, 0.35)';
+        ctx.fillStyle = 'rgba(43, 37, 64, 0.35)';
         ctx.fill();
-        ctx.strokeStyle = '#34d399';
+        ctx.strokeStyle = '#2b2540';
         ctx.lineWidth = 1.5 * dpr;
         ctx.stroke();
 
         // Inner solid pinpoint
         ctx.beginPath();
         ctx.arc(sx, sy, 3.5 * dpr, 0, Math.PI * 2);
-        ctx.fillStyle = '#10b981';
+        ctx.fillStyle = '#e8735a';
         ctx.fill();
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1.2 * dpr;
@@ -411,9 +411,9 @@ function paintGlobe(canvas: HTMLCanvasElement, texture: ImageData | null, view: 
           else ctx.lineTo(pt.x, pt.y);
         });
         ctx.closePath();
-        ctx.fillStyle = 'rgba(52, 211, 153, 0.20)';
+        ctx.fillStyle = 'rgba(43, 37, 64, 0.20)';
         ctx.fill();
-        ctx.strokeStyle = '#34d399';
+        ctx.strokeStyle = '#2b2540';
         ctx.lineWidth = 2.0 * dpr;
         ctx.setLineDash([4 * dpr, 3 * dpr]);
         ctx.stroke();
@@ -745,10 +745,10 @@ export function GlobeMap(props: TerraMapProps) {
 
       {/* Region Status Pill with Frosted Glass Styling */}
       <div className="pointer-events-none absolute left-3 top-3 flex items-center gap-2">
-        <span className="rounded-full bg-white/90 backdrop-blur-md px-3 py-1.5 text-[11px] font-semibold text-[#16362a] shadow-sm border border-white/60 flex items-center gap-1.5">
+        <span className="rounded-full bg-white/90 backdrop-blur-md px-3 py-1.5 text-[11px] font-semibold text-[#2b2540] shadow-sm border border-white/60 flex items-center gap-1.5">
           {customSelection ? (
             <>
-              <Target size={12} className="text-[#16804a]" />
+              <Target size={12} className="text-[#c4621a]" />
               <span>{getSelectionLabel(customSelection)}</span>
             </>
           ) : draftRegion ? (
@@ -758,12 +758,12 @@ export function GlobeMap(props: TerraMapProps) {
           )}{' '}
           · 3D Globe
         </span>
-        <span className="hidden sm:inline-block rounded-full bg-[#081824]/80 backdrop-blur-sm text-[#7fe0b8] border border-white/10 px-2.5 py-1 text-[10px] font-mono shadow-xs">
+        <span className="hidden sm:inline-block rounded-full bg-[#2b2540]/80 backdrop-blur-sm text-white border border-white/10 px-2.5 py-1 text-[10px] font-mono shadow-xs">
           {view.lat >= 0 ? `${view.lat.toFixed(1)}°N` : `${Math.abs(view.lat).toFixed(1)}°S`},{' '}
           {view.lon >= 0 ? `${view.lon.toFixed(1)}°E` : `${Math.abs(view.lon).toFixed(1)}°W`}
         </span>
         {drawMode === 'point' && (
-          <span className="rounded-full bg-[#16804a] text-white px-3 py-1 text-[11px] font-medium shadow-sm flex items-center gap-1 animate-pulse">
+          <span className="rounded-full bg-[#2b2540] text-white px-3 py-1 text-[11px] font-medium shadow-sm flex items-center gap-1 animate-pulse">
             <MapPin size={12} />
             <span>Click globe to place point</span>
           </span>
@@ -772,11 +772,11 @@ export function GlobeMap(props: TerraMapProps) {
 
       {/* Notice for 2D shape drawing while in 3D globe */}
       {(drawMode === 'rectangle' || drawMode === 'polygon') && (
-        <div className="absolute top-14 left-3 right-3 sm:left-auto sm:right-14 max-w-sm rounded-xl bg-white/95 backdrop-blur-md p-3 text-xs text-[#16362a] shadow-xl border border-[#dbe8df] flex items-center gap-2.5 z-10">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#e8f5ed] text-[#16804a]">
+        <div className="absolute top-14 left-3 right-3 sm:left-auto sm:right-14 max-w-sm rounded-xl bg-white/95 backdrop-blur-md p-3 text-xs text-[#2b2540] shadow-xl border border-[#ece3d3] flex items-center gap-2.5 z-10">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#ede6fb] text-[#2b2540]">
             {drawMode === 'rectangle' ? <Square size={14} /> : <Shapes size={14} />}
           </div>
-          <p className="leading-snug text-[11px]">
+          <p className="leading-snug text-[11px] font-semibold">
             Drawing shapes is precision-optimized on the 2D map. Switch to <strong>2D Map</strong> to draw, and your shape will render on this 3D globe.
           </p>
         </div>
@@ -799,7 +799,7 @@ export function GlobeMap(props: TerraMapProps) {
           <RotateCcw size={13} />
         </button>
         <button
-          className={`map-control ${showInstruction ? 'text-[#16804a] bg-[#e8f5ed]' : ''}`}
+          className={`map-control ${showInstruction ? 'text-[#2b2540] bg-[#ede6fb]' : ''}`}
           aria-label="Toggle interaction instructions"
           onClick={() => setShowInstruction((prev) => !prev)}
           title="Interaction instructions"
@@ -810,8 +810,8 @@ export function GlobeMap(props: TerraMapProps) {
 
       {/* Loading State Overlay */}
       {loading && (
-        <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white/95 backdrop-blur-md px-4 py-3 text-xs font-semibold text-[#16362a] shadow-xl flex items-center gap-2.5 border border-[#dbe8df]">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#16804a] border-t-transparent" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white/95 backdrop-blur-md px-4 py-3 text-xs font-semibold text-[#2b2540] shadow-xl flex items-center gap-2.5 border border-[#ece3d3]">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#2b2540] border-t-transparent" />
           <span>Rendering Earth geography...</span>
         </div>
       )}
@@ -824,13 +824,13 @@ export function GlobeMap(props: TerraMapProps) {
 
       {/* High-Contrast Opaque Map Instruction Pill (Part 1) */}
       {showInstruction && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-full border border-[#2b5944] bg-[#16362a] px-3.5 py-1.5 text-xs font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#34d399] animate-pulse" />
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-full border border-[#4e4860] bg-[#2b2540] px-3.5 py-1.5 text-xs font-semibold text-white shadow-card animate-in fade-in slide-in-from-bottom-2">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#ede6fb] animate-pulse" />
           <span>Drag to rotate · Scroll to zoom</span>
           <button
             type="button"
             onClick={() => setShowInstruction(false)}
-            className="ml-1 rounded-full p-0.5 text-[#86e2b6] hover:bg-[#204e38] hover:text-white transition cursor-pointer"
+            className="ml-1 rounded-full p-0.5 text-[#ede6fb] hover:bg-[#3c3454] hover:text-white transition cursor-pointer"
             aria-label="Dismiss instructions"
             title="Dismiss"
           >
@@ -842,12 +842,12 @@ export function GlobeMap(props: TerraMapProps) {
       {/* Premium Floating Legend Card */}
       {grid && meta && (
         <div className="pointer-events-none absolute bottom-3 left-3 w-[min(340px,calc(100%-24px))] rounded-2xl border border-white/70 bg-white/92 backdrop-blur-md p-3.5 shadow-xl">
-          <div className="mb-2 flex items-center justify-between gap-2 text-[11px] font-bold text-[#16362a]">
+          <div className="mb-2 flex items-center justify-between gap-2 text-[11px] font-bold text-[#2b2540]">
             <span className="flex items-center gap-1.5">
-              <Layers3 size={13} className="text-[#16804a]" />
+              <Layers3 size={13} className="text-[#2b2540]" />
               {mode === 'value' ? `Mean ${meta.name}` : `${meta.name} Trend`}
             </span>
-            <span className="font-semibold text-[#16804a] text-[10px] bg-[#edf6f0] px-2 py-0.5 rounded-md border border-[#cce4d4]">
+            <span className="font-semibold text-[#2b2540] text-[10px] bg-[#ede6fb] px-2 py-0.5 rounded-md border border-[#ece3d3]">
               {mode === 'value' ? meta.unit : meta.slopeUnit}
             </span>
           </div>

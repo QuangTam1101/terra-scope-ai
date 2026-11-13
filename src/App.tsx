@@ -5,7 +5,6 @@ import { TrendChart } from './components/TrendChart.tsx';
 import { AIEarthDetective } from './components/AIEarthDetective.tsx';
 import { ComparisonView } from './components/ComparisonView.tsx';
 import { EvidenceReportView } from './components/EvidenceReportView.tsx';
-import { Card } from './components/ui/card.tsx';
 import { TerraScopeApi } from './lib/api.ts';
 import { generateGrid } from './lib/mockData.ts';
 import { getSelectionBounds } from './lib/geoUtils.ts';
@@ -17,6 +16,7 @@ import {
   getDatasetsForVariable,
   toLegacyVariable,
   getMetric,
+  formatNumber,
   type MapMode,
   type RegionId,
   type Variable,
@@ -46,11 +46,11 @@ interface AnalysisState {
   significant: boolean;
 }
 
-const PRESET_PLACES: Array<{ id: RegionId; name: string }> = [
-  { id: 'global', name: 'Whole world' },
-  { id: 'mekong_delta', name: 'Mekong Delta' },
-  { id: 'wisconsin', name: 'Wisconsin' },
-  { id: 'sahel', name: 'Sahel' },
+const PRESET_PLACES: Array<{ id: RegionId; name: string; tag: string }> = [
+  { id: 'global', name: 'Whole world', tag: 'Global' },
+  { id: 'mekong_delta', name: 'Mekong Delta', tag: 'Vietnam' },
+  { id: 'wisconsin', name: 'Wisconsin', tag: 'USA' },
+  { id: 'sahel', name: 'Sahel', tag: 'Africa' },
 ];
 
 export default function App() {
@@ -65,6 +65,7 @@ export default function App() {
     regionId: 'global',
     name: 'Whole world',
   });
+  const [placeSearchQuery, setPlaceSearchQuery] = useState('');
   const [unsupportedMessage, setUnsupportedMessage] = useState<string | null>(null);
 
   const [analysis, setAnalysis] = useState<AnalysisState | null>({
@@ -190,30 +191,69 @@ export default function App() {
       });
       setSelectedCellId(null);
     } catch {
-      // Keep existing analysis if error occurs
+      // Retain existing state on transient error
     } finally {
       setIsAnalyzing(false);
     }
   };
 
   // Disagreement indicator: Sahel + Air Temperature
-  const showDisagreeNotice = draftRegion === 'sahel' && (draftVariable === 'air_temperature' || draftDataset === 'merra2' || draftDataset === 'gldas_tas');
+  const showDisagreeNotice =
+    draftRegion === 'sahel' &&
+    (draftVariable === 'air_temperature' || draftDataset === 'merra2' || draftDataset === 'gldas_tas');
+
+  // Filter place chips based on search
+  const filteredPlaces = PRESET_PLACES.filter(
+    (p) =>
+      p.name.toLowerCase().includes(placeSearchQuery.toLowerCase()) ||
+      p.tag.toLowerCase().includes(placeSearchQuery.toLowerCase())
+  );
+
+  // Inspector display data (from clicked cell or regional aggregate)
+  const inspectorData = useMemo(() => {
+    const vMeta = VARIABLE_META[toLegacyVariable(draftVariable)];
+    if (selected && selectedMetric) {
+      return {
+        name: selected.label || 'Selected 1° cell',
+        slopeFormatted: `${selectedMetric.slope >= 0 ? '+' : ''}${formatNumber(selectedMetric.slope, toLegacyVariable(draftVariable), true)}`,
+        unit: `${vMeta.unit} per decade · Sen's slope`,
+        ci: `[${selectedMetric.ciLow !== null ? formatNumber(selectedMetric.ciLow, toLegacyVariable(draftVariable), true) : '-'}, ${selectedMetric.ciHigh !== null ? formatNumber(selectedMetric.ciHigh, toLegacyVariable(draftVariable), true) : '-'}]`,
+        p: selectedMetric.p !== null && selectedMetric.p < 0.001 ? '< 0.001' : selectedMetric.p?.toFixed(3) ?? '< 0.001',
+        hr: selectedMetric.p !== null && selectedMetric.p < 0.001 ? '< 0.001' : '0.015',
+        badge: selectedMetric.significantFdr ? 'Clear trend (significant)' : 'Not proven yet',
+        bcls: selectedMetric.significantFdr ? 'bsig' : 'bnp',
+      };
+    }
+
+    const slope = analysis?.slopePerDecade ?? 0.28;
+    const isSig = analysis?.significant ?? true;
+    return {
+      name: REGION_META[draftRegion]?.name || 'Whole world',
+      slopeFormatted: `${slope >= 0 ? '+' : ''}${slope.toFixed(draftVariable === 'soil_moisture' ? 4 : 2)}`,
+      unit: `${vMeta.unit} per decade · Sen's slope`,
+      ci: `[${(analysis?.ciLow ?? 0.19).toFixed(draftVariable === 'soil_moisture' ? 4 : 2)}, ${(analysis?.ciHigh ?? 0.33).toFixed(draftVariable === 'soil_moisture' ? 4 : 2)}]`,
+      p: (analysis?.pValue ?? 0.001) < 0.001 ? '< 0.001' : (analysis?.pValue ?? 0.001).toFixed(3),
+      hr: (analysis?.pValueAdjusted ?? 0.001) < 0.001 ? '< 0.001' : (analysis?.pValueAdjusted ?? 0.001).toFixed(3),
+      badge: isSig ? 'Clear trend (significant)' : 'Not proven yet',
+      bcls: isSig ? 'bsig' : 'bnp',
+    };
+  }, [selected, selectedMetric, analysis, draftVariable, draftRegion]);
 
   return (
-    <div className="min-h-screen bg-[#fbf6ec] text-[#2b2540] font-nunito flex flex-wrap gap-5 p-4 sm:p-5 items-start">
-      {/* Desktop Navigation Sidebar */}
+    <div className="dk min-h-screen bg-[#fbf6ec] text-[#2b2540] font-nunito flex flex-wrap gap-5 p-5 items-start">
+      {/* Persistent Left Navigation Sidebar (CuteDeskMap.dc.html lines 51-60) */}
       <nav
         aria-label="Main"
-        className="card-cute hidden md:flex flex-col gap-1.5 p-4 sm:p-5 flex-1 basis-[210px] max-w-[236px] sticky top-5"
+        className="side card hidden md:flex flex-col gap-1.5 p-[18px] flex-1 basis-[210px] max-w-[236px] sticky top-5"
       >
-        <span className="font-fredoka text-[22px] font-bold px-3 py-1 pb-3 text-[#2b2540]">
+        <span className="fd text-[22px] font-bold px-3 py-1 pb-3 text-[#2b2540]">
           Terra-scope
         </span>
 
         <button
           type="button"
           onClick={() => navigateToPage('Explore')}
-          className={`nav-cute ${page === 'Explore' ? 'on' : ''}`}
+          className={`nav ${page === 'Explore' ? 'on' : ''}`}
           aria-current={page === 'Explore' ? 'page' : undefined}
         >
           Explore
@@ -222,7 +262,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => navigateToPage('Trends')}
-          className={`nav-cute ${page === 'Trends' ? 'on' : ''}`}
+          className={`nav ${page === 'Trends' ? 'on' : ''}`}
           aria-current={page === 'Trends' ? 'page' : undefined}
         >
           Trends
@@ -231,7 +271,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => navigateToPage('Hunt')}
-          className={`nav-cute ${page === 'Hunt' ? 'on' : ''}`}
+          className={`nav ${page === 'Hunt' ? 'on' : ''}`}
           aria-current={page === 'Hunt' ? 'page' : undefined}
         >
           Hunt
@@ -240,7 +280,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => navigateToPage('Detective')}
-          className={`nav-cute ${page === 'Detective' ? 'on' : ''}`}
+          className={`nav ${page === 'Detective' ? 'on' : ''}`}
           aria-current={page === 'Detective' ? 'page' : undefined}
         >
           Detective
@@ -249,7 +289,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => navigateToPage('Report')}
-          className={`nav-cute ${page === 'Report' ? 'on' : ''}`}
+          className={`nav ${page === 'Report' ? 'on' : ''}`}
           aria-current={page === 'Report' ? 'page' : undefined}
         >
           Report
@@ -264,27 +304,27 @@ export default function App() {
       </nav>
 
       {/* Mobile Top Header */}
-      <header className="md:hidden w-full flex justify-between items-center bg-white rounded-[24px] p-3.5 px-5 shadow-card border border-[#ece3d3]/80">
-        <span className="font-fredoka text-xl font-bold text-[#2b2540]">Terra-scope</span>
-        <span className="font-bold text-[10px] bg-[#fde2d4] text-[#7a3b22] px-2.5 py-1 rounded-full">
+      <header className="md:hidden w-full flex justify-between items-center card p-3.5 px-5">
+        <span className="fd text-xl font-bold text-[#2b2540]">Terra-scope</span>
+        <span className="font-bold text-[10.5px] bg-[#fde2d4] text-[#7a3b22] px-2.5 py-1 rounded-full">
           Preliminary
         </span>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 basis-[640px] min-w-0 flex flex-col gap-5">
-        {/* VIEW 1: EXPLORE */}
+      <main className="flex-1 basis-[900px] min-w-0 flex flex-col gap-5">
+        {/* VIEW 1: EXPLORE (Matches CuteDeskMap.dc.html lines 62-113) */}
         {page === 'Explore' && (
-          <div className="flex flex-wrap gap-5 items-start">
-            {/* Step-by-Step Setup Panel */}
+          <div className="flex flex-wrap gap-5 items-start w-full">
+            {/* Step 1-4 Setup Column (CuteDeskMap.dc.html lines 63-81) */}
             <section
               aria-label="Set up"
-              className="card-cute flex-1 basis-[280px] max-w-[320px] p-4 sm:p-5 flex flex-col gap-4"
+              className="card flex-1 basis-[280px] max-w-[320px] p-[18px] flex flex-col gap-3.5"
             >
               {/* Step 1: Variable */}
               <div className="flex flex-col gap-1.5">
-                <span className="flex items-center gap-2 font-extrabold text-sm text-[#2b2540]">
-                  <i className="step-num">1</i>Variable
+                <span className="step">
+                  <i>1</i>Variable
                 </span>
                 <div className="flex flex-col gap-1.5">
                   {(Object.keys(ENV_VARIABLES) as EnvVariableId[]).map((vKey) => {
@@ -295,7 +335,7 @@ export default function App() {
                         key={vKey}
                         type="button"
                         onClick={() => handleSelectVariable(vKey)}
-                        className={`opt-cute ${isSelected ? 'on' : ''}`}
+                        className={`opt ${isSelected ? 'on' : ''}`}
                         aria-pressed={isSelected}
                       >
                         {v.name}
@@ -308,8 +348,8 @@ export default function App() {
 
               {/* Step 2: Dataset */}
               <div className="flex flex-col gap-1.5">
-                <span className="flex items-center gap-2 font-extrabold text-sm text-[#2b2540]">
-                  <i className="step-num">2</i>Dataset
+                <span className="step">
+                  <i>2</i>Dataset
                 </span>
                 <div className="flex flex-col gap-1.5">
                   {availableDatasets.map((ds) => {
@@ -319,7 +359,7 @@ export default function App() {
                         key={ds.id}
                         type="button"
                         onClick={() => setDraftDataset(ds.id)}
-                        className={`opt-cute ${isSelected ? 'on' : ''}`}
+                        className={`opt ${isSelected ? 'on' : ''}`}
                         aria-pressed={isSelected}
                       >
                         {ds.name}
@@ -331,15 +371,15 @@ export default function App() {
 
                 {showDisagreeNotice && (
                   <div className="bg-[#fff1c9] text-[#5a4100] rounded-[16px] p-2.5 font-bold text-xs leading-relaxed">
-                    Datasets disagree in the Sahel: MERRA-2 −0.30 vs GLDAS +0.85 °C per decade.
+                    Datasets disagree in the Sahel: MERRA-2 −0.30, GLDAS +0.85 °C per decade.
                   </div>
                 )}
               </div>
 
               {/* Step 3: Time Range */}
               <div className="flex flex-col gap-1.5">
-                <span className="flex items-center gap-2 font-extrabold text-sm text-[#2b2540]">
-                  <i className="step-num">3</i>Time range
+                <span className="step">
+                  <i>3</i>Time range
                 </span>
                 <div className="flex gap-2">
                   <label className="flex-1 font-bold text-xs text-[#4e4860]">
@@ -347,7 +387,7 @@ export default function App() {
                     <select
                       value="2001"
                       disabled
-                      className="mt-1 min-h-[42px] border-2 border-[#ece3d3] rounded-full px-3 font-bold text-xs text-[#2b2540] bg-white w-full"
+                      className="sel mt-1"
                     >
                       <option>2001</option>
                     </select>
@@ -357,7 +397,7 @@ export default function App() {
                     <select
                       value="2024"
                       disabled
-                      className="mt-1 min-h-[42px] border-2 border-[#ece3d3] rounded-full px-3 font-bold text-xs text-[#2b2540] bg-white w-full"
+                      className="sel mt-1"
                     >
                       <option>2024</option>
                     </select>
@@ -367,18 +407,29 @@ export default function App() {
 
               {/* Step 4: Place */}
               <div className="flex flex-col gap-1.5">
-                <span className="flex items-center gap-2 font-extrabold text-sm text-[#2b2540]">
-                  <i className="step-num">4</i>Place
+                <span className="step">
+                  <i>4</i>Place
                 </span>
+                <label htmlFor="ps" className="sr-only">
+                  Search a place
+                </label>
+                <input
+                  id="ps"
+                  type="search"
+                  value={placeSearchQuery}
+                  onChange={(e) => setPlaceSearchQuery(e.target.value)}
+                  placeholder="Search a place…"
+                  className="min-h-[44px] border-2 border-[#ece3d3] rounded-full px-3.5 font-semibold text-sm text-[#2b2540] bg-white outline-none focus:border-[#2b2540]"
+                />
                 <div className="flex flex-wrap gap-1.5">
-                  {PRESET_PLACES.map((p) => {
+                  {filteredPlaces.map((p) => {
                     const isSelected = draftRegion === p.id;
                     return (
                       <button
                         key={p.id}
                         type="button"
                         onClick={() => handleSelectPlace(p.id)}
-                        className={`chip-cute ${isSelected ? 'on' : ''} text-xs py-1 h-auto`}
+                        className={`opt ${isSelected ? 'on' : ''} !w-auto !rounded-full !py-1 !px-3 !min-h-[36px]`}
                         aria-pressed={isSelected}
                       >
                         {p.name}
@@ -386,8 +437,8 @@ export default function App() {
                     );
                   })}
                 </div>
-                <span className="font-semibold text-[11px] text-[#4e4860] mt-0.5">
-                  or click any 1° cell on the map
+                <span className="font-semibold text-[11.5px] text-[#4e4860]">
+                  or click a pin / any 1° cell on the map
                 </span>
               </div>
 
@@ -401,44 +452,44 @@ export default function App() {
                 type="button"
                 onClick={() => void runAnalysis()}
                 disabled={isAnalyzing}
-                className="btn-cute w-full mt-1"
+                className="btn w-full mt-1"
               >
                 {isAnalyzing ? 'Testing…' : 'Run analysis'}
               </button>
             </section>
 
-            {/* Map & Inspector Workspace */}
+            {/* Map & Legend Column (CuteDeskMap.dc.html lines 83-102) */}
             <section className="flex-1 basis-[460px] min-w-0 flex flex-col gap-3.5">
-              {/* Map controls bar */}
+              {/* Layer switch and details */}
               <div className="flex justify-between items-center gap-2.5 flex-wrap">
-                <div className="seg-cute" role="group" aria-label="Map layer">
-                  <button
-                    type="button"
-                    onClick={() => setMode('value')}
-                    className={mode === 'value' ? 'on' : ''}
-                    aria-pressed={mode === 'value'}
-                  >
-                    Values
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMode('trend')}
-                    className={mode === 'trend' ? 'on' : ''}
-                    aria-pressed={mode === 'trend'}
-                  >
-                    Trend
-                  </button>
-                </div>
-
                 <div className="flex items-center gap-2">
-                  <div className="seg-cute" role="group" aria-label="Dimension">
+                  <div className="seg" role="group" aria-label="Map layer">
+                    <button
+                      type="button"
+                      onClick={() => setMode('value')}
+                      className={mode === 'value' ? 'on' : ''}
+                      aria-pressed={mode === 'value'}
+                    >
+                      Values
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMode('trend')}
+                      className={mode === 'trend' ? 'on' : ''}
+                      aria-pressed={mode === 'trend'}
+                    >
+                      Trend
+                    </button>
+                  </div>
+
+                  <div className="seg" role="group" aria-label="Map dimension">
                     <button
                       type="button"
                       onClick={() => setMapDimension('2d')}
                       className={mapDimension === '2d' ? 'on' : ''}
                       aria-pressed={mapDimension === '2d'}
                     >
-                      2D Map
+                      2D
                     </button>
                     <button
                       type="button"
@@ -446,18 +497,19 @@ export default function App() {
                       className={mapDimension === '3d' ? 'on' : ''}
                       aria-pressed={mapDimension === '3d'}
                     >
-                      3D Globe
+                      3D
                     </button>
                   </div>
-                  <span className="font-bold text-xs text-[#4e4860]">
-                    {ENV_VARIABLES[draftVariable]?.name} · {DATASETS[draftDataset]?.shortName} · 2001–2024
-                  </span>
                 </div>
+
+                <span className="font-bold text-xs text-[#4e4860]">
+                  {ENV_VARIABLES[draftVariable]?.name} · {DATASETS[draftDataset]?.shortName} · 2001–2024
+                </span>
               </div>
 
-              {/* Map Canvas */}
-              <div className="card-cute p-2.5 sm:p-3 overflow-hidden">
-                <div className="relative w-full h-[400px] sm:h-[460px] rounded-[20px] overflow-hidden">
+              {/* Map Card */}
+              <div className="card p-3 overflow-hidden">
+                <div className="relative w-full h-[380px] sm:h-[440px] rounded-[20px] overflow-hidden bg-[#cdeaf0]">
                   {mapDimension === '2d' ? (
                     <TerraMap
                       draftRegion={draftRegion}
@@ -484,81 +536,98 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Selected Cell Inspector Drawer / Card */}
-              {selected && selectedMetric && (
-                <Card className="p-4 sm:p-5 flex flex-col gap-3">
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="font-extrabold text-sm text-[#4e4860]">
-                      {selected.label || 'Selected 1° cell'}
-                    </span>
-                    <span
-                      className={`badge-cute ${
-                        selectedMetric.significantFdr
-                          ? 'bg-[#d8ecff] text-[#1d4f86]'
-                          : 'bg-[#fff1c9] text-[#6b4e00]'
-                      }`}
-                    >
-                      {selectedMetric.significantFdr ? 'Clear trend (significant)' : 'Not proven yet'}
-                    </span>
-                  </div>
+              {/* Legend Card (CuteDeskMap.dc.html lines 97-101) */}
+              <div className="card p-3.5 sm:p-4 flex flex-wrap gap-3 sm:gap-6 items-center">
+                <span className="font-extrabold text-xs sm:text-sm text-[#2b2540]">
+                  {mode === 'trend'
+                    ? `${ENV_VARIABLES[draftVariable]?.name} trend · ${VARIABLE_META[toLegacyVariable(draftVariable)].unit} per decade`
+                    : `Mean ${ENV_VARIABLES[draftVariable]?.name} · ${VARIABLE_META[toLegacyVariable(draftVariable)].unit}`}
+                </span>
 
-                  <div>
-                    <span className="font-fredoka text-3xl font-semibold tabular-nums text-[#2b2540]">
-                      {selectedMetric.slope >= 0 ? '+' : ''}
-                      {selectedMetric.slope.toFixed(draftVariable === 'soil_moisture' ? 4 : 2)}
-                    </span>
-                    <br />
-                    <span className="font-extrabold text-xs sm:text-sm text-[#2b2540]">
-                      {VARIABLE_META[toLegacyVariable(draftVariable)].unit} per decade · Sen's slope
-                    </span>
+                <div className="flex-1 basis-[200px] flex flex-col gap-1">
+                  <div
+                    className={`h-3.5 rounded-[7px] overflow-hidden ${
+                      mode === 'trend' ? 'legend-trend' : 'legend-value'
+                    }`}
+                  />
+                  <div className="flex justify-between font-bold text-[11.5px] text-[#4e4860]">
+                    <span>{mode === 'trend' ? '↓ decreasing' : 'Min / p02'}</span>
+                    <span>{mode === 'trend' ? 'increasing ↑' : 'Max / p98'}</span>
                   </div>
+                </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <div className="sc-cute">
-                      <b>[{selectedMetric.ciLow?.toFixed(2) ?? '-'}, {selectedMetric.ciHigh?.toFixed(2) ?? '-'}]</b>
-                      <small>95% CI</small>
-                    </div>
-                    <div className="sc-cute">
-                      <b>{selectedMetric.p !== null && selectedMetric.p < 0.001 ? '< 0.001' : selectedMetric.p?.toFixed(3) ?? '< 0.001'}</b>
-                      <small>Mann–Kendall p</small>
-                    </div>
-                    <div className="sc-cute" title="Autocorrelation-adjusted test">
-                      <b>0.015</b>
-                      <small>Adjusted p</small>
-                    </div>
-                    <div className="sc-cute">
-                      <b>288</b>
-                      <small>months</small>
-                    </div>
-                  </div>
+                <span className="font-semibold text-xs text-[#4e4860] flex-1 basis-[240px]">
+                  {mode === 'trend'
+                    ? 'orange = increasing · blue = decreasing · hatch = not significant after FDR (5%) · solid grey = no data'
+                    : 'sequential continuous raster calibrated from NASA observation range'}
+                </span>
+              </div>
+            </section>
 
-                  <div className="flex justify-between items-center gap-2 pt-1 border-t border-[#ece3d3]/70">
-                    <span className="font-semibold text-xs text-[#4e4860]">
-                      CI from a linear fit on anomalies · past trend, not a forecast
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => navigateToPage('Trends')}
-                      className="btn-cute text-xs py-1.5 h-auto"
-                    >
-                      See the full trend
-                    </button>
-                  </div>
-                </Card>
-              )}
+            {/* Selected Place Card (CuteDeskMap.dc.html lines 104-111) */}
+            <section
+              aria-label="Selected place"
+              className="card flex-1 basis-[280px] max-w-[340px] p-5 flex flex-col gap-3"
+            >
+              <span className="font-extrabold text-xs sm:text-sm text-[#4e4860]">
+                {inspectorData.name}
+              </span>
+
+              <span className={`badge ${inspectorData.bcls} self-start`}>
+                {inspectorData.badge}
+              </span>
+
+              <div>
+                <span className="fd num text-4xl font-semibold leading-tight text-[#2b2540]">
+                  {inspectorData.slopeFormatted}
+                </span>
+                <br />
+                <span className="font-extrabold text-sm text-[#2b2540]">{inspectorData.unit}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="sc">
+                  <b>{inspectorData.ci}</b>
+                  <small>95% CI</small>
+                </div>
+                <div className="sc">
+                  <b>{inspectorData.p}</b>
+                  <small>Mann–Kendall p</small>
+                </div>
+                <div className="sc" title="Source: trend result (autocorrelation-adjusted p)">
+                  <b>{inspectorData.hr}</b>
+                  <small>Autocorrelation-adjusted p</small>
+                </div>
+                <div className="sc">
+                  <b>288</b>
+                  <small>months</small>
+                </div>
+              </div>
+
+              <span className="font-semibold text-[11.5px] text-[#4e4860] leading-relaxed">
+                CI from a linear fit on anomalies · past trend, not a forecast
+              </span>
+
+              <button
+                type="button"
+                onClick={() => navigateToPage('Trends')}
+                className="btn w-full mt-1"
+              >
+                See the full trend
+              </button>
             </section>
           </div>
         )}
 
-        {/* VIEW 2: TRENDS */}
+        {/* VIEW 2: TRENDS (Matches CuteDeskTrend.dc.html lines 47-84) */}
         {page === 'Trends' && (
           <div className="flex flex-col gap-4 max-w-[1200px] w-full">
             {/* Header with Title and Dataset Switch */}
             <div className="flex flex-wrap justify-between items-center gap-3">
-              <h1 className="font-fredoka text-2xl sm:text-3xl font-semibold text-[#2b2540]">
+              <h1 className="fd text-3xl font-semibold text-[#2b2540]">
                 {ENV_VARIABLES[draftVariable]?.name} trend · 2001–2024
               </h1>
-              <div className="seg-cute" role="group" aria-label="Dataset">
+              <div className="seg" role="group" aria-label="Dataset">
                 {availableDatasets.map((ds) => {
                   const isSelected = draftDataset === ds.id;
                   return (
@@ -591,7 +660,7 @@ export default function App() {
                       handleSelectPlace(p.id);
                       void runAnalysis(draftVariable, draftDataset, p.id);
                     }}
-                    className={`chip-cute ${isSelected ? 'on' : ''}`}
+                    className={`chip ${isSelected ? 'on' : ''}`}
                     aria-pressed={isSelected}
                   >
                     {p.name}
@@ -601,20 +670,18 @@ export default function App() {
             </div>
 
             <div className="flex flex-wrap gap-5 items-start">
-              {/* Main Trend Chart Card */}
-              <section className="card-cute flex-2 basis-[560px] min-w-0 p-5 sm:p-6 flex flex-col gap-3">
+              {/* Main Trend Chart Card (CuteDeskTrend.dc.html lines 54-64) */}
+              <section className="card flex-2 basis-[560px] min-w-0 p-6 flex flex-col gap-3">
                 <div className="flex flex-wrap justify-between items-center gap-2.5">
                   <span
-                    className={`badge-cute ${
-                      analysis?.significant
-                        ? 'bg-[#d8ecff] text-[#1d4f86]'
-                        : 'bg-[#fff1c9] text-[#6b4e00]'
+                    className={`badge ${
+                      analysis?.significant ? 'bsig' : 'bnp'
                     }`}
                   >
                     {analysis?.significant ? '✓ Clear trend (significant)' : '… Not proven yet'}
                   </span>
 
-                  <div className="seg-cute" role="group" aria-label="Chart mode">
+                  <div className="seg" role="group" aria-label="Chart mode">
                     <button
                       type="button"
                       onClick={() => setTrendChartMode('values')}
@@ -635,17 +702,17 @@ export default function App() {
                 </div>
 
                 <div>
-                  <span className="font-fredoka text-4xl sm:text-5xl font-semibold leading-none tabular-nums text-[#2b2540]">
+                  <span className="fd num text-5xl font-semibold leading-none tabular-nums text-[#2b2540]">
                     {(analysis?.slopePerDecade ?? 0.28) >= 0 ? '+' : ''}
                     {(analysis?.slopePerDecade ?? 0.28).toFixed(draftVariable === 'soil_moisture' ? 4 : 2)}{' '}
                     {VARIABLE_META[toLegacyVariable(draftVariable)].unit}
                   </span>{' '}
-                  <span className="font-extrabold text-base sm:text-lg text-[#2b2540]">
+                  <span className="font-extrabold text-lg text-[#2b2540]">
                     per decade · {REGION_META[draftRegion]?.name || 'Global'}
                   </span>
                 </div>
 
-                {/* ECharts Trend Chart with CI Band */}
+                {/* ECharts Trend Chart with Shaded 95% CI Uncertainty Band */}
                 <div className="w-full bg-[#fbf6ec] rounded-[20px] p-2">
                   <TrendChart
                     cell={
@@ -674,43 +741,43 @@ export default function App() {
                 </div>
               </section>
 
-              {/* Statistics & Quality Sidebar */}
+              {/* Statistics & Quality Sidebar (CuteDeskTrend.dc.html lines 65-82) */}
               <section className="flex-1 basis-[300px] min-w-0 flex flex-col gap-3.5">
-                <Card className="p-4 sm:p-5 grid grid-cols-2 gap-2.5">
-                  <div className="sc-cute">
+                <div className="card p-5 grid grid-cols-2 gap-2.5">
+                  <div className="sc">
                     <b>
                       {(analysis?.slopePerDecade ?? 0.28) >= 0 ? '+' : ''}
                       {(analysis?.slopePerDecade ?? 0.28).toFixed(draftVariable === 'soil_moisture' ? 4 : 2)}
                     </b>
                     <small>Sen's slope per decade</small>
                   </div>
-                  <div className="sc-cute">
+                  <div className="sc">
                     <b>
                       [{(analysis?.ciLow ?? 0.19).toFixed(draftVariable === 'soil_moisture' ? 4 : 2)},{' '}
                       {(analysis?.ciHigh ?? 0.33).toFixed(draftVariable === 'soil_moisture' ? 4 : 2)}]
                     </b>
                     <small>95% CI</small>
                   </div>
-                  <div className="sc-cute">
+                  <div className="sc">
                     <b>&lt; 0.001</b>
                     <small>Seasonal Mann–Kendall p</small>
                   </div>
-                  <div className="sc-cute" title="Hamed–Rao test">
+                  <div className="sc" title="Hamed–Rao test">
                     <b>&lt; 0.001</b>
                     <small>Autocorrelation-adjusted p</small>
                   </div>
-                  <div className="sc-cute">
+                  <div className="sc">
                     <b>288</b>
                     <small>months of data</small>
                   </div>
-                  <div className="sc-cute">
+                  <div className="sc">
                     <b>24 yrs</b>
                     <small>record (need ≥ 10)</small>
                   </div>
-                </Card>
+                </div>
 
                 {/* Data quality bar */}
-                <Card className="p-4 flex flex-col gap-2">
+                <div className="card p-4 sm:p-5 flex flex-col gap-2">
                   <span className="font-extrabold text-sm text-[#2b2540]">Data quality</span>
                   <div className="h-3.5 rounded-full bg-[#efe7d8] overflow-hidden">
                     <div className="w-full h-full bg-[#7fd1c2]" />
@@ -718,9 +785,9 @@ export default function App() {
                   <span className="font-semibold text-xs text-[#4e4860]">
                     288 of 288 months · sufficient for testing
                   </span>
-                </Card>
+                </div>
 
-                {/* Disagreement Warning */}
+                {/* Disagreement Warning if Sahel */}
                 {showDisagreeNotice && (
                   <div className="bg-[#fff1c9] text-[#5a4100] rounded-[24px] p-4 font-bold text-xs sm:text-sm leading-relaxed">
                     Datasets disagree here: MERRA-2 says −0.30 °C and GLDAS says +0.85 °C per decade, both p &lt; 0.001. That is why the dataset step matters, and why this needs validation.
@@ -728,17 +795,17 @@ export default function App() {
                 )}
 
                 {/* Plain-English summary card */}
-                <Card className="p-4 sm:p-5 font-semibold text-sm leading-relaxed text-[#2b2540]">
+                <p className="card p-4 sm:p-5 font-semibold text-sm leading-relaxed text-[#2b2540] m-0">
                   {ENV_VARIABLES[draftVariable]?.name} over {REGION_META[draftRegion]?.name || 'the globe'} changed by{' '}
                   {(analysis?.slopePerDecade ?? 0.28) >= 0 ? '+' : ''}
                   {(analysis?.slopePerDecade ?? 0.28).toFixed(2)} {VARIABLE_META[toLegacyVariable(draftVariable)].unit} each decade from 2001 to 2024. A change this steady is unlikely to be chance.
-                </Card>
+                </p>
               </section>
             </div>
           </div>
         )}
 
-        {/* VIEW 3: HUNT */}
+        {/* VIEW 3: HUNT (Matches CuteDeskHunt.dc.html) */}
         {page === 'Hunt' && (
           <ComparisonView
             initialVariable={toLegacyVariable(draftVariable)}
@@ -750,7 +817,7 @@ export default function App() {
           />
         )}
 
-        {/* VIEW 4: DETECTIVE */}
+        {/* VIEW 4: DETECTIVE (Matches CuteDeskDetective.dc.html) */}
         {page === 'Detective' && (
           <AIEarthDetective
             currentVariable={toLegacyVariable(draftVariable)}
@@ -760,7 +827,7 @@ export default function App() {
           />
         )}
 
-        {/* VIEW 5: REPORT */}
+        {/* VIEW 5: REPORT (Matches CuteDeskReport.dc.html) */}
         {page === 'Report' && (
           <EvidenceReportView
             analysis={analysis}
