@@ -1,6 +1,6 @@
 import { isCelsius, seriesF, trendF, variableF, type TempUnit } from "./units";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { api, errorText, type BBox, type Region, type RegionRef, type SeriesResponse, type TrendResponse, type Variable } from "./api";
+import { api, errorText, type BBox, type ChatContext, type ChatHistoryTurn, type ChatResponse, type Region, type RegionRef, type SeriesResponse, type TrendResponse, type Variable } from "./api";
 import { pointPlace } from "./places";
 
 export type Page = "home" | "explore" | "hunt" | "detective" | "report";
@@ -8,6 +8,7 @@ export type Page = "home" | "explore" | "hunt" | "detective" | "report";
 export interface Place { ref: RegionRef; label: string; bbox: BBox }
 export interface Selection { parameter: string; variableId: string; startYear: number; endYear: number; place: Place }
 export interface Run { key: string; series: SeriesResponse; trend: TrendResponse; variable: Variable; place: Place }
+export interface ChatExchange { id: string; question: string; context: ChatContext; response?: ChatResponse; error?: string }
 
 interface Store {
   page: Page; go: (p: Page) => void;
@@ -18,6 +19,9 @@ interface Store {
   tempUnit: TempUnit; setTempUnit: (u: TempUnit) => void;
   toast: string | null; showError: (e: unknown) => void; clearToast: () => void;
   variable: Variable | undefined;
+  chatTurns: ChatExchange[]; chatBusy: boolean;
+  sendChat: (message: string, context: ChatContext) => Promise<void>;
+  clearChat: () => void;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -55,6 +59,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [tempUnit, setTempUnitState] = useState<TempUnit>(() => { try { return localStorage.getItem("tempUnit") === "F" ? "F" : "C"; } catch { return "C"; } });
   const setTempUnit = useCallback((u: TempUnit) => { setTempUnitState(u); try { localStorage.setItem("tempUnit", u); } catch { /* private mode */ } }, []);
   const reqId = useRef(0);
+  // Session memory survives page navigation; a reload starts a new conversation.
+  const [chatTurns, setChatTurns] = useState<ChatExchange[]>([]);
+  const [chatBusy, setChatBusy] = useState(false);
+  const chatInFlight = useRef(false);
+
+  const sendChat = useCallback(async (message: string, context: ChatContext) => {
+    const question = message.trim();
+    if (!question || question.length > 2000 || chatInFlight.current) return;
+    chatInFlight.current = true;
+    const id = crypto.randomUUID();
+    const prior: ChatHistoryTurn[] = chatTurns.filter((t) => t.response).slice(-12).flatMap((t) => [
+      { role: "user" as const, content: t.question },
+      { role: "assistant" as const, content: t.response!.answer.slice(0, 2000) },
+    ]);
+    setChatTurns((t) => [...t, { id, question, context }]);
+    setChatBusy(true);
+    try {
+      const response = await api.chat({ message: question, context, history: prior });
+      setChatTurns((turns) => turns.map((t) => t.id === id ? { ...t, response } : t));
+    } catch (e) {
+      setChatTurns((turns) => turns.map((t) => t.id === id ? { ...t, error: errorText(e) } : t));
+    } finally {
+      chatInFlight.current = false;
+      setChatBusy(false);
+    }
+  }, [chatTurns]);
+
+  const clearChat = useCallback(() => {
+    if (!chatInFlight.current) setChatTurns([]);
+  }, []);
 
   const go = useCallback((p: Page) => { setPage(p); location.hash = p; window.scrollTo({ top: 0 }); }, []);
   const showError = useCallback((e: unknown) => setToast(errorText(e)), []);
@@ -103,7 +137,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     page, go, variables: shown.variables, regions, ready, sel, setSel, run: shown.run, running, runAnalysis, history: shown.history,
     toast, showError, clearToast: () => setToast(null), tempUnit, setTempUnit,
     variable: shown.variables.find((v) => v.id === sel.variableId),
-  }), [page, go, shown, regions, ready, sel, setSel, running, runAnalysis, toast, showError, tempUnit, setTempUnit]);
+    chatTurns, chatBusy, sendChat, clearChat,
+  }), [page, go, shown, regions, ready, sel, setSel, running, runAnalysis, toast, showError, tempUnit, setTempUnit,
+       chatTurns, chatBusy, sendChat, clearChat]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -27,13 +27,13 @@ The backend precomputes the global trend maps at start-up (about 15 s per variab
 | File | Purpose |
 |---|---|
 | `src/api.ts` | Typed client for every endpoint, error codes → friendly text, no mock fallbacks (rule R13) |
-| `src/store.tsx` | Shared state: variables, regions, current selection (variable → dataset → years → place), last run, run history |
+| `src/store.tsx` | Shared state: variables, regions, current selection (variable → dataset → years → place), last run, run history, session chat exchanges |
 | `src/WorldMap.tsx` | Canvas world map (equirectangular, `world-atlas` land outline bundled locally): Values heatmap and Trend divergence map, hover readout, click to pick a 1° cell |
 | `src/TrendChart.tsx` | Monthly series, Theil–Sen line (dashed when not significant), shaded 95% CI band |
 | `src/pages/Home.tsx` | Mascot welcome, topic tiles, featured cases |
 | `src/pages/Explore.tsx` | 4-step set-up, map with Values / Trend switch and month filter, result card |
 | `src/pages/Hunt.tsx` | Two-place comparison via `POST /compare` (automatic search: coming soon) |
-| `src/pages/Detective.tsx` | Chat via `POST /explain` with cited numbers, actions, disclaimer, offline label |
+| `src/pages/Detective.tsx` | Template chat via `POST /chat`: selected context, session history, retry, evidence/source/method cards, typed actions and warnings. No LLM connected. `/explain` remains available. |
 | `src/pages/Report.tsx` | Session results table, method, NASA datasets, limitations, Markdown export, print to PDF |
 
 Rules kept: numbers in Nunito tabular figures (no monospace), no em dash anywhere, increasing = orange,

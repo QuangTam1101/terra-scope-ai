@@ -1,7 +1,7 @@
 """Pydantic models = schema của FRONTEND_BACKEND_CONTRACT v0.2. OpenAPI (/openapi.json) sinh từ đây."""
 from typing import Annotated, Any, Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 Month = Annotated[str, Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$", examples=["2001-01"])]
 BBox = tuple[float, float, float, float]          # [west, south, east, north]
@@ -293,3 +293,73 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     available_variables: list[str]
+
+
+# ---------- Chat foundation (template only; /explain remains unchanged) ----------
+ChatText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=2000)]
+
+
+class ChatContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    variable_id: Optional[str] = None
+    dataset_id: Optional[str] = Field(None, description="Exact catalog source.product, e.g. GPM_3IMERGM")
+    region: Optional[RegionRef] = None
+    start: Optional[Month] = None
+    end: Optional[Month] = None
+    trend_id: Optional[str] = None
+
+    @model_validator(mode="after")
+    def paired_period(self):
+        if (self.start is None) != (self.end is None):
+            raise ValueError("context.start and context.end must be supplied together")
+        return self
+
+
+class ChatHistoryTurn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    role: Literal["user", "assistant"]
+    content: ChatText
+
+
+class ChatRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    message: ChatText
+    context: ChatContext = Field(default_factory=ChatContext)
+    history: list[ChatHistoryTurn] = Field(default_factory=list, max_length=24)
+
+
+class ChatWarning(BaseModel):
+    code: Literal["TEMPLATE_MODE", "ANALYSIS_WARNING", "CONTEXT_REQUIRED", "UNSUPPORTED_QUESTION"]
+    message: str
+
+
+class ChatEvidence(BaseModel):
+    trend: TrendResponse
+    cited_numbers: list[CitedNumber]
+
+
+class ChatActionParams(BaseModel):
+    variable_id: str
+    region: Union[PresetRegion, BBoxRegion]
+    start: Month
+    end: Month
+
+
+class ChatAction(BaseModel):
+    type: Literal["navigate"]
+    page: Literal["explore"]
+    label: str
+    params: ChatActionParams
+
+
+class ChatResponse(BaseModel):
+    answer: str
+    mode: Literal["template"]
+    evidence: list[ChatEvidence]
+    warnings: list[ChatWarning]
+    actions: list[ChatAction]
+    disclaimer: str
+    analysis_id: Optional[str] = None
