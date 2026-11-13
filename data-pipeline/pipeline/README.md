@@ -5,7 +5,7 @@ Mọi code từng nằm trong `docs/02`, `docs/03`, `docs/05` đã chuyển ra �
 Script ở gốc dự án:
 - `appeears.py`: client AppEEARS (gửi task, poll bằng `task_status`, tải). `appeears_adapter.py` gọi nó.
 - `download_appeears.sh`: gửi các request vùng mẫu R1–R4.
-- `download_grid.py`: tải lưới toàn cầu qua Harmony HOSS → `data/raw/harmony_grid/<VAR_ID>/` → `data/processed/cube_<biến>.nc` (02 §4.6). Cần tài khoản đã authorize app GES DISC (docs/04, T-1; xong 13/11).
+- `download_grid.py`: tải lưới toàn cầu qua Harmony HOSS → `data/raw/harmony_grid/<VAR_ID>/` → `data/processed/grid/cube_<biến>.nc` (02 §4.6). Cần tài khoản đã authorize app GES DISC (docs/04, T-1; xong 13/11).
 
 Luồng chính của web: **cube lưới 1° toàn cầu** (`grid.py`) → `api.py` (hàm cho backend và cho AI) → `report.py`. Bảng `observations` (`schema.py`) dùng cho vùng mẫu và dữ liệu point trước khi thành cube.
 

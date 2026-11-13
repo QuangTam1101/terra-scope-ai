@@ -8,7 +8,7 @@ Web app phân tích xu hướng môi trường cho **bất kỳ vùng nào trên
 - Sau mỗi quyết định, rà lại **mọi** tài liệu và code liên quan để chúng khớp nhau.
 
 ## Chạy
-- Luôn chạy từ thư mục gốc dự án bằng `.venv/bin/python`. `pipeline/api.py` đọc cube theo đường dẫn tương đối `data/processed/cube_<biến>.nc`.
+- Luôn chạy từ thư mục gốc dự án bằng `.venv/bin/python`. `pipeline/api.py` đọc cube theo đường dẫn tương đối `data/processed/grid/cube_<biến>.nc`.
 - Test không gọi mạng: `.venv/bin/python -m pytest -q tests`.
 - Tài khoản Earthdata nằm trong `.env` (`EARTHDATA_USER`, `EARTHDATA_PASS`), đọc bằng `appeears.load_env()`. Người dùng tự điền; không in, không hỏi nội dung file này.
 - Task AppEEARS chạy nhiều giờ. Nếu tiến trình chờ bị chết, tiếp tục bằng `appeears.py fetch TASK_ID OUT_DIR` (task ID lưu trong `data/raw/appeears/<tên>/task_id.txt`), đừng gửi lại request.

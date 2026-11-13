@@ -42,8 +42,8 @@
 |---|---|---|---|---|
 | T-1 | **Liên kết GES DISC với tài khoản Earthdata:** urs.earthdata.nasa.gov → Profile → Applications → Authorized Apps → Approve More Applications → **NASA GESDISC DATA ARCHIVE** → Approve (chấp nhận điều khoản nếu được hỏi) | Data (tự làm trên web) | 5' | ✅ Xong 13/11. Nguyên nhân `403` đã xác nhận: Earthdata đòi authorize đúng app GES DISC; link trực tiếp: https://urs.earthdata.nasa.gov/approve_app?client_id=e2WVk8Pw6weeLUKZYOxvTQ |
 | T-2 | Cài thư viện vào `.venv` có sẵn (mục 7) | Data | 20' | ✅ đã cài |
-| T-3 | `sh download_appeears.sh`: gửi R1–R4 vùng mẫu (mục 3c) | Data | 5' (+ vài giờ NASA xử lý) | ✅ đã gửi 13/11; **R4 đã tải xong** (21 MB; nhờ file thật mà sửa được 3 lỗi đọc file area, xem README); R1, R3 đang `processing`; R2a, R2b `pending` |
-| T-4 | Sau T-1: chạy `download_grid.py` nền (mục 3a), tải lưới toàn cầu 5 biến Giovanni | Data | 5' (+ vài giờ tải) | ⏳ 5 job Harmony (mỗi biến 288 tháng) chạy từ 13/11 ~04:00 (giờ máy). Tiến trình chờ của harmony-py chết lần đầu vì lỗi `/jobs/status` (02 §4.7), đã sửa và nối lại đúng 5 job đó. Log: `data/raw/harmony_grid/log_<VAR_ID>.txt`. Tổng ≈ 3 GB. Cấu trúc file HOSS đã ✅ trên job thử 1 tháng |
+| T-3 | `sh download_appeears.sh`: gửi R1–R4 vùng mẫu (mục 3c) | Data | 5' (+ vài giờ NASA xử lý) | ✅ đã gửi 13/11; **R1 (NDVI, 106 MB) và R4 (tĩnh, 21 MB) đã tải xong**; nhờ file thật của R4 mà sửa được 3 lỗi đọc file area (xem README). R2a, R2b, R3 đang `processing` |
+| T-4 | Sau T-1: chạy `download_grid.py` nền (mục 3a), tải lưới toàn cầu 5 biến Giovanni | Data | 5' (+ vài giờ tải) | ⏳ 5 job Harmony (mỗi biến 288 tháng) chạy từ 13/11 ~04:00 (giờ máy). Tiến trình chờ của harmony-py chết lần đầu vì lỗi `/jobs/status` (02 §4.7), đã sửa và nối lại đúng 5 job đó. Log: `data/raw/harmony_grid/<VAR_ID>/log.txt`. Tổng ≈ 3 GB. Cấu trúc file HOSS đã ✅ trên job thử 1 tháng |
 | T-5 | Gửi thử **1 batch point** AppEEARS nhỏ (~100 điểm, 1 năm, NDVI) | Data | 15' (+ chờ) | Xác nhận tên cột CSV point, thời gian xử lý, và dò **giới hạn số điểm** (API không công bố) |
 
 ---
@@ -63,11 +63,13 @@
 **Lệnh:**
 
 ```bash
-nohup .venv/bin/python -u download_grid.py > data/raw/harmony_grid/log.txt 2>&1 &
+for v in $(.venv/bin/python -c "from pipeline.giovanni_adapter import HOSS_VARIABLES as H; print(*H)"); do
+  mkdir -p data/raw/harmony_grid/$v && nohup .venv/bin/python -u download_grid.py $v > data/raw/harmony_grid/$v/log.txt 2>&1 &
+done
 ```
 
 - Mỗi biến một job, không bbox (cả Trái Đất), chỉ lấy đúng biến cần, ra NetCDF mỗi tháng một file.
-- Tải xong thì `build_cube` gộp về ô 1° và đổi đơn vị → `data/processed/cube_<biến>.nc`.
+- Tải xong thì `build_cube` gộp về ô 1° và đổi đơn vị → `data/processed/grid/cube_<biến>.nc`.
 - Chạy lại an toàn: không tải lại file đã có, bỏ qua biến đã có cube.
 
 ✅ *Đã kiểm chứng (13/11, Harmony `/capabilities`):* cả 3 collection có dịch vụ `sds/HOSS-geographic` (cắt biến, cắt bbox, cắt thời gian, ra NetCDF-4). Tên biến HOSS ở bảng trên lấy từ danh sách biến của chính endpoint đó.
@@ -214,7 +216,7 @@ uv pip install --python .venv/bin/python -r requirements.txt
 
 ```bash
 sh download_appeears.sh                                         # AppEEARS area vùng mẫu R1–R4
-nohup .venv/bin/python -u download_grid.py > data/raw/harmony_grid/log.txt 2>&1 &   # lưới toàn cầu HOSS
+# lưới toàn cầu HOSS: vòng lặp ở mục 3a (mỗi biến một tiến trình, log trong data/raw/harmony_grid/<VAR_ID>/log.txt)
 .venv/bin/python appeears.py fetch TASK_ID OUT_DIR              # tiếp tục chờ / tải một task AppEEARS
 .venv/bin/python -m pytest -q tests                             # test, không gọi mạng
 ```

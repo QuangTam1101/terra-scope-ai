@@ -89,7 +89,7 @@ Hàm kiểm tra hợp đồng. **Mọi đầu ra của adapter phải qua hàm n
 
 | Thành phần | Quy ước |
 |---|---|
-| Kiểu | `xarray.DataArray`, `name` = ID biến chuẩn (`precip`, `ndvi`…), lưu NetCDF ở `data/processed/cube_<biến>.nc` |
+| Kiểu | `xarray.DataArray`, `name` = ID biến chuẩn (`precip`, `ndvi`…), lưu NetCDF ở `data/processed/grid/cube_<biến>.nc` |
 | Chiều | `(time, lat, lon)` = `(288, 180, 360)` |
 | `time` | ngày đầu tháng, 2001-01-01 → 2024-12-01 |
 | `lat`, `lon` | tâm ô 1°: −89.5 … 89.5 và −179.5 … 179.5 (`grid.global_coords()`) |
@@ -349,7 +349,7 @@ CSV của Giovanni có **phần đầu là metadata**: tên biến, đơn vị, 
 4. **Gộp về ô 1°:** `bin_to_grid()` lấy trung bình mọi ô gốc có tâm trong ô 1°, bỏ NaN. Dùng chung cho IMERG 0.1°, GLDAS 0.25° và MERRA-2 0.5° × 0.625° (lưới này không chia hết cho 1°).
 5. **Đơn vị:** `convert_cube()` assert thuộc tính `units` rồi đổi; `days_in_month` lấy từ trục `time`.
 6. **Đủ lưới:** `reindex` về 180 × 360 ô (`global_coords`); ô không có dữ liệu (GLDAS dưới 60°S, biển) = NaN.
-7. **Ghi:** `data/processed/cube_<biến>.nc` (mục 2b).
+7. **Ghi:** `data/processed/grid/cube_<biến>.nc` (mục 2b).
 
 **Lý do của các lựa chọn:**
 - *Vì sao trung bình khối chứ không dùng dịch vụ regrid của HOSS:* `/capabilities` không ghi phương pháp nội suy của dịch vụ regrid. Lấy trung bình khối thì giá trị ô 1° đúng là trung bình mưa / ẩm đất trong ô (bảo toàn tổng lượng), dễ giải thích với giám khảo (03, K18).

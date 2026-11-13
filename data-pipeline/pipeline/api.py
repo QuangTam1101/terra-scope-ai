@@ -11,7 +11,7 @@ from .contradictions import hunt_global, pair_difference_test
 from .grid import grid_trend, region_series
 from .trends import trend_one
 
-CUBE_DIR = Path("data/processed")
+CUBE_DIR = Path("data/processed/grid")
 
 # id → (tên hiển thị, đơn vị chuẩn, nguồn NASA hiển thị trên web + báo cáo)
 VARIABLES = {
