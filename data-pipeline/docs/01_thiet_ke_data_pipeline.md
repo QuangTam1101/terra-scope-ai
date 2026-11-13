@@ -137,7 +137,7 @@ Code của từng bước ở **03**, chi tiết adapter ở **02**, thuật to�
 
 ### S7 — Đổi đơn vị + validate + ghi
 
-**Output:** `data/processed/cube_<biến>.nc` (lưới) và `data/processed/observations.parquet` (vùng mẫu).
+**Output:** `data/processed/grid/cube_<biến>.nc` (lưới) và `data/processed/regions/observations.parquet` (vùng mẫu).
 
 1. Assert đơn vị nguồn khớp danh sách chấp nhận (thuộc tính `units` của NetCDF hoặc metadata CSV). Không khớp → dừng.
 2. Đổi sang đơn vị chuẩn (bảng mục 4), dùng `convert_cube()` cho cube và `convert_units()` cho chuỗi:
@@ -217,7 +217,7 @@ Scale / fill / miền hợp lệ của từng layer: 03 §C, §C2, §D2.
 ```
 download_grid.py ─► Harmony HOSS, không bbox (cả Trái Đất), 2001–2024, mỗi biến 1 job
                      S1 → S2 (read_grid_file) → S3 → S5 (bin_to_grid 1°) → S6 → S7 (convert_cube)
-                     └─► data/processed/cube_<biến>.nc   (time 288 × lat 180 × lon 360)
+                     └─► data/processed/grid/cube_<biến>.nc   (time 288 × lat 180 × lon 360)
 cube GLDAS ─► ô đất liền ─► write_grid_points ─► AppEEARS point theo đợt (P1)
                      S1 → S2 → S3 → S4 → S6 → points_to_cube → S7 ─► cube_ndvi.nc, cube_lst_day.nc, …
 ```
@@ -246,11 +246,25 @@ regions.geojson ─► AppEEARS area R1–R4 (1 km) ─► S1 → S2 → S3 → 
 
 ## 6. File đầu ra
 
+**Cấu trúc thư mục dữ liệu** (`data/` nằm trong `.gitignore`; mỗi nguồn, mỗi request / biến một thư mục riêng, không trộn lẫn):
+
+```
+data/
+├── raw/                              # nguyên bản từ NASA, không bao giờ sửa tay
+│   ├── appeears/                     # AppEEARS area, vùng mẫu
+│   │   └── R1_mvp_MOD13A3/ …         # mỗi request: file NASA + task_id.txt + log.txt
+│   └── harmony_grid/                 # Giovanni qua Harmony HOSS, lưới toàn cầu
+│       └── GPM_3IMERGM_07_precipitation/ …   # mỗi biến: 288 file tháng + job_id.txt + log.txt
+└── processed/                        # đã làm sạch, chuẩn hoá
+    ├── grid/                         # cube_<biến>.nc: lưới 1° toàn cầu (nền của web)
+    └── regions/                      # observations.parquet: chuỗi vùng mẫu
+```
+
 | File | Stage | Nội dung |
 |---|---|---|
-| `data/raw/{harmony_grid,appeears,giovanni}/…` | S1 | File thô, không bao giờ sửa |
-| `data/processed/cube_<biến>.nc` | S7 | Lưới tháng toàn cầu 1°, đơn vị chuẩn |
-| `data/processed/observations.parquet` | S7 | Vùng mẫu: 1 dòng = vùng × biến × tháng (schema: 02 §2) |
+| `data/raw/appeears/<request>/…`, `data/raw/harmony_grid/<VAR_ID>/…` | S1 | File thô, không bao giờ sửa |
+| `data/processed/grid/cube_<biến>.nc` | S7 | Lưới tháng toàn cầu 1°, đơn vị chuẩn |
+| `data/processed/regions/observations.parquet` | S7 | Vùng mẫu: 1 dòng = vùng × biến × tháng (schema: 02 §2) |
 | `web/data/variables.json` | S9 | `list_variables()`: biến nào đã có dữ liệu |
 | `web/data/trend_map_<biến>.json` | S9 | `trend_map()` mặc định 2001–2024 cho lần tải trang đầu |
 | `web/data/contradictions_<biến>.json` | S9 | `find_contradictions()` mặc định (05, mục 6) |
