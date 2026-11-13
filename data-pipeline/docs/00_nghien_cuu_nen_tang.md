@@ -75,7 +75,7 @@ Tài liệu này tóm tắt kiến thức cần có trước khi xây pipeline c
 **Bẫy:**
 - **Đơn vị "lạ":** IMERG tháng là *tốc độ mưa* (mm/giờ), không phải tổng mưa tháng; ẩm đất GLDAS là *khối lượng nước* (kg/m²) trong lớp 0–10 cm, không phải tỷ lệ thể tích. Đổi sai là sai hàng chục lần (03, mục G).
 - **Đất liền hay cả biển:** GLDAS chỉ có ô đất liền; IMERG và MERRA-2 có cả biển. Cùng một bbox ven biển, hai biến "trung bình vùng" thực ra trung bình trên hai tập ô khác nhau.
-- 🔬 Trung bình vùng của Giovanni có trọng số theo diện tích ô (cos vĩ độ) không: Đăng xác nhận.
+- ⚠️ Trung bình vùng của Giovanni có trọng số theo diện tích ô (cos vĩ độ) không: chưa có tài liệu xác nhận.
 
 ---
 
@@ -187,7 +187,7 @@ Thư viện phụ:
 - Lưới equal-area (MODIS `native`) → trung bình thường là đúng. Đây là lý do request dùng projection `native`.
 - Nếu lỡ dùng `geographic` (lat/lon) → phải lấy trung bình **có trọng số cos(vĩ độ)**. Với phạm vi toàn cầu, sai số này không nhỏ: ở vĩ độ 60°, cos = 0.5, tức một pixel chỉ rộng bằng nửa pixel ở xích đạo theo chiều đông-tây.
 - Cube lưới 1° là lưới lat/lon, nên mọi trung bình vùng trên cube (`region_series`, chuỗi điểm nóng) đều **có trọng số cos(vĩ độ)**. Trong một ô 1°, `bin_to_grid` lấy trung bình thường các ô gốc vì cos(vĩ độ) gần như không đổi trong 1° (03, K18).
-- Giovanni tính trung bình vùng trên **lưới lat/lon** của nó (IMERG, GLDAS, MERRA-2 đều là lưới độ). Phép tính đó do NASA làm nên ta không chỉnh được; 🔬 Đăng xác nhận có trọng số cos(vĩ độ) hay không. Với bbox nhỏ ở vĩ độ thấp, chênh lệch không đáng kể; với bbox trải dài nhiều độ vĩ thì đáng kể.
+- Giovanni tính trung bình vùng trên **lưới lat/lon** của nó (IMERG, GLDAS, MERRA-2 đều là lưới độ). Phép tính đó do NASA làm nên ta không chỉnh được; ⚠️ chưa rõ có trọng số cos(vĩ độ) hay không. Với bbox nhỏ ở vĩ độ thấp, chênh lệch không đáng kể; với bbox trải dài nhiều độ vĩ thì đáng kể.
 
 ### 4.2 Fill value / NoData
 
@@ -273,7 +273,7 @@ Cách hiểu: `>> n` "đẩy" n bit cuối ra ngoài, còn `& 0b111` "giữ lạ
 
 **Với Giovanni**, "point" nghĩa là giá trị của **ô lưới** chứa điểm (IMERG ~11 km, GLDAS ~28 km, MERRA-2 ~55 km), thô hơn nhiều so với pixel MODIS 1 km. Vì vậy so sánh "điểm" giữa hai nguồn là so một pixel 1 km với một ô vài chục km: dùng để **giải thích xu hướng**, không dùng để so giá trị tuyệt đối.
 
-**Tại sao lưới MODIS dùng point:** area request 1 km cho cả Trái Đất quá nặng; point request chỉ trả giá trị tại điểm. Cái giá là mỗi ô lưới chỉ được đại diện bởi **một pixel mẫu** (🔬 Đăng: tính đại diện). Nếu cần ổn định hơn: polygon nhỏ ~10×10 km quanh mỗi điểm, lấy trung bình theo feature trong `*-Statistics.csv`.
+**Tại sao lưới MODIS dùng point:** area request 1 km cho cả Trái Đất quá nặng; point request chỉ trả giá trị tại điểm. Cái giá là mỗi ô lưới chỉ được đại diện bởi **một pixel mẫu**. Nếu cần ổn định hơn: polygon nhỏ ~10×10 km quanh mỗi điểm, lấy trung bình theo feature trong `*-Statistics.csv`.
 
 Công cụ đã có: `python3 appeears.py point ...` và `python3 appeears.py area ...`.
 

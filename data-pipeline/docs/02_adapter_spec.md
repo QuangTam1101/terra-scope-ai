@@ -214,7 +214,7 @@ Task JSON mẫu (point, một đợt grid):
 | 1. Mở file | `xr.open_dataset(path, mask_and_scale=False)`. Đọc **số thô**, tự decode để kiểm soát bẫy QC fill. ✅ File thật (R4, 13/11): lưới `native` có chiều `xdim`/`ydim` (mét), CRS sinusoidal nằm trong **biến** `crs` (phải `set_coords("crs")` thì rioxarray mới đọc được); `time` dùng **lịch julian** (cftime), lấy nguyên ngày ghi trên nhãn | 03, mục B |
 | 2. Fill | Che theo fill của **layer giá trị** (NDVI -3000, LST 0, ET/PET > 32700). Không che QA theo fill | 03, mục B |
 | 3. Scale | `ensure_scaled()`: tự phát hiện file đã nhân scale hay chưa (⚠️ chưa biết AppEEARS NetCDF đã scale sẵn chưa) | 03, mục C |
-| 4. QA | NDVI: `modland_good` (bit 0–1 = 00). LST: `modland_good_or_lst_err_le_2k`. ET/PET: `et_valid_only` (giải mã qua `/api/quality/MOD16A2GF.061/ET_QC_500m`, 🔬 Đăng) | 03, mục D |
+| 4. QA | NDVI: `modland_good` (bit 0–1 = 00). LST: `modland_good_or_lst_err_le_2k`. ET/PET: `et_valid_only` (giải mã qua `/api/quality/MOD16A2GF.061/ET_QC_500m`) | 03, mục D |
 | 5. Trung bình vùng | Mỗi `.nc` ứng với một feature → map sang `region_id`. ✅ Tên file là `<dataset>_<độ phân giải>_aid<NNNN>.nc`, `NNNN` = **thứ tự feature** (1, 2…) trong GeoJSON gửi đi; tên **không** chứa id vùng (`nc_files_for`). Lưới `native` có diện tích bằng nhau nên trọng số = 1. `n_valid` = số pixel còn lại; `valid_frac = n_valid / n_pixel_trong_vùng` | 01, S2–S6 |
 | 6. Về tháng | NDVI: đã là tháng. LST: trung bình các composite 8 ngày có ngày bắt đầu trong tháng (`min_composites=2`). ET/PET: **cộng theo ngày** (`composites_to_monthly(how="sum")`), vì ET là tổng lượng nước cho 8 ngày chứ không phải giá trị tức thời | 03, mục F |
 | 7. Đơn vị | NDVI giữ nguyên; LST K → °C (−273.15); ET/PET → mm/tháng; `et_pet_ratio = et / pet` tính sau cùng | 03, mục G |
@@ -236,7 +236,7 @@ Task JSON mẫu (point, một đợt grid):
 - Quy tắc decode/QA giống đường area (kể cả bẫy QC fill). Về tháng: `series_to_monthly()` cho từng điểm (bên trong gọi `composites_to_monthly`).
 - Cột: `region_id = "g_{lat}_{lon}"` (tâm ô, ví dụ `g_10.5_105.5`), `geom_type="point"`, `agg="pixel"`, `n_valid` = số composite hợp lệ trong tháng, `valid_frac = n_valid / số composite của tháng`.
 - Sau khi `validate()`: `points_to_cube(obs, biến)` → cube (mục 2b); ô không có điểm là NaN.
-- 🔬 Giá trị là **1 pixel**, không phải trung bình ô. Phương án thay thế vẫn trong AppEEARS: polygon nhỏ ~10 × 10 km quanh mỗi điểm, đi đường area, rồi lấy cột mean của `*-Statistics.csv` theo từng feature.
+- Giá trị là **1 pixel**, không phải trung bình ô. Phương án thay thế vẫn trong AppEEARS: polygon nhỏ ~10 × 10 km quanh mỗi điểm, đi đường area, rồi lấy cột mean của `*-Statistics.csv` theo từng feature.
 
 **Code:** [`pipeline/appeears_adapter.py`](../pipeline/appeears_adapter.py) → `normalize_points()`; [`pipeline/grid.py`](../pipeline/grid.py) → `write_grid_points()`, `points_to_cube()` (test: `tests/test_schema_adapters.py`, `tests/test_api.py`)
 
@@ -319,7 +319,7 @@ CSV của Giovanni có **phần đầu là metadata**: tên biến, đơn vị, 
 4. Điền cột: `source="giovanni"`, `geom_type="polygon"`, `agg="area_mean"`, `n_valid=None`, `valid_frac=None`, `qa_policy="giovanni_preprocessed"`, `request_ref = job_id`.
 5. **Điền đủ 288 tháng** bằng `reindex`. Tháng thiếu thành NaN, không bị bỏ dòng.
 
-🔬 **Đăng xác nhận:** Giovanni area-average có trọng số cos(vĩ độ) không? Ở vùng nhỏ gần xích đạo thì chênh lệch không đáng kể. Với bbox lớn, hoặc ở vĩ độ cao (Siberia, Canada), không có trọng số thì các ô gần cực bị tính quá tay.
+⚠️ **Chưa rõ:** Giovanni area-average có trọng số cos(vĩ độ) không? Ở vùng nhỏ gần xích đạo thì chênh lệch không đáng kể. Với bbox lớn, hoặc ở vĩ độ cao (Siberia, Canada), không có trọng số thì các ô gần cực bị tính quá tay.
 
 ### 4.5 Chuỗi tại điểm (dự phòng), token, quota, retry
 
@@ -352,7 +352,7 @@ CSV của Giovanni có **phần đầu là metadata**: tên biến, đơn vị, 
 7. **Ghi:** `data/processed/cube_<biến>.nc` (mục 2b).
 
 **Lý do của các lựa chọn:**
-- *Vì sao trung bình khối chứ không dùng dịch vụ regrid của HOSS:* `/capabilities` không ghi phương pháp nội suy của dịch vụ regrid. Lấy trung bình khối thì giá trị ô 1° đúng là trung bình mưa / ẩm đất trong ô (bảo toàn tổng lượng), dễ giải thích với Đăng và giám khảo. 🔬 (03, K18)
+- *Vì sao trung bình khối chứ không dùng dịch vụ regrid của HOSS:* `/capabilities` không ghi phương pháp nội suy của dịch vụ regrid. Lấy trung bình khối thì giá trị ô 1° đúng là trung bình mưa / ẩm đất trong ô (bảo toàn tổng lượng), dễ giải thích với giám khảo (03, K18).
 - *Vì sao 1°:* 64.800 ô cho heatmap tính được trong ~4 s. Mỗi cube chỉ ~75 MB.
 
 **Đã kiểm chứng (13/11):**
@@ -361,7 +361,7 @@ CSV của Giovanni có **phần đầu là metadata**: tên biến, đơn vị, 
 - ✅ Lỗi `403` trước đó là do tài khoản chưa authorize app GES DISC. Earthdata báo rõ khi gọi thẳng file trên `data.gesdisc.earthdata.nasa.gov`: *"Pre authorization required for this application"*, kèm link https://urs.earthdata.nasa.gov/approve_app?client_id=e2WVk8Pw6weeLUKZYOxvTQ. Authorize xong là chạy được.
 - ✅ Job 1 tháng mất 50–85 s. File tháng nặng 7 MB (IMERG), 0,8 MB (GLDAS), 0,5 MB (MERRA-2), nên cả 288 tháng × 5 biến ≈ 3 GB.
 - ✅ `build_cube` chạy trên file thật tháng 7/2010: mưa ĐBSCL 241 mm, nam Sahara 16 mm; ẩm đất ĐBSCL 0,36, Sahara 0,09 m³/m³.
-- 🔬 GLDAS gán ẩm đất **100 kg/m² cố định** (= 1,0 m³/m³) cho ô phủ băng (Greenland, Patagonia, Alaska…), vượt khoảng sanity 0–0,6. Chuỗi không đổi nên xu hướng = 0; chưa che (03, K22).
+- ⚠️ GLDAS gán ẩm đất **100 kg/m² cố định** (= 1,0 m³/m³) cho ô phủ băng (Greenland, Patagonia, Alaska…), vượt khoảng sanity 0–0,6. Chuỗi không đổi nên xu hướng = 0; chưa che (03, K22).
 
 ### 4.7 Lỗi thường gặp
 
@@ -373,9 +373,9 @@ CSV của Giovanni có **phần đầu là metadata**: tên biến, đơn vị, 
 | `harmony-py`: `Invalid format for Job ID 'status'` | `wait_for_processing` / `download_all` của harmony-py hỏi endpoint `/jobs/status`, Harmony thỉnh thoảng trả 400 (13/11: cả 5 job 288 tháng đều dính sau ~15 phút). Job trên máy chủ vẫn chạy tiếp | Đã sửa: `wait_job()` tự hỏi `client.status()` (`/jobs/<id>`); `job_id.txt` ghi ngay khi gửi, chạy lại `download_grid.py` sẽ nối tiếp job cũ |
 | `FileNotFoundError … .harmony-xxxx` khi tải | Thư mục đích chưa tồn tại | Tạo thư mục trước (`download_grid.py` đã làm) |
 | Job Harmony `failed` | Sai ID biến, bbox ngoài phạm vi (ví dụ GLDAS dưới 60°S) | Đọc message trong job |
-| Assert đơn vị lỗi | Giovanni đổi đơn vị | Cập nhật `UNIT_RULES` sau khi Đăng duyệt |
+| Assert đơn vị lỗi | Giovanni đổi đơn vị | Đối chiếu tài liệu dataset rồi cập nhật `GIOVANNI_UNITS` (`pipeline/units.py`) |
 | CSV không có dòng `,` | Định dạng đổi | Mở file raw, sửa `parse_giovanni_area_csv` |
-| Bbox ven biển, mưa/T2M lệch so với MODIS | IMERG/MERRA-2 tính cả ô biển trong bbox, còn MODIS chỉ có đất liền | Ghi rõ trong giới hạn; chọn bbox ít biển (🔬) |
+| Bbox ven biển, mưa/T2M lệch so với MODIS | IMERG/MERRA-2 tính cả ô biển trong bbox, còn MODIS chỉ có đất liền | Ghi rõ trong giới hạn; chọn bbox ít biển |
 
 ---
 
@@ -403,7 +403,7 @@ CSV của Giovanni có **phần đầu là metadata**: tên biến, đơn vị, 
 | V3 | Assert đơn vị chạy cho cả 5 biến (cố ý đổi đơn vị giả thì phải báo lỗi) | ☐ |
 | V4 | 1 vùng × 1 biến × 1 năm khớp con số tải tay từ **Giovanni web UI** (Time Series, Area-Averaged) | ☐ |
 | V5 | Mưa tháng mùa mưa / mùa khô hợp lý cho vùng (ví dụ ĐBSCL mùa mưa 5–11 nhiều hơn rõ rệt) | ☐ |
-| V6 | `evap_gldas` (GLDAS) và `et` (MODIS) cùng chu kỳ mùa ở cùng vùng (🔬 Đăng; khác biên độ là bình thường vì một bên là mô hình, một bên là vệ tinh) | ☐ |
+| V6 | `evap_gldas` (GLDAS) và `et` (MODIS) cùng chu kỳ mùa ở cùng vùng (khác biên độ là bình thường vì một bên là mô hình, một bên là vệ tinh) | ☐ |
 | V7 | `quota_guard` chặn được khi quota ≥ 0.95 (test bằng giá trị giả) | ☐ |
 
 ### Giovanni / HOSS (lưới toàn cầu)
@@ -414,5 +414,5 @@ CSV của Giovanni có **phần đầu là metadata**: tên biến, đơn vị, 
 | H2 | Cube đúng chiều `(288, 180, 360)`, đúng tâm ô, `attrs.units` = đơn vị chuẩn | ☐ |
 | H3 | Assert đơn vị chạy (cố ý đổi `units` giả thì báo lỗi) | ✅ test |
 | H4 | `bin_to_grid` bảo toàn trung bình một khối, bỏ qua NaN | ✅ test |
-| H5 | `region_series` của cube trên một vùng mẫu khớp Giovanni area-average cùng bbox (chênh do lưới 1° nhỏ, 🔬 ngưỡng) | ☐ |
+| H5 | `region_series` của cube trên một vùng mẫu khớp Giovanni area-average cùng bbox (chênh do lưới 1° nhỏ) | ☐ |
 | H6 | Bản đồ trung bình nhìn hợp lý: mưa nhiều ở dải hội tụ nhiệt đới, ít ở Sahara; GLDAS NaN trên biển | ☐ |

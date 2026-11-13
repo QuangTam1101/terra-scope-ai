@@ -2,7 +2,7 @@
 chuỗi đủ để chạy xu hướng. Tên biến theo docs/01 mục 4."""
 import pandas as pd
 
-# Khoảng kỳ vọng toàn cầu (đơn vị chuẩn) 🔬
+# Khoảng kỳ vọng toàn cầu (đơn vị chuẩn)
 SANITY = {
     "ndvi": (-0.2, 1.0), "lst_day": (-70, 80), "lst_night": (-80, 50),       # 1, °C
     "et": (0, 350), "pet": (0, 700),                                         # mm/month

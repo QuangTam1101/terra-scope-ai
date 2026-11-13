@@ -67,7 +67,7 @@ def lst_ok(qc):                         # MODLAND 00, hoặc 01 mà LST error (b
 
 
 # MOD16A2GF ET_QC_500m (✅ /api/quality/MOD16A2GF.061/ET_QC_500m)
-def et_main_algorithm(qc):              # bit 0 MODLAND == 0 (chỉ dùng nếu Đăng chọn siết, K5)
+def et_main_algorithm(qc):              # bit 0 MODLAND == 0 (chỉ dùng nếu muốn siết, K5)
     return bits(qc, 0, 1) == 0
 
 
@@ -76,7 +76,7 @@ def lst_valid(lst_raw, qc):
     return (np.asarray(lst_raw) != 0) & lst_ok(qc)
 
 
-# Chính sách QA mặc định theo layer giá trị (🔬 Đăng duyệt). ET: không lọc thêm (gap-filled), xem 03 K5.
+# Chính sách QA mặc định theo layer giá trị (03, mục K). ET: không lọc thêm (gap-filled), xem 03 K5.
 QA_POLICY = {
     "_1_km_monthly_NDVI": ("_1_km_monthly_VI_Quality", ndvi_good, "modland_good"),
     "LST_Day_1km": ("QC_Day", lst_ok, "modland_good_or_lst_err_le_2k"),

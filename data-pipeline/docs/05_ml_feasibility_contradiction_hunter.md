@@ -79,7 +79,7 @@ z(nơi, tháng t) = (giá_trị(t) − TB các năm cùng tháng) / độ lệch
 
 - Loại A dùng xu hướng (Sen's slope). Bản thân Seasonal MK đã miễn nhiễm với chu kỳ mùa.
 - Loại B, C, D dùng `z`.
-- *Lượng mưa:* phân phối lệch, nên z của tháng mưa cực lớn có thể rất cao. Với `precip`, có thể dùng thêm hạng phân vị (percentile) để đọc dễ hơn 🔬 (03, K13).
+- *Lượng mưa:* phân phối lệch, nên z của tháng mưa cực lớn có thể rất cao. Với `precip`, có thể dùng thêm hạng phân vị (percentile) để đọc dễ hơn (03, K13).
 
 ---
 
@@ -88,7 +88,7 @@ z(nơi, tháng t) = (giá_trị(t) − TB các năm cùng tháng) / độ lệch
 | Đầu vào | Từ đâu | Ghi chú |
 |---|---|---|
 | **Cube Giovanni** `precip`, `soil_moisture`, `tair_land`, `t2m` (+ `evap_gldas`) | Harmony HOSS → `bin_to_grid` 1° (01, S1–S7) | Mỗi ô = **trung bình khối** các ô gốc 0.1°–0.5° |
-| **Cube AppEEARS** `ndvi`, `lst_day`, `lst_night`, `et`, `pet` (+ `et_pet_ratio`) | Point request tại tâm ô đất liền → `points_to_cube` | Mỗi ô là **1 pixel tại tâm ô**, không phải trung bình ô 🔬 (03, K6) |
+| **Cube AppEEARS** `ndvi`, `lst_day`, `lst_night`, `et`, `pet` (+ `et_pet_ratio`) | Point request tại tâm ô đất liền → `points_to_cube` | Mỗi ô là **1 pixel tại tâm ô**, không phải trung bình ô (03, K6) |
 | Xu hướng từng ô: Sen's slope, z, p, **q (FDR)** | `grid_trend()`, tính khi gọi cho khoảng thời gian người dùng chọn | ~4 s toàn cầu × 24 năm |
 | Độ cao, thảm phủ | SRTMGL3_DEM, MCD12Q1 `LC_Type1` ✅ (vùng mẫu; trên lưới cần thêm point tĩnh, P1) | Thuộc tính tĩnh cho loại C |
 | Khí hậu nền: trung bình năm, biên độ mùa; chênh ngày–đêm LST; ET/PET trung bình; mưa trung bình năm | Tính từ các cube | Không cần tải thêm |
@@ -132,7 +132,7 @@ Bước 5 — Kết luận:               FDR trên p_diff của mọi cặp →
 - *Vì sao gom điểm nóng thay vì ghép từng ô:*
   - Ghép thẳng từng ô cho hàng nghìn cặp gần như trùng nhau, vì đó là các ô cạnh nhau của cùng một vùng.
   - Điểm nóng là "khu vực" theo đúng nghĩa người dùng hiểu (có bbox để vẽ lên bản đồ), và giảm số phép kiểm định.
-- 🔬 (03, K19) *Chọn rồi mới kiểm định:* điểm nóng được chọn **vì** significant, nên p_diff của cặp tăng × giảm gần như luôn nhỏ. Giá trị thật của bước 4 nằm ở **độ lớn và CI** của khác biệt, ở **độ ổn định hai nửa**, và ở **lớp 2 hoán vị** (mục 5): số điểm nóng thật so với khi xáo năm.
+- (03, K19) *Chọn rồi mới kiểm định:* điểm nóng được chọn **vì** significant, nên p_diff của cặp tăng × giảm gần như luôn nhỏ. Giá trị thật của bước 4 nằm ở **độ lớn và CI** của khác biệt, ở **độ ổn định hai nửa**, và ở **lớp 2 hoán vị** (mục 5): số điểm nóng thật so với khi xáo năm.
 - *Hai vùng người dùng chọn* (`compare_regions`): bỏ qua bước 1–3, chạy thẳng bước 4 trên chuỗi hai vùng. Không có vấn đề "chọn rồi mới kiểm định", vì vùng được chọn trước khi xem kết quả.
 - *Cách hiển thị trên website:* "Lượng mưa ở A tăng 12 mm/tháng/thập kỷ, ở B giảm 10; khác biệt 22 (CI 95%: 15–29), q = 0.001, **đáng tin cậy**".
 
@@ -248,7 +248,7 @@ So sánh số cặp thật với phân phối số cặp khi xáo trộn
 | Hạn hán + cháy rừng Úc 2019–20 | `ndvi` z < 0 (12/2019–2/2020); `lst_day` z > 0 | `precip` (IMERG) thâm hụt mạnh năm 2019 | Đông nam Úc: NDVI âm mạnh đi cùng mưa thấp |
 | Lũ miền Trung Việt Nam 10/2020 | (`ndvi` có thể giảm) | `precip` (IMERG) z ≫ 0 tại các ô Quảng Trị – Thừa Thiên Huế | Tháng 10/2020 nổi bật trong chuỗi mưa |
 
-🔬 Đăng bổ sung 1–2 sự kiện (03, K15).
+Có thể bổ sung sự kiện khác (03, K15).
 
 ---
 
@@ -338,7 +338,7 @@ So sánh số cặp thật với phân phối số cặp khi xáo trộn
 | 1 | Loại mâu thuẫn nào hiển thị? | A (C, B, D nếu kịp) |
 | 2 | Giới hạn khoảng cách giữa hai điểm nóng? | Không giới hạn mặc định; frontend có bộ lọc |
 | 3 | Bao nhiêu cặp hiển thị? | Top 10 mỗi biến (`find_contradictions(top_n=10)`) |
-| 4 | Kích thước tối thiểu của điểm nóng | 4 ô 1° liền kề (`min_cells=4`) 🔬 (03, K20) |
+| 4 | Kích thước tối thiểu của điểm nóng | 4 ô 1° liền kề (`min_cells=4`) (03, K20) |
 | 5 | Ngưỡng z cho loại B | ±2 |
 | 6 | Đặc trưng "song sinh" | Độ cao, NDVI TB, biên độ mùa NDVI, LST ngày TB, chênh ngày–đêm LST, ET TB, ET/PET TB, mưa TB năm; cùng lớp `LC_Type1` |
 | 7 | Lưới | 1° cho mọi biến (Giovanni: trung bình khối; MODIS: 1 pixel/ô); 0.5° nếu còn giờ |
