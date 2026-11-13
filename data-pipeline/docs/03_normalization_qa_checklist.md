@@ -5,7 +5,7 @@
 > 2. **"Vì sao"**, để người kiểm tra hiểu mình đang chặn lỗi gì.
 > 3. **Code Python** viết riêng cho đặc tính của từng dataset.
 >
-> Mục K là checklist riêng để **Đăng** duyệt ý nghĩa khoa học.
+> Mục K liệt kê các lựa chọn phương pháp pipeline đang dùng mặc định, kèm lý do và rủi ro.
 >
 > **Nguyên tắc chung:** khi không chắc, **dừng và báo lỗi**, đừng đoán. Một con số sai trông hợp lý nguy hiểm hơn nhiều so với một lỗi làm chương trình dừng.
 >
@@ -20,7 +20,7 @@
 | Ta nhận được gì | Ảnh raster theo pixel (area: NetCDF-4) hoặc giá trị pixel tại điểm (point: CSV) | **Lưới gốc toàn cầu** mỗi tháng (HOSS, NetCDF-4) → cube 1°; hoặc một con số mỗi tháng (CSV area-average trên bbox vùng mẫu) |
 | Scale factor / fill value | **Ta phải xử lý** (mục C) | Giovanni đã xử lý |
 | Mây / chất lượng | **Ta phải giải mã bit QA** (mục D) | Không có layer QA; dữ liệu mô hình/tái phân tích (GLDAS, MERRA-2) không bị mây che, IMERG đã gộp nhiều nguồn |
-| Tổng hợp không gian | **Ta tính** trung bình vùng (mục E) | Lưới: **ta gộp khối** về ô 1° (`bin_to_grid`, mục E; K18). Area-average: Giovanni tính sẵn (🔬 có trọng số cos vĩ độ không? K9) |
+| Tổng hợp không gian | **Ta tính** trung bình vùng (mục E) | Lưới: **ta gộp khối** về ô 1° (`bin_to_grid`, mục E; K18). Area-average: Giovanni tính sẵn (⚠️ có trọng số cos vĩ độ không? K9) |
 | Bước thời gian gốc | NDVI tháng; LST, ET **8 ngày** → ta gộp về tháng (mục F) | Đã là tháng |
 | Đơn vị | Sau scale: K, mm/8 ngày… | Đơn vị gốc của model (mm/hr, kg/m²/s, K…) → **ta đổi và assert** (mục G) |
 | Lỗi hay gặp nhất | Quên QA, nhầm fill với dữ liệu tốt, cộng sai ET | Đổi đơn vị sai, đổi hai lần, lệch nhãn tháng |
@@ -152,13 +152,13 @@
 | 3–4 | CloudState | `00` trời quang · `01` có mây · `10` mây lẫn · `11` không xác định (coi như quang) |
 | 5–7 | SCF_QC | `000` thuật toán chính, tốt nhất · `001` chính, bão hoà · `010`/`011` thuật toán thực nghiệm · `100` không tạo được |
 
-**Chính sách mặc định** 🔬 (K2, K5):
+**Chính sách mặc định** (K2, K5):
 
 | Biến | Chính sách | Vì sao |
 |---|---|---|
-| NDVI | `ndvi_good` (+ `ndvi_land` nếu Đăng đồng ý, K3) | Mây làm NDVI thấp giả tạo |
+| NDVI | `ndvi_good` (+ `ndvi_land` nếu bật, K3) | Mây làm NDVI thấp giả tạo |
 | LST ngày / đêm | `lst_ok`: MODLAND `00`, **hoặc** `01` với LST error ≤ 2 K | Giữ thêm dữ liệu mùa mưa mà sai số vẫn chấp nhận được |
-| ET / PET | Giữ mọi giá trị hợp lệ (đã qua C2); `et_main_algorithm` chỉ dùng nếu Đăng chọn siết | MOD16A2GF đã **lấp khoảng trống (gap-filled)** chỗ mây. Lọc thêm theo mây là bỏ đúng phần sản phẩm đã sửa |
+| ET / PET | Giữ mọi giá trị hợp lệ (đã qua C2); `et_main_algorithm` chỉ dùng nếu muốn siết | MOD16A2GF đã **lấp khoảng trống (gap-filled)** chỗ mây. Lọc thêm theo mây là bỏ đúng phần sản phẩm đã sửa |
 
 **Code:** [`pipeline/qa.py`](../pipeline/qa.py) → `bits()`, `ndvi_good()`, `ndvi_land()`, `lst_ok()`, `et_main_algorithm()`, `lst_valid()`, `QA_POLICY` (test: `tests/test_qa.py`)
 
@@ -182,9 +182,9 @@
 ## E. Tổng hợp không gian (AppEEARS)
 
 **AppEEARS vùng mẫu (area, bbox):** trung bình các pixel có **tâm** nằm trong vùng.
-**AppEEARS lưới điểm (point → cube):** giá trị ô 1° = **1 pixel** tại tâm ô (NDVI/LST 1 km, ET 500 m), không phải trung bình ô 🔬 (K6). Hàm `zonal_mean` không áp dụng; `points_to_cube` chỉ đặt giá trị vào ô.
-**Giovanni lưới (HOSS → cube):** `bin_to_grid` lấy **trung bình khối** mọi ô gốc có tâm trong ô 1°, bỏ NaN 🔬 (K18).
-**Giovanni area-average:** đã là trung bình bbox → không cần tính (🔬 cách lấy trọng số của Giovanni: K9).
+**AppEEARS lưới điểm (point → cube):** giá trị ô 1° = **1 pixel** tại tâm ô (NDVI/LST 1 km, ET 500 m), không phải trung bình ô (K6). Hàm `zonal_mean` không áp dụng; `points_to_cube` chỉ đặt giá trị vào ô.
+**Giovanni lưới (HOSS → cube):** `bin_to_grid` lấy **trung bình khối** mọi ô gốc có tâm trong ô 1°, bỏ NaN (K18).
+**Giovanni area-average:** đã là trung bình bbox → không cần tính (⚠️ cách lấy trọng số của Giovanni: K9).
 **Vùng người dùng chọn trên web:** `region_series(cube, bbox)` = trung bình trọng số cos(vĩ độ) các ô 1° có tâm trong bbox, kèm `valid_frac`.
 
 **Code:** [`pipeline/aggregate.py`](../pipeline/aggregate.py) → `zonal_mean()`; raster → chuỗi vùng: `raster_to_series()`, `region_mask()`, `decode_layer()` (test: `tests/test_aggregate.py`). Lưới: [`pipeline/grid.py`](../pipeline/grid.py) → `bin_to_grid()`, `points_to_cube()`, `region_series()` (test: `tests/test_grid.py`)
@@ -288,7 +288,7 @@
 
 ## I. Kiểm tra hợp lý toàn cầu (sanity checks)
 
-Khoảng kỳ vọng **thô** để bắt lỗi lớn, không phải chuẩn khoa học 🔬. Đơn vị là đơn vị chuẩn:
+Khoảng kỳ vọng **thô** để bắt lỗi lớn, không phải chuẩn khoa học. Đơn vị là đơn vị chuẩn:
 
 | Biến | Khoảng | Dấu hiệu lỗi điển hình |
 |---|---|---|
@@ -322,7 +322,7 @@ Khoảng kỳ vọng **thô** để bắt lỗi lớn, không phải chuẩn kho
 
 **Code:** [`pipeline/checks.py`](../pipeline/checks.py) → `cross_check_temp()`, `cross_check_et()` (test: `tests/test_trends.py`)
 
-| ☐ | Kiểm tra | Kỳ vọng 🔬 | Nếu không đạt |
+| ☐ | Kiểm tra | Kỳ vọng | Nếu không đạt |
 |---|---|---|---|
 | ☐ | r(LST ngày, Tair hoặc T2M) theo tháng, mỗi vùng | > 0.7 ở vùng có mùa rõ (nhiệt đới có thể thấp hơn) | Kiểm tra nhãn tháng, vùng, đơn vị |
 | ☐ | Tỷ lệ tháng LST ngày > nhiệt độ không khí | > 0.8 (ngoại lệ: vùng tuyết, rừng rậm) | Kiểm tra đổi K → °C |
@@ -350,33 +350,31 @@ Khoảng kỳ vọng **thô** để bắt lỗi lớn, không phải chuẩn kho
 
 ---
 
-## K. Checklist review khoa học cho Đăng 🔬
+## K. Các lựa chọn phương pháp đang dùng
 
-Mỗi mục là một **lựa chọn có tính khoa học** mà pipeline đang dùng giá trị mặc định. Đăng ghi quyết định vào cột cuối; pipeline đổi theo cấu hình, không cần sửa thiết kế.
+Mỗi mục là một **lựa chọn có tính khoa học** mà pipeline đang dùng giá trị mặc định. Đổi mặc định thì sửa tham số / cấu hình, không cần sửa thiết kế. Các mục ảnh hưởng tới cách đọc kết quả được đưa vào phần Giới hạn của báo cáo (`api.LIMITATIONS`).
 
-| # | Câu hỏi | Mặc định hiện tại | Vì sao cần chuyên môn | Quyết định của Đăng |
-|---|---|---|---|---|
-| K1 | Ngưỡng `valid_frac` loại tháng | 0.3 | Đánh đổi giữa số tháng giữ lại và độ đại diện | |
-| K2 | Mức chặt của QA cho NDVI/LST | NDVI: chỉ "good"; LST: good hoặc sai số ≤ 2 K | Chặt quá mất dữ liệu mùa mưa; lỏng quá lẫn mây | |
-| K3 | Loại pixel nước khỏi NDVI (bit 11–13)? | Đề xuất có | Vùng nhiều sông, đầm phá: NDVI nước âm kéo trung bình xuống | |
-| K4 | LST tháng = trung bình theo số ngày phủ, cần ≥ 2 composite | Có | Có nên đòi nhiều composite hơn ở vùng nhiều mây? | |
-| K5 | ET tháng = tổng theo ngày; composite cuối năm 5–6 ngày; ET không lọc mây (bản gap-filled) | Như mục C2, D, F | Cộng sai cho số sai khoảng 4 lần; lọc mây trên bản gap-filled có thể bỏ đúng phần đã sửa | |
-| K6 | **Độ đại diện của lưới điểm:** giá trị cube MODIS = 1 pixel tại tâm ô 1°, không phải trung bình ô | Mẫu tại điểm; phương án thay thế: polygon ~10×10 km quanh điểm, lấy `*-Statistics.csv` theo từng feature | Một pixel có thể rơi đúng ruộng, hồ hay khu đô thị | |
-| K7 | Quỹ đạo Terra trôi những năm gần đây → LST ngày có thể giảm giả tạo; MOD16A2GF cũng dùng đầu vào từ Terra | Dừng ở 2024, ghi chú | Kiểm tra chéo với Aqua (MYD11A2) và với T2M MERRA-2 (I2) | |
-| K8 | LST chỉ đo được khi trời quang (clear-sky bias) | Ghi chú | LST tháng mưa là trung bình của vài ngày nắng hiếm hoi | |
-| K9 | **Giovanni area-average có trọng số cos(vĩ độ) không?** | Chưa biết ⚠️ | Bbox lớn ở vĩ độ cao: không có trọng số thì giá trị lệch về phía cực, không khớp cách AppEEARS tính | |
-| K10 | Phương pháp xu hướng: Seasonal MK + Sen (chính), Hamed-Rao, OLS (phụ) | Như trên | Phù hợp dữ liệu có mùa, phi chuẩn, tự tương quan? | |
-| K11 | Hiệu chỉnh nhiều phép kiểm định | FDR Benjamini–Hochberg, q < 0.05 | Heatmap có tới 64.800 kiểm định mỗi biến; FDR tính riêng từng biến và từng khoảng thời gian | |
-| K12 | Các phép đổi đơn vị (mục G), đặc biệt IMERG mm/hr và ẩm đất ÷ 100 | Như bảng | Sai một hệ số là sai 24 lần hoặc 100 lần | |
-| K13 | Contradiction Hunter dùng **anomaly** (lệch so với khí hậu của chính nơi đó) | Có (05, mục 2) | Tránh "phát hiện" điều hiển nhiên như mùa ở hai bán cầu ngược nhau | |
-| K14 | Diễn đạt kết quả: "xu hướng quan sát được", **không** khẳng định nguyên nhân | Có | Tương quan/xu hướng ≠ nhân quả | |
-| K15 | Sự kiện đã biết để kiểm tra Contradiction Hunter | Nắng nóng Nga 7–8/2010; Úc 2019–20; lũ miền Trung Việt Nam 10/2020 | Đăng bổ sung 1–2 sự kiện (05, mục 5) | |
-| K16 | **Phạm vi phủ của Giovanni:** GLDAS chỉ có **đất liền**, từ 60°S lên; IMERG và MERRA-2 phủ cả biển → cùng một bbox ven biển, các biến lấy trung bình trên **các diện tích khác nhau** | Ghi chú; chọn bbox ít biển | Vùng ven biển (ví dụ ĐBSCL) có thể bị lượng mưa trên biển kéo lệch | |
-| K17 | Ngưỡng kiểm tra chéo ở I2 (r > 0.7 nhiệt độ; r > 0.5 ET) | Như bảng I2 | Nhiệt đới và vùng tuyết có thể thấp hơn tự nhiên | |
-| K18 | **Gộp lưới Giovanni về 1°:** trung bình khối các ô gốc có tâm trong ô 1° (không trọng số diện tích trong ô) | `bin_to_grid`, thay vì dịch vụ regrid của HOSS (02 §4.6) | Trong một ô 1°, cos(vĩ độ) đổi rất ít; nhưng ô ven biển của IMERG lẫn mưa trên biển (K16) | |
-| K19 | **Chọn rồi mới kiểm định:** điểm nóng được chọn **vì** significant, nên p_diff của cặp tăng × giảm gần như luôn nhỏ | Báo cáo kèm CI, độ ổn định hai nửa giai đoạn và baseline hoán vị (P2) (05, mục 2) | Tránh trình bày p_diff như bằng chứng độc lập | |
-| K20 | **Định nghĩa điểm nóng:** ô có q < 0.05, cùng chiều, liền kề 8 hướng, ≥ 4 ô | `hotspot_regions(q=0.05, min_cells=4)` | Ngưỡng nhỏ thì nhiều điểm nóng nhiễu; lớn thì mất vùng nhỏ có thật | |
-| K21 | `grid_trend` **không hiệu chỉnh giá trị trùng** (ties) trong phương sai MK | Bỏ, vì làm p lớn hơn (thận trọng hơn) | Ảnh hưởng ô sa mạc có nhiều tháng mưa = 0 | |
-| K22 | **Ẩm đất GLDAS trên băng:** ô phủ băng có giá trị cố định 100 kg/m² (= 1,0 m³/m³), khoảng 1% ô đất liền (tháng 7/2010) | Giữ nguyên (xu hướng = 0) | Có nên che các ô này khỏi heatmap và trung bình vùng không? | |
-
-**Ký duyệt:** Đăng ☐ · Data ☐ · Ngày: ____
+| # | Lựa chọn | Mặc định hiện tại | Lý do / rủi ro |
+|---|---|---|---|
+| K1 | Ngưỡng `valid_frac` loại tháng | 0.3 | Đánh đổi giữa số tháng giữ lại và độ đại diện |
+| K2 | Mức chặt của QA cho NDVI/LST | NDVI: chỉ "good"; LST: good hoặc sai số ≤ 2 K | Chặt quá mất dữ liệu mùa mưa; lỏng quá lẫn mây |
+| K3 | Loại pixel nước khỏi NDVI (bit 11–13)? | Đề xuất có | Vùng nhiều sông, đầm phá: NDVI nước âm kéo trung bình xuống |
+| K4 | LST tháng = trung bình theo số ngày phủ, cần ≥ 2 composite | Có | Có nên đòi nhiều composite hơn ở vùng nhiều mây? |
+| K5 | ET tháng = tổng theo ngày; composite cuối năm 5–6 ngày; ET không lọc mây (bản gap-filled) | Như mục C2, D, F | Cộng sai cho số sai khoảng 4 lần; lọc mây trên bản gap-filled có thể bỏ đúng phần đã sửa |
+| K6 | **Độ đại diện của lưới điểm:** giá trị cube MODIS = 1 pixel tại tâm ô 1°, không phải trung bình ô | Mẫu tại điểm; phương án thay thế: polygon ~10×10 km quanh điểm, lấy `*-Statistics.csv` theo từng feature | Một pixel có thể rơi đúng ruộng, hồ hay khu đô thị |
+| K7 | Quỹ đạo Terra trôi những năm gần đây → LST ngày có thể giảm giả tạo; MOD16A2GF cũng dùng đầu vào từ Terra | Dừng ở 2024, ghi chú | Kiểm tra chéo với Aqua (MYD11A2) và với T2M MERRA-2 (I2) |
+| K8 | LST chỉ đo được khi trời quang (clear-sky bias) | Ghi chú | LST tháng mưa là trung bình của vài ngày nắng hiếm hoi |
+| K9 | **Giovanni area-average có trọng số cos(vĩ độ) không?** | Chưa biết ⚠️ | Bbox lớn ở vĩ độ cao: không có trọng số thì giá trị lệch về phía cực, không khớp cách AppEEARS tính |
+| K10 | Phương pháp xu hướng: Seasonal MK + Sen (chính), Hamed-Rao, OLS (phụ) | Như trên | Phù hợp dữ liệu có mùa, phi chuẩn, tự tương quan? |
+| K11 | Hiệu chỉnh nhiều phép kiểm định | FDR Benjamini–Hochberg, q < 0.05 | Heatmap có tới 64.800 kiểm định mỗi biến; FDR tính riêng từng biến và từng khoảng thời gian |
+| K12 | Các phép đổi đơn vị (mục G), đặc biệt IMERG mm/hr và ẩm đất ÷ 100 | Như bảng | Sai một hệ số là sai 24 lần hoặc 100 lần |
+| K13 | Contradiction Hunter dùng **anomaly** (lệch so với khí hậu của chính nơi đó) | Có (05, mục 2) | Tránh "phát hiện" điều hiển nhiên như mùa ở hai bán cầu ngược nhau |
+| K14 | Diễn đạt kết quả: "xu hướng quan sát được", **không** khẳng định nguyên nhân | Có | Tương quan/xu hướng ≠ nhân quả |
+| K15 | Sự kiện đã biết để kiểm tra Contradiction Hunter | Nắng nóng Nga 7–8/2010; Úc 2019–20; lũ miền Trung Việt Nam 10/2020 | Có thể bổ sung sự kiện (05, mục 5) |
+| K16 | **Phạm vi phủ của Giovanni:** GLDAS chỉ có **đất liền**, từ 60°S lên; IMERG và MERRA-2 phủ cả biển → cùng một bbox ven biển, các biến lấy trung bình trên **các diện tích khác nhau** | Ghi chú; chọn bbox ít biển | Vùng ven biển (ví dụ ĐBSCL) có thể bị lượng mưa trên biển kéo lệch |
+| K17 | Ngưỡng kiểm tra chéo ở I2 (r > 0.7 nhiệt độ; r > 0.5 ET) | Như bảng I2 | Nhiệt đới và vùng tuyết có thể thấp hơn tự nhiên |
+| K18 | **Gộp lưới Giovanni về 1°:** trung bình khối các ô gốc có tâm trong ô 1° (không trọng số diện tích trong ô) | `bin_to_grid`, thay vì dịch vụ regrid của HOSS (02 §4.6) | Trong một ô 1°, cos(vĩ độ) đổi rất ít; nhưng ô ven biển của IMERG lẫn mưa trên biển (K16) |
+| K19 | **Chọn rồi mới kiểm định:** điểm nóng được chọn **vì** significant, nên p_diff của cặp tăng × giảm gần như luôn nhỏ | Báo cáo kèm CI, độ ổn định hai nửa giai đoạn và baseline hoán vị (P2) (05, mục 2) | Tránh trình bày p_diff như bằng chứng độc lập |
+| K20 | **Định nghĩa điểm nóng:** ô có q < 0.05, cùng chiều, liền kề 8 hướng, ≥ 4 ô | `hotspot_regions(q=0.05, min_cells=4)` | Ngưỡng nhỏ thì nhiều điểm nóng nhiễu; lớn thì mất vùng nhỏ có thật |
+| K21 | `grid_trend` **không hiệu chỉnh giá trị trùng** (ties) trong phương sai MK | Bỏ, vì làm p lớn hơn (thận trọng hơn) | Ảnh hưởng ô sa mạc có nhiều tháng mưa = 0 |
+| K22 | **Ẩm đất GLDAS trên băng:** ô phủ băng có giá trị cố định 100 kg/m² (= 1,0 m³/m³), khoảng 1% ô đất liền (tháng 7/2010) | Giữ nguyên (xu hướng = 0) | Có nên che các ô này khỏi heatmap và trung bình vùng không? |

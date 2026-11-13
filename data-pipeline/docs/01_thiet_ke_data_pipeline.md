@@ -171,7 +171,7 @@ Code của từng bước ở **03**, chi tiết adapter ở **02**, thuật to�
 
 1. **Tự tìm (toàn cầu):** `hunt_global(cube, biến, đơn vị, start, end)`.
    1. `grid_trend` + FDR.
-   2. Gom các ô significant (q < 0.05) **cùng chiều và liền kề** thành điểm nóng; bỏ điểm nóng < 4 ô (`hotspot_regions`; 🔬 03, K20).
+   2. Gom các ô significant (q < 0.05) **cùng chiều và liền kề** thành điểm nóng; bỏ điểm nóng < 4 ô (`hotspot_regions`; 03, K20).
    3. Chuỗi trung bình của mỗi điểm nóng (`hotspot_obs`).
    4. Ghép điểm nóng tăng × giảm, kiểm định khác biệt từng cặp, FDR trên các cặp (`find_opposite_trends`).
 2. **Người dùng chọn hai vùng:** `compare_regions()` gọi `pair_difference_test` trên chuỗi hai vùng.

@@ -45,7 +45,6 @@
 | T-3 | `sh download_appeears.sh`: gửi R1–R4 vùng mẫu (mục 3c) | Data | 5' (+ vài giờ NASA xử lý) | ✅ đã gửi 13/11; **R4 đã tải xong** (21 MB; nhờ file thật mà sửa được 3 lỗi đọc file area, xem README); R1, R3 đang `processing`; R2a, R2b `pending` |
 | T-4 | Sau T-1: chạy `download_grid.py` nền (mục 3a), tải lưới toàn cầu 5 biến Giovanni | Data | 5' (+ vài giờ tải) | ⏳ 5 job Harmony (mỗi biến 288 tháng) chạy từ 13/11 ~04:00 (giờ máy). Tiến trình chờ của harmony-py chết lần đầu vì lỗi `/jobs/status` (02 §4.7), đã sửa và nối lại đúng 5 job đó. Log: `data/raw/harmony_grid/log_<VAR_ID>.txt`. Tổng ≈ 3 GB. Cấu trúc file HOSS đã ✅ trên job thử 1 tháng |
 | T-5 | Gửi thử **1 batch point** AppEEARS nhỏ (~100 điểm, 1 năm, NDVI) | Data | 15' (+ chờ) | Xác nhận tên cột CSV point, thời gian xử lý, và dò **giới hạn số điểm** (API không công bố) |
-| T-6 | Đọc chéo bộ tài liệu; Đăng xem trước checklist K (03) | Đăng | 30' | Thứ Bảy chỉ còn ra quyết định, không phải đọc từ đầu |
 
 ---
 
@@ -80,7 +79,7 @@ nohup .venv/bin/python -u download_grid.py > data/raw/harmony_grid/log.txt 2>&1 
   - Không cần task MCD12Q1 riêng để lọc biển. Khoảng 15.000 điểm ⚠️ ước tính.
 - **Layer:** như R1–R3 (NDVI + VI_Quality; LST ngày/đêm + QC; ET/PET + ET_QC).
 - **Lệnh mỗi đợt:** `appeears.py point grid_G1.csv <layers> 01-01-2001 12-31-2024 data/raw/appeears/G1`.
-- **Cái giá:** mỗi ô được đại diện bởi **một pixel 1 km mẫu**, không phải trung bình ô (🔬 Đăng: tính đại diện; vùng mẫu ở mục 3c dùng để đo sai lệch này).
+- **Cái giá:** mỗi ô được đại diện bởi **một pixel 1 km mẫu**, không phải trung bình ô (vùng mẫu ở mục 3c dùng để đo sai lệch này).
 - **Kiểm chứng:** ⚠️ cỡ đợt chọn theo kết quả T-5.
 
 ### 3c. Vùng mẫu để kiểm chứng (P1)
@@ -118,7 +117,7 @@ nohup .venv/bin/python -u download_grid.py > data/raw/harmony_grid/log.txt 2>&1 
 | CH-3 | Chạy `find_contradictions` trên cube thật cho `precip`, `soil_moisture`, `tair_land`, `t2m` → `contradictions_<biến>.json` | P0 | Thứ Bảy 20:00 | ☐ chờ cube (T-1, T-4) |
 | CH-4 | So sánh hai vùng người dùng chọn (`compare_regions`) | P0 | — | ✅ code có, test đạt |
 | CH-5 | Câu giải thích theo template, chỉ dùng số trong bảng kết quả, ví dụ "Lượng mưa ở A tăng 12, ở B giảm 10 mm/tháng/thập kỷ; khác biệt 22 (CI 95%: 15–29), đáng tin cậy" (05, mục 6) | P0 | Chủ nhật 07:00 | ☐ chưa có code |
-| CH-6 | Đăng duyệt top 5 cặp mỗi biến (03, K13–K15, K19–K20); đối chiếu sự kiện thật (05, mục 5). 🔬 Điểm nóng được chọn **vì** significant, nên p của khác biệt gần như chắc chắn nhỏ → dựa thêm vào CI, độ ổn định hai nửa và CH-8 | P0 | Chủ nhật 08:00 | ☐ |
+| CH-6 | Tự đối chiếu top 5 cặp mỗi biến với sự kiện thật (05, mục 5; 03, K15). Điểm nóng được chọn **vì** significant, nên p của khác biệt gần như chắc chắn nhỏ → dựa thêm vào CI, độ ổn định hai nửa và CH-8 | P0 | Chủ nhật 08:00 | ☐ |
 | CH-7 | Cùng quy trình cho biến MODIS khi có cube từ AppEEARS point | P1 | Chủ nhật 11:00 | ☐ |
 | CH-8 | Vòng kiểm định hoán vị toàn lưới (05, mục 5); loại C "song sinh"; loại B, D | P1–P2 | Nếu còn giờ | ◐ có hàm thành phần |
 
@@ -139,19 +138,19 @@ nohup .venv/bin/python -u download_grid.py > data/raw/harmony_grid/log.txt 2>&1 
 | **09:00–10:00** | Kick-off: chốt biến, giai đoạn, **hợp đồng dữ liệu** (mục 5: tên hàm, JSON) với frontend / backend / AI | Cả team | Hợp đồng được chốt |
 | **10:00–12:00** | Kiểm tra `download_grid.py` đã tải tới đâu. Song song: tạo **cube giả đúng định dạng** (sin + xu hướng) → chạy 4 hàm `api.py` → `web/data/*.json` giả | Frontend, backend nhận JSON giả | **CP1 (12:00):** frontend/backend dựng được giao diện và endpoint trên JSON đúng định dạng |
 | 12:00–13:00 | Ăn trưa · `write_grid_points` từ cube GLDAS → **gửi các đợt point `G1…Gn`** (cỡ đợt theo T-5) | | |
-| **13:00–16:00** | **Kiểm tra cube thật** `precip`, `soil_moisture`, `tair_land`, `t2m`: sanity range (03 §I), vẽ bản đồ trung bình nhìn bằng mắt (mùa mưa nhiệt đới, sa mạc khô), so 1 vùng với Giovanni web UI | Đăng duyệt bảng đơn vị (K12) | **CP2 (16:00):** cube thật P0 |
+| **13:00–16:00** | **Kiểm tra cube thật** `precip`, `soil_moisture`, `tair_land`, `t2m`: sanity range (03 §I), vẽ bản đồ trung bình nhìn bằng mắt (mùa mưa nhiệt đới, sa mạc khô), so 1 vùng với Giovanni web UI | — | **CP2 (16:00):** cube thật P0 |
 | **16:00–19:00** | Backend bọc `api.py` thành endpoint; định nghĩa tool cho AI (01, mục 7); xuất `trend_map_<biến>.json` thật | Backend, AI | **CP3 (19:00):** web hiển thị heatmap thật + phân tích vùng bất kỳ |
 | 19:00–20:00 | Ăn tối | | |
-| **20:00–23:00** | Contradiction Hunter trên cube thật (CH-3) → `contradictions_<biến>.json` v0; nếu R1–R3 xong: đọc vùng mẫu (AppEEARS adapter) | Đăng xem top cặp | `contradictions_*.json` v0 thật |
+| **20:00–23:00** | Contradiction Hunter trên cube thật (CH-3) → `contradictions_<biến>.json` v0; nếu R1–R3 xong: đọc vùng mẫu (AppEEARS adapter) | — | `contradictions_*.json` v0 thật |
 | 23:00–07:00 | Ngủ (luân phiên) · đợt point nào xong thì tải về (`appeears.py fetch`) | | |
 
 ### Chủ nhật 15/11
 
 | Giờ | Việc của Data (bạn) | Phối hợp | Checkpoint / giao hàng |
 |---|---|---|---|
-| **07:00–09:00** | Câu giải thích template (CH-5); Đăng duyệt top cặp (CH-6) | Đăng | `contradictions_*.json` v1 |
+| **07:00–09:00** | Câu giải thích template (CH-5); đối chiếu top cặp với sự kiện thật (CH-6) | — | `contradictions_*.json` v1 |
 | **09:00–11:00** | Biến MODIS: parse CSV các đợt point (`normalize_points`) → QA → tháng → `points_to_cube` → `cube_ndvi.nc`, `cube_lst_day.nc`, … | | |
-| **11:00–14:00** | Contradiction Hunter cho biến MODIS (CH-7); **kiểm chứng vùng mẫu**: cube so với AppEEARS area 1 km và Giovanni area-average; kiểm tra `evidence_report` hiển thị đúng | Đăng duyệt K13–K15 | **CP4 (14:00):** đủ biến P1 |
+| **11:00–14:00** | Contradiction Hunter cho biến MODIS (CH-7); **kiểm chứng vùng mẫu**: cube so với AppEEARS area 1 km và Giovanni area-average; kiểm tra `evidence_report` hiển thị đúng | — | **CP4 (14:00):** đủ biến P1 |
 | **14:00–16:00** | Sửa lỗi; P2 nếu dư giờ | Frontend tích hợp | **CP5 (16:00): ĐÓNG BĂNG DỮ LIỆU**, sau mốc này không đổi số liệu |
 | **16:00–20:00** | Viết phần "Dữ liệu & Phương pháp" của bài nộp (nguồn, trích dẫn dataset, QA, giới hạn) | Pitch/video | |
 | **20:00–22:00** | Hỗ trợ demo; kiểm tra số liệu trên web khớp file | | |
@@ -227,7 +226,7 @@ nohup .venv/bin/python -u download_grid.py > data/raw/harmony_grid/log.txt 2>&1 
 - [ ] `cube_precip.nc`, `cube_soil_moisture.nc`, `cube_tair_land.nc`, `cube_t2m.nc` qua sanity range (03 §I) và đối chiếu Giovanni web UI ở 1 vùng
 - [ ] 4 hàm `api.py` chạy trên cube thật; `trend_map` toàn cầu ≤ 5 s
 - [ ] `web/data/variables.json`, `trend_map_<biến>.json`, `contradictions_<biến>.json` đã giao, frontend hiển thị đúng
-- [ ] Test (`pytest`) đạt; Đăng đã ký duyệt checklist K (03)
+- [ ] Test (`pytest`) đạt
 - [ ] (P1) cube biến MODIS; vùng mẫu kiểm chứng xong
 - [ ] Phần "Dữ liệu & Phương pháp" có:
   - tên + version từng dataset (GPM_3IMERGM.07, GLDAS_NOAH025_M.2.1, M2IMNXASM.5.12.4, MOD13A3.061, MOD11A2.061, MOD16A2GF.061, MCD12Q1.061, SRTMGL3_NC.003);

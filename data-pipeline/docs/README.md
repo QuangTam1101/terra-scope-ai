@@ -1,7 +1,6 @@
 # Terra-scope AI — Tài liệu Data Pipeline (NASA Space Apps 2026)
 
 **Phụ trách:** Data collection, preprocessing, harmonization, ML (data pipeline)
-**Phối hợp khoa học:** Đăng (kiểm tra ý nghĩa khoa học của các phép chuyển đổi)
 **Cập nhật:** 13/11/2026 — hackathon diễn ra 14–15/11/2026
 **Nguồn dữ liệu:** hai nguồn của NASA: **AppEEARS** và **Giovanni** (truy cập qua **Harmony**, gồm dịch vụ cắt lưới HOSS)
 **Phạm vi:** **toàn thế giới**
@@ -31,7 +30,6 @@ Mỗi quyết định trong tài liệu đều có 3 phần:
 - ✅ đã kiểm chứng
 - ⚠️ giả định / cần xác nhận
 - ⛔ đang bị chặn
-- 🔬 cần Đăng review khoa học
 
 ## Danh sách tài liệu
 
@@ -40,7 +38,7 @@ Mỗi quyết định trong tài liệu đều có 3 phần:
 | 00 | [Nghiên cứu nền tảng](00_nghien_cuu_nen_tang.md) | AppEEARS, Giovanni, Harmony / HOSS là gì? CSV/NetCDF/GeoTIFF? xarray/rasterio? Reprojection, QA, scale factor, missing value là gì? |
 | 01 | [Thiết kế Data Pipeline](01_thiet_ke_data_pipeline.md) | Các stage S0–S9; lưới toàn cầu 1°; luồng từ thao tác của người dùng trên web tới hàm phân tích; lớp `api.py` cho web và AI |
 | 02 | [Adapter Specification cho Giovanni/AppEEARS](02_adapter_spec.md) | Endpoint, tham số, cách fetch/parse từng nguồn; schema chung |
-| 03 | [Normalization & QA Checklist](03_normalization_qa_checklist.md) | Kiểm tra gì ở mỗi bước để không ra số sai? Đăng cần duyệt gì? |
+| 03 | [Normalization & QA Checklist](03_normalization_qa_checklist.md) | Kiểm tra gì ở mỗi bước để không ra số sai? Đang dùng lựa chọn phương pháp nào? |
 | 04 | [Kế hoạch triển khai](04_ke_hoach_trien_khai.md) | Tối nay làm gì, giờ nào làm gì trong 39 tiếng; hợp đồng với frontend / backend / AI; Plan B |
 | 05 | [ML Feasibility Report: Contradiction Hunter](05_ml_feasibility_contradiction_hunter.md) | Tự tìm vùng ngược xu hướng thế nào? Cần ML đến đâu? Làm sao chắc mâu thuẫn là thật? |
 | code | [pipeline/README.md](../pipeline/README.md) | File code nào ↔ mục tài liệu ↔ hàm chính ↔ test |
@@ -103,7 +101,7 @@ Mỗi nguồn có một adapter "hấp thụ" sự phức tạp đó. Nhờ vậ
 - Concept ID collection: GPM_3IMERGM v07 = `C2723754851-GES_DISC`, GLDAS_NOAH025_M v2.1 = `C1342986036-GES_DISC`, M2IMNXASM v5.12.4 = `C1276812823-GES_DISC`.
 - Đăng nhập Harmony bằng tài khoản trong `.env` thành công (job HOSS được tạo).
 - Job HOSS 1 tháng chạy được cho cả 3 collection (50–85 s). Cấu trúc file khớp `read_grid_file`. IMERG dùng lịch julian; GLDAS chỉ từ 60°S. `build_cube` trên file thật cho giá trị hợp lý (02 §4.6).
-- 🔬 Ẩm đất GLDAS = 1,0 m³/m³ cố định trên ô băng (03, K22).
+- Ẩm đất GLDAS = 1,0 m³/m³ cố định trên ô băng (03, K22).
 
 *Pipeline*
 - `grid_trend` khớp `pymannkendall.seasonal_test` từng ô; toàn cầu 1° × 24 năm ~4 s, 12 năm ~1 s; chuỗi vùng 4 ms; nhiễu thuần cho 0 ô significant sau FDR.
@@ -115,4 +113,4 @@ Mỗi nguồn có một adapter "hấp thụ" sự phức tạp đó. Nhờ vậ
 - Output AppEEARS đã nhân scale factor sẵn hay chưa → pipeline **tự phát hiện** khi đọc file (03, mục C).
 - Số điểm tối đa mỗi AppEEARS point request; tốc độ xử lý thực tế.
 - Đơn vị thực tế trong CSV area-average và dạng JSON của `/quota`, `/timeseries`.
-- 🔬 Giovanni area-average có trọng số cos(vĩ độ) không → Đăng xác nhận (03, mục K).
+- Giovanni area-average có trọng số cos(vĩ độ) không (03, K9).
