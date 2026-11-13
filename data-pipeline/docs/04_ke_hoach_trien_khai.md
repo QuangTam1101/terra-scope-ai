@@ -42,8 +42,8 @@
 |---|---|---|---|---|
 | T-1 | **Liên kết GES DISC với tài khoản Earthdata:** urs.earthdata.nasa.gov → Profile → Applications → Authorized Apps → Approve More Applications → **NASA GESDISC DATA ARCHIVE** → Approve (chấp nhận điều khoản nếu được hỏi) | Data (tự làm trên web) | 5' | ✅ Xong 13/11. Nguyên nhân `403` đã xác nhận: Earthdata đòi authorize đúng app GES DISC; link trực tiếp: https://urs.earthdata.nasa.gov/approve_app?client_id=e2WVk8Pw6weeLUKZYOxvTQ |
 | T-2 | Cài thư viện vào `.venv` có sẵn (mục 7) | Data | 20' | ✅ đã cài |
-| T-3 | `sh download_appeears.sh`: gửi R1–R4 vùng mẫu (mục 3c) | Data | 5' (+ vài giờ NASA xử lý) | ✅ đã gửi 13/11; **R1 (NDVI, 106 MB) và R4 (tĩnh, 21 MB) đã tải xong**; nhờ file thật của R4 mà sửa được 3 lỗi đọc file area (xem README). R2a, R2b, R3 đang `processing` |
-| T-4 | Sau T-1: chạy `download_grid.py` nền (mục 3a), tải lưới toàn cầu 5 biến Giovanni | Data | 5' (+ vài giờ tải) | ⏳ 5 job Harmony (mỗi biến 288 tháng) chạy từ 13/11 ~04:00 (giờ máy). Tiến trình chờ của harmony-py chết lần đầu vì lỗi `/jobs/status` (02 §4.7), đã sửa và nối lại đúng 5 job đó. Log: `data/raw/harmony_grid/<VAR_ID>/log.txt`. Tổng ≈ 3 GB. Cấu trúc file HOSS đã ✅ trên job thử 1 tháng |
+| T-3 | `sh download_appeears.sh`: gửi R1–R4 vùng mẫu (mục 3c) | Data | 5' (+ vài giờ NASA xử lý) | ✅ đã gửi 13/11; **R1 (NDVI, 106 MB) và R4 (tĩnh, 21 MB) đã tải xong**; nhờ file thật của R4 mà sửa được 3 lỗi đọc file area (xem README). **R2a, R2b tải xong 13/11**; R1 + R2a + R2b đã chuẩn hoá → `data/processed/regions/observations.parquet` (`build_regions.py`, 2.592 dòng, validate ✅). R3 đang `processing` (64% lúc 16:00 13/11): tải xong thì chạy lại `build_regions.py`. Dữ liệu sạch đã chia sẻ ở `data-pipeline/processed_data/` (01 mục 6) |
+| T-4 | Sau T-1: chạy `download_grid.py` nền (mục 3a), tải lưới toàn cầu 5 biến Giovanni | Data | 5' (+ vài giờ tải) | ✅ xong 13/11 ~06:12 (giờ máy): 5 biến × 288 file tháng (2001-01 → 2024-12) → 5 cube `data/processed/grid/cube_<biến>.nc`, mỗi cube 180 × 360 ô, float32 75 MB. Giữa chừng tiến trình chờ của harmony-py chết vì lỗi `/jobs/status` (02 §4.7), đã sửa và nối lại đúng 5 job đó. Kiểm tra cube: 02 §4.6 |
 | T-5 | Gửi thử **1 batch point** AppEEARS nhỏ (~100 điểm, 1 năm, NDVI) | Data | 15' (+ chờ) | Xác nhận tên cột CSV point, thời gian xử lý, và dò **giới hạn số điểm** (API không công bố) |
 
 ---
@@ -78,7 +78,7 @@ done
 
 - **Danh sách điểm:**
   - Lấy các ô 1° có giá trị trong cube GLDAS (GLDAS chỉ có đất liền, từ 60°S lên), ghi CSV theo đợt bằng `write_grid_points(land, path, batch_size)`.
-  - Không cần task MCD12Q1 riêng để lọc biển. Khoảng 15.000 điểm ⚠️ ước tính.
+  - Không cần task MCD12Q1 riêng để lọc biển. 17.284 điểm (đếm trên cube GLDAS thật, 13/11).
 - **Layer:** như R1–R3 (NDVI + VI_Quality; LST ngày/đêm + QC; ET/PET + ET_QC).
 - **Lệnh mỗi đợt:** `appeears.py point grid_G1.csv <layers> 01-01-2001 12-31-2024 data/raw/appeears/G1`.
 - **Cái giá:** mỗi ô được đại diện bởi **một pixel 1 km mẫu**, không phải trung bình ô (vùng mẫu ở mục 3c dùng để đo sai lệch này).
@@ -116,7 +116,7 @@ done
 |---|---|---|---|---|
 | CH-1 | Tự tìm khu vực: gom ô significant cùng chiều, liền kề thành điểm nóng (`hotspot_regions`) | P0 | — | ✅ code có, test đạt |
 | CH-2 | Kiểm định khác biệt từng cặp điểm nóng tăng × giảm (`find_opposite_trends`), gói trong `hunt_global` / `find_contradictions` | P0 | — | ✅ code có, test đạt |
-| CH-3 | Chạy `find_contradictions` trên cube thật cho `precip`, `soil_moisture`, `tair_land`, `t2m` → `contradictions_<biến>.json` | P0 | Thứ Bảy 20:00 | ☐ chờ cube (T-1, T-4) |
+| CH-3 | Chạy `find_contradictions` trên cube thật cho `precip`, `soil_moisture`, `tair_land`, `t2m` → `contradictions_<biến>.json` | P0 | Thứ Bảy 20:00 | ☐ cube đã sẵn sàng (T-4 ✅); chạy thử `precip` 13/11: 222 điểm nóng, cặp đầu đã kiểm định, 16 s. Chưa ghi JSON |
 | CH-4 | So sánh hai vùng người dùng chọn (`compare_regions`) | P0 | — | ✅ code có, test đạt |
 | CH-5 | Câu giải thích theo template, chỉ dùng số trong bảng kết quả, ví dụ "Lượng mưa ở A tăng 12, ở B giảm 10 mm/tháng/thập kỷ; khác biệt 22 (CI 95%: 15–29), đáng tin cậy" (05, mục 6) | P0 | Chủ nhật 07:00 | ☐ chưa có code |
 | CH-6 | Tự đối chiếu top 5 cặp mỗi biến với sự kiện thật (05, mục 5; 03, K15). Điểm nóng được chọn **vì** significant, nên p của khác biệt gần như chắc chắn nhỏ → dựa thêm vào CI, độ ổn định hai nửa và CH-8 | P0 | Chủ nhật 08:00 | ☐ |
@@ -225,7 +225,7 @@ sh download_appeears.sh                                         # AppEEARS area 
 
 ## 8. Định nghĩa "xong" (Definition of Done) cho phần Data
 
-- [ ] `cube_precip.nc`, `cube_soil_moisture.nc`, `cube_tair_land.nc`, `cube_t2m.nc` qua sanity range (03 §I) và đối chiếu Giovanni web UI ở 1 vùng
+- [ ] `cube_precip.nc`, `cube_soil_moisture.nc`, `cube_tair_land.nc`, `cube_t2m.nc` qua sanity range (03 §I) và đối chiếu Giovanni web UI ở 1 vùng. *13/11: sanity range ✅; còn đối chiếu Giovanni web UI*
 - [ ] 4 hàm `api.py` chạy trên cube thật; `trend_map` toàn cầu ≤ 5 s
 - [ ] `web/data/variables.json`, `trend_map_<biến>.json`, `contradictions_<biến>.json` đã giao, frontend hiển thị đúng
 - [ ] Test (`pytest`) đạt
