@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { SeriesResponse, TrendResponse } from "./api";
 import { plain } from "./ui";
 
-// Monthly series + Theil–Sen line + shaded 95% band. Drawing only: the slope, CI and line come from the backend.
+// Monthly series + seasonal Sen line. OLS slope intervals are separate numeric evidence,
+// not a confidence band around the Sen line (no Sen-targeted interval is supplied).
 // The SVG is drawn at the container's real pixel width so text stays readable at any size.
 interface Line { series: SeriesResponse; trend?: TrendResponse | null; color?: string; dash?: boolean; label?: string }
 
@@ -68,12 +69,9 @@ export function TrendChart({ lines, anomaly, height = 340, units = "" }: { lines
       : (t.trend_line[0].value + t.trend_line[t.trend_line.length - 1].value) / 2;
     const at = (slope: number, i: number) => centre + (slope / 120) * (i - mid);
     const line = `M${X(0)} ${Y(at(t.slope_per_decade, 0))} L${X(n - 1)} ${Y(at(t.slope_per_decade, n - 1))}`;
-    const band = t.slope_ci
-      ? `${X(0)},${Y(at(t.slope_ci[0], 0))} ${X(n - 1)},${Y(at(t.slope_ci[0], n - 1))} ${X(n - 1)},${Y(at(t.slope_ci[1], n - 1))} ${X(0)},${Y(at(t.slope_ci[1], 0))}`
-      : null;
     const up = t.slope_per_decade >= 0;
     // Colour always encodes direction (orange = increasing, blue = decreasing), never the series identity.
-    return { line, band, color: up ? "#c4621a" : "#2f6fb3", bandFill: up ? "#f5b98a" : "#9cc6ef", dashed: !t.significant };
+    return { line, color: up ? "#c4621a" : "#2f6fb3", dashed: !t.significant };
   };
 
   const onMove = (ev: React.PointerEvent<SVGSVGElement>) => {
@@ -86,8 +84,8 @@ export function TrendChart({ lines, anomaly, height = 340, units = "" }: { lines
   return (
     <div ref={box} style={{ position: "relative", width: "100%" }}>
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" onPointerMove={onMove} onPointerLeave={() => setHover(null)}
-        style={{ display: "block", background: "var(--bg)", borderRadius: 18, touchAction: "none" }}
-        aria-label={`Monthly ${anomaly ? "anomalies" : "values"} from ${firstYear} to ${lastYear} with the Theil–Sen trend line and its 95% confidence band`}>
+        style={{ display: "block", maxWidth: "100%", height: "auto", background: "var(--bg)", borderRadius: 18, touchAction: "pan-y" }}
+        aria-label={`Monthly ${anomaly ? "anomalies" : "values"} from ${firstYear} to ${lastYear}${lines.some((l) => l.trend) ? ' with seasonal Sen trend line; no Sen confidence band is available' : ''}`}>
         {yTicks.map((v) => (
           <g key={v}>
             <line x1={PL} x2={W - PR} y1={Y(v)} y2={Y(v)} stroke={anomaly && v === 0 ? "rgba(43,37,64,.35)" : "rgba(43,37,64,.08)"} strokeWidth={anomaly && v === 0 ? 1.4 : 1} />
@@ -101,7 +99,6 @@ export function TrendChart({ lines, anomaly, height = 340, units = "" }: { lines
           </g>
         ))}
         <text x={12} y={PT + 2} fontSize="11.5" fontWeight="800" fill="#4e4860" fontFamily="Nunito" transform={`rotate(-90 12 ${PT + 2})`} textAnchor="end">{units}</text>
-        {lines.map((l, k) => { const g = trendGeom(l); return g?.band ? <polygon key={`b${k}`} points={g.band} fill={g.bandFill} fillOpacity={0.45} /> : null; })}
         {lines.map((l, k) => (
           <path key={`p${k}`} d={pathOf(l)} fill="none" stroke={l.color ?? "#5e5872"} strokeOpacity={0.75} strokeWidth={1.5}
             strokeLinejoin="round" strokeDasharray={l.dash ? "5 4" : undefined} />

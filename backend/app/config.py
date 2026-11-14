@@ -1,9 +1,15 @@
 """Cấu hình backend. Mọi giá trị đọc từ biến môi trường, có mặc định chạy được ngay trong repo."""
 import os
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
+# Absolute path works with either backend or repository-root uvicorn commands.
+# Existing process variables take precedence; never log environment contents.
+load_dotenv(REPO_ROOT / "backend" / ".env", override=False)
 VERSION = "0.2.0"
 
 # Thư mục data-pipeline của Long (chứa package `pipeline`) và thư mục cube lưới 1°.
@@ -43,3 +49,31 @@ DEFAULT_ALPHA = 0.05
 
 if str(PIPELINE_DIR) not in sys.path:
     sys.path.insert(0, str(PIPELINE_DIR))
+
+
+@dataclass(frozen=True)
+class LLMSettings:
+    provider: str = "gemini"
+    api_key: str = field(default="", repr=False)
+    model: str = "gemini-4-argon"
+    timeout: float = 30
+    max_output_tokens: int = 1024
+    requests_per_minute: int = 10
+    valid: bool = True
+
+
+def llm_settings() -> LLMSettings:
+    """Invalid LLM settings disable the provider, never the statistics server."""
+    try:
+        timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "30"))
+        tokens = int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "1024"))
+        rpm = int(os.getenv("LLM_REQUESTS_PER_MINUTE", "10"))
+        valid = 1 <= timeout <= 60 and 128 <= tokens <= 2048 and 1 <= rpm <= 120
+    except ValueError:
+        return LLMSettings(valid=False)
+    return LLMSettings(
+        provider=os.getenv("LLM_PROVIDER", "gemini").strip().lower(),
+        api_key=os.getenv("GEMINI_API_KEY", "").strip(),
+        model=os.getenv("GEMINI_MODEL", "gemini-4-argon").strip(),
+        timeout=timeout, max_output_tokens=tokens, requests_per_minute=rpm, valid=valid,
+    )

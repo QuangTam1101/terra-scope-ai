@@ -1,7 +1,7 @@
 """Pydantic models = schema của FRONTEND_BACKEND_CONTRACT v0.2. OpenAPI (/openapi.json) sinh từ đây."""
 from typing import Annotated, Any, Literal, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 Month = Annotated[str, Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$", examples=["2001-01"])]
 BBox = tuple[float, float, float, float]          # [west, south, east, north]
@@ -293,3 +293,119 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     available_variables: list[str]
+
+
+# ---------- Chat (optional Gemini enhancement; /explain remains unchanged) ----------
+ChatText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=2000)]
+
+
+class ChatContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    variable_id: Optional[str] = None
+    dataset_id: Optional[str] = Field(None, description="Exact catalog source.product, e.g. GPM_3IMERGM")
+    region: Optional[RegionRef] = None
+    start: Optional[Month] = None
+    end: Optional[Month] = None
+    trend_id: Optional[str] = None
+    region_b: Optional[RegionRef] = None
+    intent: Optional[Literal["trend", "compare", "series", "provenance", "advisor"]] = None
+    parameter: Optional[str] = Field(None, max_length=80)
+
+    @model_validator(mode="after")
+    def paired_period(self):
+        if (self.start is None) != (self.end is None):
+            raise ValueError("context.start and context.end must be supplied together")
+        return self
+
+
+class ChatHistoryTurn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    role: Literal["user", "assistant"]
+    content: ChatText
+
+
+class ChatRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    message: ChatText
+    context: ChatContext = Field(default_factory=ChatContext)
+    history: list[ChatHistoryTurn] = Field(default_factory=list, max_length=24)
+    use_tools: bool = False
+
+
+class ChatWarning(BaseModel):
+    code: Literal["TEMPLATE_MODE", "ANALYSIS_WARNING", "CONTEXT_REQUIRED", "UNSUPPORTED_QUESTION", "LLM_FALLBACK"]
+    message: str
+
+
+class ChatEvidence(BaseModel):
+    trend: TrendResponse
+    cited_numbers: list[CitedNumber]
+    scientific_advice: 'MethodAdvice | None' = None
+
+
+class ChatActionParams(BaseModel):
+    variable_id: str
+    region: Union[PresetRegion, BBoxRegion]
+    start: Month
+    end: Month
+    region_b: Optional[Union[PresetRegion, BBoxRegion]] = None
+
+
+class ChatAction(BaseModel):
+    type: Literal["navigate"]
+    page: Literal["explore", "hunt", "report"]
+    label: str
+    params: ChatActionParams
+
+
+class RegionCatalog(BaseModel):
+    catalog: RegionsResponse
+    supported_selection_types: list[Literal["preset", "bbox"]]
+
+
+class Provenance(BaseModel):
+    variable: VariableItem
+    processing_notes: list[str]
+
+
+class ToolWarning(BaseModel):
+    code: Literal["ANALYSIS_WARNING", "LIMITATION"]
+    message: str
+
+
+class ToolError(BaseModel):
+    category: Literal["invalid_input", "unsupported_dataset", "unknown_region", "no_observations",
+                      "computation_failed", "service_unavailable", "resource_limit", "unknown_tool"]
+    message: str
+    retryable: bool = False
+
+
+from .scientific_schemas import MethodAdvice
+
+ToolData = Union[VariablesResponse, RegionCatalog, SeriesResponse, TrendResponse, CompareResponse, Provenance, MethodAdvice]
+
+
+class ToolResult(BaseModel):
+    tool: str
+    ok: bool
+    data: ToolData | None = None
+    warnings: list[ToolWarning] = Field(default_factory=list)
+    provenance: list[DataSource] = Field(default_factory=list)
+    error: ToolError | None = None
+
+
+class ChatResponse(BaseModel):
+    answer: str
+    mode: Literal["template", "llm"]
+    evidence: list[ChatEvidence]
+    warnings: list[ChatWarning]
+    actions: list[ChatAction]
+    disclaimer: str
+    analysis_id: Optional[str] = None
+    tool_results: list[ToolResult] = Field(default_factory=list)
+    resolved_context: Optional[ChatContext] = None
+    clarification: Optional[str] = None
+    suggested_questions: list[str] = Field(default_factory=list)

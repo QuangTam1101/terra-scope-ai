@@ -1,0 +1,618 @@
+{
+  "status": "SHADOW RESEARCH ONLY - not production results",
+  "seed": 20261114,
+  "budget": {
+    "c2_reps": 1000,
+    "c2_boot": 300,
+    "draws": 199,
+    "c1_reps": 4000,
+    "c3_reps": 1000,
+    "c4_reps": 1000,
+    "c4_boot": 300,
+    "c5_reps": 200
+  },
+  "alpha": 0.05,
+  "years": 24,
+  "versions": {
+    "python": "3.11.17",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "pandas": "3.1.1",
+    "xarray": "2026.9.0",
+    "pymannkendall": "1.4.3"
+  },
+  "C1_tie_correction": {
+    "type1_current_grid_no_ties": {
+      "rate": 0.0355,
+      "mcse": 0.0029,
+      "n": 4000
+    },
+    "type1_c1_tie_corrected": {
+      "rate": 0.0478,
+      "mcse": 0.0034,
+      "n": 4000
+    },
+    "type1_regional_pymannkendall": {
+      "rate": 0.0478,
+      "mcse": 0.0034,
+      "n": 4000
+    },
+    "variance_ratio_corrected_over_current": {
+      "median": 0.8733,
+      "min": 0.7707
+    },
+    "grid_trend_vs_shadow_no_tie_max_abs_p_diff": 0.0
+  },
+  "C2_regional_verdict": {
+    "iid|beta=0.0": {
+      "current_raw_seasonal_mk": {
+        "rate": 0.044,
+        "mcse": 0.0065,
+        "n": 1000
+      },
+      "hr_anomaly_diagnostic": {
+        "rate": 0.116,
+        "mcse": 0.0101,
+        "n": 1000
+      },
+      "shadow_year_block_bootstrap": {
+        "rate": 0.3433,
+        "mcse": 0.0274,
+        "n": 300
+      },
+      "bootstrap_seconds_per_series": 0.0136
+    },
+    "iid|beta=0.3": {
+      "current_raw_seasonal_mk": {
+        "rate": 0.91,
+        "mcse": 0.009,
+        "n": 1000
+      },
+      "hr_anomaly_diagnostic": {
+        "rate": 0.936,
+        "mcse": 0.0077,
+        "n": 1000
+      },
+      "shadow_year_block_bootstrap": {
+        "rate": 0.9933,
+        "mcse": 0.0047,
+        "n": 300
+      },
+      "bootstrap_seconds_per_series": 0.0128
+    },
+    "iid|beta=0.6": {
+      "current_raw_seasonal_mk": {
+        "rate": 1.0,
+        "mcse": 0.0,
+        "n": 1000
+      },
+      "hr_anomaly_diagnostic": {
+        "rate": 0.996,
+        "mcse": 0.002,
+        "n": 1000
+      },
+      "shadow_year_block_bootstrap": {
+        "rate": 1.0,
+        "mcse": 0.0,
+        "n": 300
+      },
+      "bootstrap_seconds_per_series": 0.0134
+    },
+    "ar1_0.3|beta=0.0": {
+      "current_raw_seasonal_mk": {
+        "rate": 0.141,
+        "mcse": 0.011,
+        "n": 1000
+      },
+      "hr_anomaly_diagnostic": {
+        "rate": 0.115,
+        "mcse": 0.0101,
+        "n": 1000
+      },
+      "shadow_year_block_bootstrap": {
+        "rate": 0.2433,
+        "mcse": 0.0248,
+        "n": 300
+      },
+      "bootstrap_seconds_per_series": 0.0131
+    },
+    "ar1_0.3|beta=0.3": {
+      "current_raw_seasonal_mk": {
+        "rate": 0.831,
+        "mcse": 0.0119,
+        "n": 1000
+      },
+      "hr_anomaly_diagnostic": {
+        "rate": 0.798,
+        "mcse": 0.0127,
+        "n": 1000
+      },
+      "shadow_year_block_bootstrap": {
+        "rate": 0.8933,
+        "mcse": 0.0178,
+        "n": 300
+      },
+      "bootstrap_seconds_per_series": 0.013
+    },
+    "ar1_0.3|beta=0.6": {
+      "current_raw_seasonal_mk": {
+        "rate": 1.0,
+        "mcse": 0.0,
+        "n": 1000
+      },
+      "hr_anomaly_diagnostic": {
+        "rate": 0.993,
+        "mcse": 0.0026,
+        "n": 1000
+      },
+      "shadow_year_block_bootstrap": {
+        "rate": 1.0,
+        "mcse": 0.0,
+        "n": 300
+      },
+      "bootstrap_seconds_per_series": 0.0123
+    },
+    "ar1_0.6|beta=0.0": {
+      "current_raw_seasonal_mk": {
+        "rate": 0.294,
+        "mcse": 0.0144,
+        "n": 1000
+      },
+      "hr_anomaly_diagnostic": {
+        "rate": 0.17,
+        "mcse": 0.0119,
+        "n": 1000
+      },
+      "shadow_year_block_bootstrap": {
+        "rate": 0.2267,
+        "mcse": 0.0242,
+        "n": 300
+      },
+      "bootstrap_seconds_per_series": 0.0125
+    },
+    "ar1_0.6|beta=0.3": {
+      "current_raw_seasonal_mk": {
+        "rate": 0.761,
+        "mcse": 0.0135,
+        "n": 1000
+      },
+      "hr_anomaly_diagnostic": {
+        "rate": 0.606,
+        "mcse": 0.0155,
+        "n": 1000
+      },
+      "shadow_year_block_bootstrap": {
+        "rate": 0.62,
+        "mcse": 0.028,
+        "n": 300
+      },
+      "bootstrap_seconds_per_series": 0.0131
+    },
+    "ar1_0.6|beta=0.6": {
+      "current_raw_seasonal_mk": {
+        "rate": 0.987,
+        "mcse": 0.0036,
+        "n": 1000
+      },
+      "hr_anomaly_diagnostic": {
+        "rate": 0.963,
+        "mcse": 0.006,
+        "n": 1000
+      },
+      "shadow_year_block_bootstrap": {
+        "rate": 0.9633,
+        "mcse": 0.0109,
+        "n": 300
+      },
+      "bootstrap_seconds_per_series": 0.0131
+    },
+    "year_effect|beta=0.0": {
+      "current_raw_seasonal_mk": {
+        "rate": 0.508,
+        "mcse": 0.0158,
+        "n": 1000
+      },
+      "hr_anomaly_diagnostic": {
+        "rate": 0.299,
+        "mcse": 0.0145,
+        "n": 1000
+      },
+      "shadow_year_block_bootstrap": {
+        "rate": 0.2833,
+        "mcse": 0.026,
+        "n": 300
+      },
+      "bootstrap_seconds_per_series": 0.0151
+    },
+    "year_effect|beta=0.3": {
+      "current_raw_seasonal_mk": {
+        "rate": 0.668,
+        "mcse": 0.0149,
+        "n": 1000
+      },
+      "hr_anomaly_diagnostic": {
+        "rate": 0.504,
+        "mcse": 0.0158,
+        "n": 1000
+      },
+      "shadow_year_block_bootstrap": {
+        "rate": 0.51,
+        "mcse": 0.0289,
+        "n": 300
+      },
+      "bootstrap_seconds_per_series": 0.0129
+    },
+    "year_effect|beta=0.6": {
+      "current_raw_seasonal_mk": {
+        "rate": 0.901,
+        "mcse": 0.0094,
+        "n": 1000
+      },
+      "hr_anomaly_diagnostic": {
+        "rate": 0.809,
+        "mcse": 0.0124,
+        "n": 1000
+      },
+      "shadow_year_block_bootstrap": {
+        "rate": 0.8367,
+        "mcse": 0.0213,
+        "n": 300
+      },
+      "bootstrap_seconds_per_series": 0.0144
+    }
+  },
+  "C3_completeness": {
+    "mcar_20pct": {
+      "current_grid": {
+        "eligible": {
+          "rate": 1.0,
+          "mcse": 0.0,
+          "n": 1000
+        },
+        "type1_among_eligible": {
+          "rate": 0.053,
+          "mcse": 0.0071,
+          "n": 1000
+        }
+      },
+      "current_regional": {
+        "eligible": {
+          "rate": 1.0,
+          "mcse": 0.0,
+          "n": 1000
+        },
+        "type1_among_eligible": {
+          "rate": 0.053,
+          "mcse": 0.0071,
+          "n": 1000
+        }
+      },
+      "shadow_per_season": {
+        "eligible": {
+          "rate": 1.0,
+          "mcse": 0.0,
+          "n": 1000
+        },
+        "type1_among_eligible": {
+          "rate": 0.053,
+          "mcse": 0.0071,
+          "n": 1000
+        }
+      },
+      "null_slope_per_decade_sd": 0.1032
+    },
+    "mcar_50pct": {
+      "current_grid": {
+        "eligible": {
+          "rate": 1.0,
+          "mcse": 0.0,
+          "n": 1000
+        },
+        "type1_among_eligible": {
+          "rate": 0.049,
+          "mcse": 0.0068,
+          "n": 1000
+        }
+      },
+      "current_regional": {
+        "eligible": {
+          "rate": 0.0,
+          "mcse": 0.0,
+          "n": 1000
+        },
+        "type1_among_eligible": {
+          "rate": NaN,
+          "mcse": null,
+          "n": 0
+        }
+      },
+      "shadow_per_season": {
+        "eligible": {
+          "rate": 0.0,
+          "mcse": 0.0,
+          "n": 1000
+        },
+        "type1_among_eligible": {
+          "rate": NaN,
+          "mcse": null,
+          "n": 0
+        }
+      },
+      "null_slope_per_decade_sd": 0.1355
+    },
+    "only_jan_mar_observed": {
+      "current_grid": {
+        "eligible": {
+          "rate": 1.0,
+          "mcse": 0.0,
+          "n": 1000
+        },
+        "type1_among_eligible": {
+          "rate": 0.051,
+          "mcse": 0.007,
+          "n": 1000
+        }
+      },
+      "current_regional": {
+        "eligible": {
+          "rate": 0.0,
+          "mcse": 0.0,
+          "n": 1000
+        },
+        "type1_among_eligible": {
+          "rate": NaN,
+          "mcse": null,
+          "n": 0
+        }
+      },
+      "shadow_per_season": {
+        "eligible": {
+          "rate": 0.0,
+          "mcse": 0.0,
+          "n": 1000
+        },
+        "type1_among_eligible": {
+          "rate": NaN,
+          "mcse": null,
+          "n": 0
+        }
+      },
+      "null_slope_per_decade_sd": 0.1746
+    },
+    "first_half_years_missing_in_wet_season": {
+      "current_grid": {
+        "eligible": {
+          "rate": 1.0,
+          "mcse": 0.0,
+          "n": 1000
+        },
+        "type1_among_eligible": {
+          "rate": 0.055,
+          "mcse": 0.0072,
+          "n": 1000
+        }
+      },
+      "current_regional": {
+        "eligible": {
+          "rate": 1.0,
+          "mcse": 0.0,
+          "n": 1000
+        },
+        "type1_among_eligible": {
+          "rate": 0.055,
+          "mcse": 0.0072,
+          "n": 1000
+        }
+      },
+      "shadow_per_season": {
+        "eligible": {
+          "rate": 1.0,
+          "mcse": 0.0,
+          "n": 1000
+        },
+        "type1_among_eligible": {
+          "rate": 0.055,
+          "mcse": 0.0072,
+          "n": 1000
+        }
+      },
+      "null_slope_per_decade_sd": 0.1125
+    }
+  },
+  "C4_intervals": {
+    "iid": {
+      "true_slope_per_decade": 0.5,
+      "current_ols_anomaly": {
+        "coverage": {
+          "rate": 0.943,
+          "mcse": 0.0073,
+          "n": 1000
+        },
+        "mean_width": 0.3278
+      },
+      "hac_newey_west_ols": {
+        "coverage": {
+          "rate": 0.925,
+          "mcse": 0.0083,
+          "n": 1000
+        },
+        "mean_width": 0.318,
+        "bandwidth_lags": 5
+      },
+      "shadow_year_block_bootstrap_sen": {
+        "coverage": {
+          "rate": 0.67,
+          "mcse": 0.0271,
+          "n": 300
+        },
+        "mean_width": 0.1697,
+        "seconds_per_series": 0.0131
+      },
+      "sen_point_inside_ols_interval": {
+        "rate": 1.0,
+        "mcse": 0.0,
+        "n": 1000
+      }
+    },
+    "ar1_0.6": {
+      "true_slope_per_decade": 0.5,
+      "current_ols_anomaly": {
+        "coverage": {
+          "rate": 0.656,
+          "mcse": 0.015,
+          "n": 1000
+        },
+        "mean_width": 0.3266
+      },
+      "hac_newey_west_ols": {
+        "coverage": {
+          "rate": 0.873,
+          "mcse": 0.0105,
+          "n": 1000
+        },
+        "mean_width": 0.5256,
+        "bandwidth_lags": 5
+      },
+      "shadow_year_block_bootstrap_sen": {
+        "coverage": {
+          "rate": 0.7433,
+          "mcse": 0.0252,
+          "n": 300
+        },
+        "mean_width": 0.4293,
+        "seconds_per_series": 0.013
+      },
+      "sen_point_inside_ols_interval": {
+        "rate": 1.0,
+        "mcse": 0.0,
+        "n": 1000
+      }
+    },
+    "year_effect": {
+      "true_slope_per_decade": 0.5,
+      "current_ols_anomaly": {
+        "coverage": {
+          "rate": 0.477,
+          "mcse": 0.0158,
+          "n": 1000
+        },
+        "mean_width": 0.3721
+      },
+      "hac_newey_west_ols": {
+        "coverage": {
+          "rate": 0.582,
+          "mcse": 0.0156,
+          "n": 1000
+        },
+        "mean_width": 0.499,
+        "bandwidth_lags": 5
+      },
+      "shadow_year_block_bootstrap_sen": {
+        "coverage": {
+          "rate": 0.6767,
+          "mcse": 0.027,
+          "n": 300
+        },
+        "mean_width": 0.5897,
+        "seconds_per_series": 0.0158
+      },
+      "sen_point_inside_ols_interval": {
+        "rate": 1.0,
+        "mcse": 0.0,
+        "n": 1000
+      }
+    }
+  },
+  "C5_fdr": {
+    "iid": {
+      "bh_current": {
+        "empirical_fdr": 0.032,
+        "fdr_mcse": 0.0048,
+        "power": 0.9996,
+        "familywise_any_false": {
+          "rate": 0.285,
+          "mcse": 0.0319,
+          "n": 200
+        }
+      },
+      "by_shadow": {
+        "empirical_fdr": 0.0055,
+        "fdr_mcse": 0.0018,
+        "power": 0.9968,
+        "familywise_any_false": {
+          "rate": 0.07,
+          "mcse": 0.018,
+          "n": 200
+        }
+      },
+      "uncorrected": {
+        "empirical_fdr": 0.2275,
+        "fdr_mcse": 0.0106,
+        "power": 1.0,
+        "familywise_any_false": {
+          "rate": 0.91,
+          "mcse": 0.0202,
+          "n": 200
+        }
+      }
+    },
+    "year_effect": {
+      "bh_current": {
+        "empirical_fdr": 0.7671,
+        "fdr_mcse": 0.0057,
+        "power": 0.8844,
+        "familywise_any_false": {
+          "rate": 1.0,
+          "mcse": 0.0,
+          "n": 200
+        }
+      },
+      "by_shadow": {
+        "empirical_fdr": 0.6962,
+        "fdr_mcse": 0.0095,
+        "power": 0.8222,
+        "familywise_any_false": {
+          "rate": 1.0,
+          "mcse": 0.0,
+          "n": 200
+        }
+      },
+      "uncorrected": {
+        "empirical_fdr": 0.797,
+        "fdr_mcse": 0.0037,
+        "power": 0.9076,
+        "familywise_any_false": {
+          "rate": 1.0,
+          "mcse": 0.0,
+          "n": 200
+        }
+      }
+    },
+    "design": {
+      "cells": 225,
+      "true_trend_cells": 25,
+      "spatial_gaussian_sigma_cells": 1.5,
+      "trend_per_decade_sd_units": 0.6,
+      "reps": 200
+    }
+  },
+  "NASA_bounded_shadow": {
+    "scope": "IMERG 1-degree cube, Mekong box 94-110E 8-35N, 2001-01..2024-12, read-only",
+    "cells_tested": 432,
+    "max_abs_p_change_c1": 0.0005563417819434147,
+    "raw_p_significance_changes_c1": 0,
+    "subset_bh_significant_current": 79,
+    "subset_by_significant_shadow": 36,
+    "note": "BH/BY here use only this subset as the family; production BH uses the full global grid.",
+    "cube_unchanged": true
+  },
+  "seconds": {
+    "C1_tie_correction": 17.6,
+    "C2_regional_verdict": 146.7,
+    "C3_completeness": 3.4,
+    "C4_intervals": 40.3,
+    "C5_fdr": 30.8,
+    "NASA_bounded_shadow": 0.5
+  },
+  "total_seconds": 239.3
+}

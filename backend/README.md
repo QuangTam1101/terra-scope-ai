@@ -1,5 +1,10 @@
 # Terra-scope AI: Backend (FastAPI)
 
+Phase 3 adds optional backend-only Gemini enhancement to `/api/v1/chat`.
+Without a key, the deterministic Template Mode remains available.
+See [PHASE_3_GEMINI.md](PHASE_3_GEMINI.md) for configuration, grounding constraints,
+Windows startup/test commands and limitations. `/api/v1/explain` remains unchanged.
+
 HTTP API cho frontend (nhánh `UI`), bọc các hàm phân tích của `data-pipeline/pipeline`.
 Hợp đồng API: `FRONTEND_BACKEND_CONTRACT.md` v0.2. Nguồn sự thật khi chạy: `/openapi.json`.
 
@@ -55,6 +60,7 @@ Khi chưa có cube, các endpoint phân tích trả `503 DATA_NOT_READY` và `/v
 | `GET /api/v1/values/grid` | trung bình theo thời gian của cube | Heatmap giá trị; `month=1..12` để chỉ lấy một tháng |
 | `POST /api/v1/compare` | `contradictions.pair_difference_test` | `is_contradiction` khi ngược chiều **và** hiệu significant |
 | `POST /api/v1/explain` | dùng lại kết quả `/trends` | Bản **template, chưa có LLM** (`model: "template-v1 (no language model)"`) |
+| `POST /api/v1/chat` | dùng lại `/trends` + dịch vụ `/explain` | Chat typed, `mode: "template"`; không gọi LLM |
 | `GET /api/v1/jobs/{id}` |: | Luôn `404`: mọi endpoint trả kết quả ngay |
 | `POST /api/v1/reports` |: | **Chưa làm** (P2) |
 
@@ -69,7 +75,48 @@ Khớp với frontend hiện tại:
 cd backend
 python -m pytest -q tests
 ```
-17 test trên cube giả (lưới 1° và lưới 0,25°) (sinh ngẫu nhiên có xu hướng biết trước), không cần dữ liệu NASA thật, không gọi mạng.
+Test trên cube giả (lưới 1° và lưới 0,25°) (sinh ngẫu nhiên có xu hướng biết trước), gồm hợp đồng chat và tương thích `/explain`; không cần dữ liệu NASA thật, không gọi mạng.
+
+## Chat foundation (Phase 2)
+
+`POST /api/v1/chat` nhận `message` (1–2000 ký tự sau khi bỏ khoảng trắng đầu/cuối),
+`context` và `history` (tối đa 24 lượt, chỉ role `user`/`assistant`).
+`context.variable_id` dùng ID từ `/variables`; `dataset_id` là `source.product` chính xác,
+ví dụ `imerg_precip` + `GPM_3IMERGM`. Vùng dùng schema `RegionRef` hiện có;
+`start`/`end` phải được cung cấp cùng nhau, dạng `YYYY-MM`.
+
+PowerShell, khi backend đang chạy trên cổng 8000:
+
+```powershell
+$body = @{
+    message = 'What is the rainfall trend in the Mekong Delta?'
+    context = @{
+        variable_id = 'imerg_precip'
+        dataset_id = 'GPM_3IMERGM'
+        region = @{ type = 'preset'; id = 'mekong_delta' }
+        start = '2001-01'
+        end = '2024-12'
+    }
+    history = @()
+} | ConvertTo-Json -Depth 8
+Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:8000/api/v1/chat' -ContentType 'application/json; charset=utf-8' -Body $body
+```
+
+Response có `answer`, `mode: "template"`, `evidence`, `warnings`, `actions`, `disclaimer`.
+`analysis_id` chỉ xuất hiện khi có kết quả thật. Mỗi evidence chứa nguyên `TrendResponse`
+(nguồn, phương pháp, CI, chất lượng, null nếu thiếu số liệu) và `cited_numbers` từ `/explain`.
+Warnings có `code`/`message`; actions điều hướng tới Explore có params typed: biến, vùng, start/end.
+
+Có thể gửi `context.trend_id` để dùng lại kết quả trong bộ nhớ. Context kèm theo phải khớp kết quả đó;
+sai trả 409 `CONTEXT_MISMATCH`. ID hết hạn có thể được tính lại nếu cung cấp đầy đủ context;
+nếu không, trả 404. Dataset không khớp trả 422 `UNSUPPORTED_DATASET`.
+Lỗi biến/vùng/dữ liệu/thời gian giữ nguyên định dạng lỗi hiện có.
+
+Template hỗ trợ câu hỏi xu hướng quá khứ và glossary tiếng Anh nhỏ (p-value, Sen's slope, confidence interval).
+Không tự trích địa danh/biến/thời gian từ câu hỏi hoặc history; context tường minh là nguồn lựa chọn duy nhất.
+Thiếu context không tự dùng vùng toàn cầu. Câu hỏi ngoài phạm vi trả limitation, không tạo số liệu hay analysis ID.
+Lịch sử chỉ ở React store của phiên trang, còn khi chuyển trang và mất khi reload; backend chưa suy luận hội thoại.
+Không thêm model provider, khóa API hoặc dependencies mới; `/explain` giữ nguyên hợp đồng.
 
 ## Việc còn lại
 - Nhận cube thật từ Long, chạy thử với frontend.
@@ -79,3 +126,19 @@ python -m pytest -q tests
 
 ## Ghi chú về AI
 Code trong `backend/` được viết với sự hỗ trợ của AI (Claude Code); đội kiểm tra và chịu trách nhiệm nội dung.
+
+## Current Phase 4 contract
+
+Phase 6 audit and approval gate: [Scientific audit](PHASE_6_SCIENTIFIC_AUDIT.md),
+[pending correction proposal](PHASE_6_CORRECTION_PROPOSAL.md), and [partial QA/manual browser checklist](PHASE_6_QA.md).
+No production statistical correction is approved or active.
+
+Phase 5 adds a reference-only scientific method advisor, deterministic trust assessment and optional
+`scientific_advice` in chat evidence. See [PHASE_5.md](PHASE_5.md) for the actual method audit,
+known statistical limitations, validation record and current commands. Original numeric results and `/explain` are unchanged.
+
+See [PHASE_4.md](PHASE_4.md) for the current architecture, limits, validation record and Windows commands.
+The Phase 2 section above describes the legacy path. Add `use_tools: true` to `/api/v1/chat`
+to use deterministic conversational selection, the six safe tools, and optional bounded Gemini
+function calling. The default remains `false` for existing clients. `/api/v1/explain` is unchanged.
+Template Mode supports these tools without a Gemini key. No new dependencies are required beyond Phase 3.

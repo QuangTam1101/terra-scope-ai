@@ -1,6 +1,9 @@
 fastapi>=0.115
 uvicorn[standard]>=0.30
 pydantic>=2.7
+# Backend-only Gemini integration and explicit local environment loading
+google-genai>=3.3,<4
+python-dotenv>=1,<2
 # pipeline (data-pipeline/requirements.txt): phần backend thật sự dùng
 numpy
 pandas
