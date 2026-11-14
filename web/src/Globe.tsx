@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { geoGraticule10, geoOrthographic, geoPath } from "d3-geo";
 import type { BBox, TrendGrid, ValueGrid } from "./api";
 import { H, land, paintMap, projection as flat, W, type Layer } from "./WorldMap";
+import { cellKey } from "./places";
 
 const S = 640;                     // internal canvas size (square, CSS scales it)
 const TEX = 2;                     // texture = 2 x logical map (1920 x 960)
@@ -13,11 +14,11 @@ const D = Math.PI / 180;
 
 interface Props {
   layer: Layer; trend: TrendGrid | null; values: ValueGrid | null; scale: number; loading: boolean;
-  selected: BBox | null; selectedLabel?: string; lookup: Map<string, string>;
+  selected: BBox | null; selectedLabel?: string; lookup: Map<string, string>; cellDeg: number;
   onPick: (lon: number, lat: number) => void; onClear: () => void;
 }
 
-export function Globe({ layer, trend, values, scale, loading, selected, selectedLabel, lookup, onPick, onClear }: Props) {
+export function Globe({ layer, trend, values, scale, loading, selected, selectedLabel, lookup, cellDeg, onPick, onClear }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const start: [number, number] = selected ? [(selected[0] + selected[2]) / 2, (selected[1] + selected[3]) / 2] : [106, 12];
   const [rot, setRot] = useState<{ lon: number; lat: number; k: number }>({ lon: start[0], lat: Math.max(-60, Math.min(60, start[1])), k: 1 });
@@ -148,7 +149,7 @@ export function Globe({ layer, trend, values, scale, loading, selected, selected
               return;
             }
             const p = toCanvas(ev), ll = lonLat(p.cx, p.cy);
-            const text = ll ? lookup.get(`${Math.floor(ll[0]) + 0.5},${Math.floor(ll[1]) + 0.5}`) : undefined;
+            const text = ll ? lookup.get(cellKey(ll[0], ll[1], cellDeg)) : undefined;
             setHover(text ? { px: p.px, py: p.py, text } : null);
           }}
           onPointerUp={(ev) => {

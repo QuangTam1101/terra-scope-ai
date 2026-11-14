@@ -20,7 +20,7 @@ class Variable:
     category: str
     description_simple: str
     description_technical: str
-    display_units: str
+    display_units_base: str
     native_resolution_deg: float
     product: str
     version: str
@@ -30,7 +30,13 @@ class Variable:
 
     @property
     def units(self) -> str:
-        return papi.VARIABLES[self.pipeline_id][1]
+        from .bridge import units          # đơn vị theo dữ liệu đang dùng (cube 1° cũ hoặc lưới 0,5° mới)
+        return units(self.pipeline_id)
+
+    @property
+    def display_units(self) -> str:
+        u = self.units
+        return {"degC": "°C", "m3/m3": "m³/m³"}.get(u, self.display_units_base if u == "1" else u)
 
     @property
     def source(self) -> dict:
@@ -44,27 +50,27 @@ _MODEL_NOTE = "This variable comes from a model/reanalysis that assimilates obse
 _VARS = [
     Variable("imerg_precip", "precip", "Precipitation", "water",
              "How much rain falls each month.",
-             "GPM IMERG Final Run monthly precipitation (V07), averaged onto a 1° grid.",
+             "GPM IMERG Final Run monthly precipitation (V07), on a common global grid.",
              "mm/month", 0.1, "GPM_3IMERGM", "07", "NASA GES DISC",
              "https://disc.gsfc.nasa.gov/datasets/GPM_3IMERGM_07/summary"),
     Variable("gldas_soil_moisture_0_10cm", "soil_moisture", "Soil moisture (0–10 cm)", "water",
              "How wet the top layer of soil is.",
-             "GLDAS Noah land surface model, volumetric soil moisture 0–10 cm, averaged onto a 1° grid.",
+             "GLDAS Noah land surface model, volumetric soil moisture 0–10 cm, on a common global grid.",
              "m³/m³", 0.25, "GLDAS_NOAH025_M", "2.1", "NASA GES DISC",
              "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary", _MODEL_NOTE),
     Variable("gldas_air_temperature", "tair_land", "Air temperature over land", "temperature",
              "How warm the air near the ground is over land.",
-             "GLDAS Noah near-surface air temperature, averaged onto a 1° grid.",
+             "GLDAS Noah near-surface air temperature, on a common global grid.",
              "°C", 0.25, "GLDAS_NOAH025_M", "2.1", "NASA GES DISC",
              "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary", _MODEL_NOTE),
     Variable("gldas_evapotranspiration", "evap_gldas", "Evapotranspiration (GLDAS)", "water",
              "How much water goes from the land into the air (evaporation plus plants).",
-             "GLDAS Noah total evapotranspiration, averaged onto a 1° grid.",
-             "mm/day", 0.25, "GLDAS_NOAH025_M", "2.1", "NASA GES DISC",
+             "GLDAS Noah total evapotranspiration, on a common global grid.",
+             "mm/month", 0.25, "GLDAS_NOAH025_M", "2.1", "NASA GES DISC",
              "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary", _MODEL_NOTE),
     Variable("merra2_air_temperature_2m", "t2m", "Air temperature (2 m)", "temperature",
              "How warm the air is at about head height, over land and sea.",
-             "MERRA-2 reanalysis 2-metre air temperature, averaged onto a 1° grid.",
+             "MERRA-2 reanalysis 2-metre air temperature, on a common global grid.",
              "°C", 0.5, "M2IMNXASM", "5.12.4", "NASA GMAO / GES DISC",
              "https://disc.gsfc.nasa.gov/datasets/M2IMNXASM_5.12.4/summary", _MODEL_NOTE),
     Variable("modis_ndvi", "ndvi", "Vegetation greenness (NDVI)", "vegetation",

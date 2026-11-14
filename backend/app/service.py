@@ -79,7 +79,7 @@ def _geometry_to_bbox(geom: dict) -> tuple[tuple, str]:
         w = min(math.floor(lon), 179)
         s = min(math.floor(lat), 89)
         return (float(w), float(s), float(w + 1), float(s + 1)), \
-            "A single point was converted to the 1° grid cell that contains it."
+            "A single point was converted to the grid cell that contains it."
     elif gtype in {"polygon", "multipolygon", "linestring", "multilinestring", "multipoint", "bbox"}:
         pts = _flatten_positions(geom.get("coordinates") or geom.get("bounds"), [])
     else:
@@ -89,7 +89,7 @@ def _geometry_to_bbox(geom: dict) -> tuple[tuple, str]:
         raise ApiError(422, "VALIDATION_ERROR", "Geometry has no coordinates.")
     lons, lats = [p[0] for p in pts], [p[1] for p in pts]
     return (min(lons), min(lats), max(lons), max(lats)), \
-        "The drawn shape is analysed using its bounding box (exact polygons are not supported on the 1° grid yet)."
+        "The drawn shape is analysed using its bounding box (exact polygons are not supported yet)."
 
 
 def _check_bbox(bbox: tuple) -> None:
@@ -191,7 +191,7 @@ def _quality_warnings(v: catalog.Variable, q: dict) -> list[str]:
     if not q["sufficient"]:
         w.append("Not enough data to test significance: at least 10 years and 70% of months with data are needed.")
     if q["coverage_fraction"] < 0.5:
-        w.append(f"On average only {q['coverage_fraction']:.0%} of the 1° cells in this region have data "
+        w.append(f"On average only {q['coverage_fraction']:.0%} of the grid cells in this region have data "
                  "(for example, ocean cells for a land variable).")
     if v.note:
         w.append(v.note)
@@ -501,7 +501,7 @@ def explain(req: ExplainRequest) -> dict:
             actions.append({"type": "run_trend", "params": {"variable_id": other, "region": region_ref,
                                                            "start": t["start"], "end": t["end"]}})
         warnings += t["warnings"]
-    parts.append("Method: Seasonal Mann-Kendall test with Sen's slope on monthly area averages (1° grid). "
+    parts.append("Method: Seasonal Mann-Kendall test with Sen's slope on monthly area averages over the global grid cells. "
                  "A trend is called significant when p < 0.05 and there are at least 10 years of data.")
     return {"answer": " ".join(parts), "cited_numbers": cited, "actions": actions[:3],
             "disclaimer": EXPLAIN_DISCLAIMER, "model": EXPLAIN_MODEL, "warnings": sorted(set(warnings))}

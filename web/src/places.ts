@@ -1,5 +1,5 @@
 // Offline place search: preset areas from the API, countries (Natural Earth 1:110m via world-atlas) and major cities.
-// Countries are analysed with their bounding box; cities and coordinates with the 1° grid cell that contains them.
+// Countries are analysed with their bounding box; cities and coordinates with the grid cell that contains them.
 import { geoBounds } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Topology } from "topojson-specification";
@@ -9,15 +9,23 @@ import type { Place } from "./store";
 
 export interface PlaceHit { kind: "Preset area" | "Country" | "City"; name: string; place: Place }
 
-const fmtLat = (v: number) => `${Math.abs(v).toFixed(1)}°${v >= 0 ? "N" : "S"}`;
-const fmtLon = (v: number) => `${Math.abs(v).toFixed(1)}°${v >= 0 ? "E" : "W"}`;
 
-/** The 1° grid cell containing a point. Label is plain coordinates (no "cell" wording). */
+// Size of one grid cell in degrees. Set from the data the backend serves (0.5° for the cleaned global grid).
+let CELL = 0.5;
+export const setGridCell = (deg: number) => { if (deg > 0) CELL = deg; };
+export const gridCell = () => CELL;
+/** Lookup key of the grid cell that contains a point (same key for a cell centre and any point inside it). */
+export const cellKey = (lon: number, lat: number, s = CELL) => `${Math.floor((lon + 180) / s)},${Math.floor((lat + 90) / s)}`;
+
+/** The grid cell containing a point. Label is plain coordinates (no "cell" wording). */
 export function pointPlace(lat: number, lon: number, name?: string): Place {
-  const w = Math.max(-180, Math.min(179, Math.floor(lon)));
-  const s = Math.max(-90, Math.min(89, Math.floor(lat)));
-  const bbox: BBox = [w, s, w + 1, s + 1];
-  return { ref: { type: "bbox", bbox }, label: name ?? `${fmtLat(s + 0.5)}, ${fmtLon(w + 0.5)}`, bbox };
+  const s0 = CELL;
+  const w = Math.max(-180, Math.min(180 - s0, Math.floor(lon / s0) * s0));
+  const s = Math.max(-90, Math.min(90 - s0, Math.floor(lat / s0) * s0));
+  const bbox: BBox = [w, s, w + s0, s + s0];
+  const d = s0 < 1 ? 2 : 1;
+  const f = (v: number, pos: string, neg: string) => `${Math.abs(v).toFixed(d)}°${v >= 0 ? pos : neg}`;
+  return { ref: { type: "bbox", bbox }, label: name ?? `${f(s + s0 / 2, "N", "S")}, ${f(w + s0 / 2, "E", "W")}`, bbox };
 }
 
 // ---------- countries ----------
@@ -62,7 +70,8 @@ const ALIASES: Record<string, string[]> = {
   "Hanoi": ["Ha Noi"], "Da Nang": ["Đà Nẵng"], "Can Tho": ["Cần Thơ"], "Hue": ["Huế"], "Hai Phong": ["Hải Phòng"], "Da Lat": ["Đà Lạt", "Dalat"],
   "Yangon": ["Rangoon"], "Mumbai": ["Bombay"], "Beijing": ["Peking"],
 };
-const CITIES: (PlaceHit & { aliases?: string[] })[] = CITY_DATA.map(([name, country, lat, lon]) => ({
+// Built on each search so the city cell follows the current grid size.
+const cities = (): (PlaceHit & { aliases?: string[] })[] => CITY_DATA.map(([name, country, lat, lon]) => ({
   kind: "City", name: `${name}, ${country}`, aliases: ALIASES[name], place: pointPlace(lat, lon, `${name}, ${country}`),
 }));
 
@@ -80,7 +89,7 @@ export function searchPlaces(query: string, regions: Region[], limit = 8): Place
     if (n.split(/[\s,()]+/).some((w) => w.startsWith(q))) return 1;
     return n.includes(q) || c.includes(qc) ? 2 : 9;
   };
-  const all: (PlaceHit & { aliases?: string[] })[] = [...presets, ...COUNTRIES, ...CITIES];
+  const all: (PlaceHit & { aliases?: string[] })[] = [...presets, ...COUNTRIES, ...cities()];
   const scored = all
     .map((h) => ({ h, s: Math.min(score(h.name), ...(h.aliases ?? []).map(score)) }))
     .filter((x) => x.s < 9)

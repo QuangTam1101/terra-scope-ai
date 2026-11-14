@@ -13,3 +13,4 @@ pymannkendall
 scipy
 scikit-learn
 pytest
+pyproj
