@@ -7,3 +7,6 @@ data/**
 !data/raw/*/README.md
 # mô hình dự báo (khoảng 275 MB): train lại bằng train_forecast.py, xem docs/05 mục 10
 models/*.joblib
+
+# cache của số liệu NASA POWER / GISTEMP (tải lại tự động)
+cache/

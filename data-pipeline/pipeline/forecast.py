@@ -741,3 +741,172 @@ def forecast_map(variable, cubes, horizon, origin=None, model=None, variant="ful
             "columns": ["lat", "lon", "z_forecast", "signal", "p_below", "p_above"],
             "cells": [[float(model["lat"][c]), float(model["lon"][c]), round(float(a), 3), str(s), round(float(b), 3), round(float(d), 3)]
                       for c, a, s, b, d in zip(cells, z, _signal(prob), prob[:, 0], prob[:, 2])], "interval": 1 - ALPHA}
+
+
+# ---------------------------------------------------------------- dự báo từ quan sát MỚI (NASA POWER), không cần cube
+def _live_context(model, ext):
+    """Chỉ số NOAA kéo dài tới `ext` + nhiệt độ toàn cầu: MERRA-2 trong giai đoạn cube, NASA GISTEMP (trừ khí hậu cùng kỳ) sau đó."""
+    from . import live
+    d = live.indices_extended(ext)
+    base = model["params"]["ctxdf"]
+    glob = pd.Series(np.nan, index=ext)
+    common = base.index.intersection(ext)
+    glob.loc[common] = base["glob"].reindex(common).to_numpy()
+    after = ext[ext > base.index[-1]]
+    if len(after):
+        try:
+            g = live.gistemp_global()
+            gb = g.loc[: f"{int(model['train_end'][:4])}-12-31"]
+            gb = gb.groupby(gb.index.month).mean()
+            for t in after:
+                if t in g.index:
+                    glob.loc[t] = g[t] - gb[t.month]
+        except Exception:
+            pass                                             # không có GISTEMP → giữ giá trị gần nhất
+    d["glob"] = glob.ffill().fillna(0.0).to_numpy()
+    return d
+
+
+def live_state(model, cells, zframes, ext):
+    """Trạng thái cho mô hình Satellite từ chuỗi z của NASA POWER (mỗi ô một DataFrame `power_z`); không cần nạp cube."""
+    from . import live
+    var = model["variable"]
+    T = len(ext)
+
+    def stack(col):
+        return np.column_stack([zf[col].reindex(ext).to_numpy() for zf in zframes]).astype("float32")
+    own = stack(live.VAR_COL[var])
+    ctxdf = _live_context(model, ext)
+    mu, sd = model["params"]["clim"][var]
+    S = {"times": ext, "Z": np.nan_to_num(own), "month0": ext.month.to_numpy() - 1, "lat": model["lat"][cells], "lon": model["lon"][cells],
+         "mu": mu[:, cells], "sd": sd[:, cells], "tz": model["params"]["tz"][:, cells, :], "ctx": _ctx_arrays(ctxdf), "ctxdf_ext": ctxdf,
+         "nb0": np.nan_to_num(own), "nb3": np.nan_to_num(_roll3(own)), "x0": {}, "x3": {}, "slope_raw": None, "tcenter": TREF}
+    for v in model.get("aux_used", []):
+        arr = stack(live.VAR_COL[v])
+        S["x0"][v], S["x3"][v] = np.nan_to_num(arr), np.nan_to_num(_roll3(arr))
+    return S
+
+
+def _live_cols(model):
+    from . import live
+    return sorted({live.VAR_COL[v] for v in [model["variable"]] + list(model.get("aux_used", []))})
+
+
+def _cell_of(model, lat, lon):
+    from . import live
+    la, lo = live.cell_center(lat, lon)
+    d = (model["lat"] - la) ** 2 + (model["lon"] - lo) ** 2
+    c = int(np.argmin(d))
+    if d[c] > 1e-6 or c not in set(model["valid"].tolist()):
+        raise ValueError("No data for this variable at this location (for example the sea for a land-only variable).")
+    return c, la, lo
+
+
+def analogs_live(z, ctxdf, ext, o0, h, k=5):
+    """Năm tương tự theo chuỗi z quan sát (POWER): origin cùng tháng lịch có Niño 3.4, SOI, PDO, IOD gần giống nhất, kèm kết quả thật sau h tháng."""
+    F = pd.DataFrame({c: _rolling(ctxdf[c].to_numpy(), 3) for c in ("nino34", "soi", "pdo", "dmi")}, index=ctxdf.index)
+    Tobs = int(np.isfinite(z).sum() and np.max(np.where(np.isfinite(z))[0]) + 1)
+    Fz = ((F - F.iloc[:Tobs].mean()) / F.iloc[:Tobs].std().replace(0, 1)).to_numpy()
+    m0 = ext.month.to_numpy() - 1
+    cand = [t for t in range(NLAG - 1, Tobs - h) if t != o0 and m0[t] == m0[o0] and np.isfinite(z[t + h])]
+    if not cand:
+        return []
+    d = np.sqrt(((Fz[cand] - Fz[o0]) ** 2).sum(1))
+    return [{"origin": str(ext[cand[i]].date())[:7], "target": str(ext[cand[i] + h].date())[:7], "distance": round(float(d[i]), 2),
+             "z_outcome": round(float(z[cand[i] + h]), 2), "state": {c: round(float(F[c].iloc[cand[i]]), 2) for c in F.columns}}
+            for i in np.argsort(d)[:k]]
+
+
+def forecast_live(variable, lat, lon, horizons=range(1, MAX_H + 1), power=None, model=None, not_before=None, not_after=None):
+    """Dự báo 1–12 tháng cho MỘT điểm từ quan sát mới nhất của NASA POWER (mô hình Satellite, origin = tháng gần nhất có đủ số liệu).
+    `power`: DataFrame `live.power_monthly` (để test hoặc dùng lại cache)."""
+    from . import live
+    model = model or load_model(variable, "full")
+    c, la, lo = _cell_of(model, lat, lon)
+    df = live.power_monthly(la, lo) if power is None else power
+    z = live.power_z(df, int(model["train_end"][:4]))
+    origin = live.last_complete(z, _live_cols(model))
+    hz = list(horizons)
+    ext = pd.date_range(df.index[0], origin + pd.DateOffset(months=max(hz)), freq="MS")
+    S = live_state(model, [c], [z], ext)
+    o0 = int(ext.get_loc(origin))
+    X = features(S, np.full(len(hz), o0), np.zeros(len(hz), dtype=int), np.array(hz), "full")
+    lo_z, mid, hi_z, prob = predict_z(model, X)
+    tm = (origin.month - 1 + np.array(hz)) % 12
+    mu_t, sd_t = S["mu"][tm, 0], S["sd"][tm, 0]
+    cand = np.arange(len(hz))
+    if not_before is not None:                                   # giải thích tháng từ `not_before` trở đi (không giải thích tháng đã qua)
+        ok = np.array([(origin + pd.DateOffset(months=int(h))) >= pd.Timestamp(not_before) and
+                       (not_after is None or (origin + pd.DateOffset(months=int(h))) <= pd.Timestamp(not_after)) for h in hz])
+        cand = cand[ok] if ok.any() else cand
+    star = int(cand[np.argmax(np.abs(prob[cand, 2] - prob[cand, 0]))])
+    contrib, _ = contributions(model, X[[star]], np.ones(1))
+    obs = z.loc[: origin].tail(12)
+    raw = df.loc[obs.index]
+    clim_raw = {col: df.loc[:f"{int(model['train_end'][:4])}-12-31", col].groupby(df.loc[:f"{int(model['train_end'][:4])}-12-31"].index.month).mean() for col in df.columns}
+    observed = [{"t": t.strftime("%Y-%m"), **{f"z_{col}": (None if pd.isna(obs.at[t, col]) else round(float(obs.at[t, col]), 2)) for col in df.columns},
+                 **{f"raw_{col}": (None if pd.isna(raw.at[t, col]) else round(float(raw.at[t, col]), 3)) for col in df.columns},
+                 **{f"normal_{col}": round(float(clim_raw[col][t.month]), 3) for col in df.columns}} for t in obs.index]
+    zown = z[live.VAR_COL[variable]].reindex(ext).to_numpy()
+    return {"variable": variable, "variant": "live", "origin": str(origin.date()), "cell": {"lat": la, "lon": lo}, "horizons": hz,
+            "time": [(origin + pd.DateOffset(months=int(h))).strftime("%Y-%m") for h in hz],
+            "forecast": (mu_t + mid * sd_t).tolist(), "lower": (mu_t + lo_z * sd_t).tolist(), "upper": (mu_t + hi_z * sd_t).tolist(),
+            "z_forecast": mid.tolist(), "climatology": mu_t.tolist(), "tercile_lower": (mu_t + S["tz"][tm, 0, 0] * sd_t).tolist(),
+            "tercile_upper": (mu_t + S["tz"][tm, 0, 1] * sd_t).tolist(), "p_below": prob[:, 0].tolist(), "p_near": prob[:, 1].tolist(),
+            "p_above": prob[:, 2].tolist(), "signal": _signal(prob).tolist(), "headline_index": star, "contributions": contrib,
+            "conditions": conditions(origin), "analogs": analogs_live(zown, S["ctxdf_ext"], ext, o0, hz[star]), "analog_horizon": hz[star],
+            "observed": observed, "interval": 1 - ALPHA, "train_end": model["train_end"], "band": BAND_NAMES[int(_band(np.array([la]))[0])],
+            "source": "NASA POWER monthly (MERRA-2 / IMERG corrected), 1° cell centre"}
+
+
+def live_backtest(variable, frames, eval_h=(1, 2, 3, 6, 12), first_target="2025-01", model=None):
+    """Kiểm tra cách dự báo từ quan sát mới trên số đo THẬT sau giai đoạn mô hình đã thấy (mặc định từ 2025-01).
+    `frames`: {(lat_tâm_ô, lon_tâm_ô): DataFrame power_monthly}. Metric cùng kiểu `_backtest`."""
+    from . import live
+    model = model or load_model(variable, "full")
+    keys = list(frames)
+    cells = [_cell_of(model, la, lo)[0] for la, lo in keys]
+    base_year = int(model["train_end"][:4])
+    zfr = [live.power_z(frames[k], base_year) for k in keys]
+    cols = _live_cols(model)
+    ext = zfr[0].index
+    S = live_state(model, cells, zfr, ext)
+    zown = np.column_stack([zf[live.VAR_COL[variable]].reindex(ext).to_numpy() for zf in zfr])
+    ok_all = np.column_stack([zf[cols].reindex(ext).notna().all(axis=1).to_numpy() for zf in zfr])
+    t0 = int(ext.get_loc(pd.Timestamp(first_target + "-01")))
+    last_ok = ext[np.where(ok_all.any(axis=1))[0].max()]
+    out = {"variable": variable, "test_period": [first_target, str(last_ok.date())[:7]], "n_cells": len(keys), "by_horizon": {}, "by_latband": {}}
+    band_c = _band(S["lat"])
+    clim_p = np.full((1, 3), 1 / 3)
+
+    def rpss(prob, cls):
+        return 1 - float(np.mean(_rps(prob, cls)) / np.mean(_rps(np.repeat(clim_p, len(cls), 0), cls)))
+    for h in eval_h:
+        tgt = np.arange(max(t0, NLAG - 1 + h), len(ext))
+        o = np.repeat(tgt - h, len(cells))
+        ci = np.tile(np.arange(len(cells)), len(tgt))
+        keep = ok_all[o, ci] & np.isfinite(zown[o + h, ci])
+        o, ci = o[keep], ci[keep]
+        if len(o) < 50:
+            continue
+        X = features(S, o, ci, np.full(len(o), h), "full")
+        y = np.clip(zown[o + h, ci], -ZCLIP, ZCLIP)
+        lo, mid, hi, prob = predict_z(model, X)
+        cls = _classes(y, X[:, FEATURES.index("tzlo")], X[:, FEATURES.index("tzhi")])
+        mse0 = float(np.mean(y ** 2))
+        row = {"n": int(len(y)), "model": _score(y, mid, mse0)}
+        row["model"].update({"coverage_conformal": float(np.mean((y >= lo) & (y <= hi))), "rpss": rpss(prob, cls),
+                             "tercile_accuracy": float(np.mean(prob.argmax(1) == cls)),
+                             "bss_below": 1 - float(np.mean((prob[:, 0] - (cls == 0)) ** 2) / np.mean((1 / 3 - (cls == 0)) ** 2)),
+                             "bss_above": 1 - float(np.mean((prob[:, 2] - (cls == 2)) ** 2) / np.mean((1 / 3 - (cls == 2)) ** 2))})
+        row["persistence"] = _score(y, np.clip(zown[o, ci], -ZCLIP, ZCLIP), mse0)
+        row["clim"] = _score(y, np.zeros_like(y), mse0)
+        out["by_horizon"][int(h)] = _round(row)
+        bnd = band_c[ci]
+        for bi, bn in enumerate(BAND_NAMES):
+            m = bnd == bi
+            if m.sum() > 50:
+                out["by_latband"].setdefault(bn, {})[int(h)] = _round({
+                    "model_skill": 1 - float(np.mean((y[m] - mid[m]) ** 2)) / max(float(np.mean(y[m] ** 2)), 1e-9),
+                    "rpss": rpss(prob[m], cls[m]), "n": int(m.sum())})
+    return out
