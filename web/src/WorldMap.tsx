@@ -84,10 +84,12 @@ const clampView = (v: View): View => {
 
 interface Props {
   layer: Layer; trend: TrendGrid | null; values: ValueGrid | null; loading: boolean;
+  /** What is really running while `loading` (Phase 8.5A); falls back to a neutral message. */
+  loadingInfo?: { title: string; detail: string } | null;
   selected: BBox | null; selectedLabel?: string; onClear: () => void; onPick: (lon: number, lat: number) => void; onArea: (bbox: BBox) => void; units: string;
 }
 
-export function WorldMap({ layer, trend, values, loading, selected, selectedLabel, onClear, onPick, onArea, units }: Props) {
+export function WorldMap({ layer, trend, values, loading, loadingInfo, selected, selectedLabel, onClear, onPick, onArea, units }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [cssW, setCssW] = useState(0);                       // displayed canvas width, to place the selection label
   useEffect(() => {
@@ -207,7 +209,7 @@ export function WorldMap({ layer, trend, values, loading, selected, selectedLabe
         </div>
       </div>
       {mode === "3d" ? (
-        <Globe layer={layer} trend={trend} values={values} scale={scale} loading={loading} selected={selected}
+        <Globe layer={layer} trend={trend} values={values} scale={scale} loading={loading} loadingInfo={loadingInfo} selected={selected}
           selectedLabel={selectedLabel} lookup={lookup} cellDeg={cellDeg} onPick={onPick} onClear={onClear} />
       ) : (
       <div className="mapwrap">
@@ -282,8 +284,10 @@ export function WorldMap({ layer, trend, values, loading, selected, selectedLabe
           <button type="button" aria-label="Show the whole world" title="Show the whole world" style={{ ...iconBtn, fontSize: 13 }} onClick={() => setView({ k: 1, ox: 0, oy: 0 })}>1:1</button>
         </div>
         {loading && (
-          <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "rgba(251,246,236,.55)", borderRadius: 20,
-            font: "800 15px var(--body)", textAlign: "center", padding: 20 }}>{layer === "trend" ? <>Calculating the trend for every place on Earth…<br /><span style={{ font: "600 13px var(--body)" }}>A new time range can take about a minute the first time. The full period (2001 to 2025) is ready instantly.</span></> : "Loading the map…"}</div>
+          <div role="status" aria-live="polite" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "rgba(251,246,236,.55)", borderRadius: 20,
+            font: "800 15px var(--body)", textAlign: "center", padding: 20, pointerEvents: "none" }}>
+            <span>{loadingInfo?.title ?? "Loading the map…"}{loadingInfo?.detail && <><br /><span style={{ font: "600 13px var(--body)" }}>{loadingInfo.detail}</span></>}</span>
+          </div>
         )}
         <span className="num" style={{ position: "absolute", left: 10, bottom: 8, font: "700 11px var(--body)", background: "rgba(255,255,255,.85)",
           padding: "2px 8px", borderRadius: 999 }}>{cellDeg}° grid · zoom {view.k.toFixed(1)}×</span>

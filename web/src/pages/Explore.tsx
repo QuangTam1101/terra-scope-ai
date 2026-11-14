@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, type TrendGrid, type ValueGrid } from "../api";
 import { areaPlace, cellPlace, useStore, WORLD } from "../store";
 import { PlacePicker } from "../PlacePicker";
@@ -6,6 +6,9 @@ import { Legend, WorldMap, type Layer } from "../WorldMap";
 import { TrendChart } from "../TrendChart";
 import { ci, pval, signed, Stat, Terra, VerdictBadge } from "../ui";
 import { trendGridF, valueGridF } from "../units";
+import { APPEEARS_URL, giovanniUrl } from "../config/giovanni";
+import { globalCells, gridMessage, regionalSteps, type GridOp } from "../progress";
+import { ExploreFurther } from "../ExploreFurther";
 
 // Maps already loaded, kept for the whole visit (leaving and reopening Explore does not download them again).
 const GRID_CACHE = new Map<string, TrendGrid | ValueGrid>();
@@ -13,12 +16,13 @@ const GRID_CACHE = new Map<string, TrendGrid | ValueGrid>();
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 export function Explore() {
-  const { variables, regions, sel, setSel, variable, runAnalysis, running, run, showError, go, tempUnit, setTempUnit } = useStore();
+  const { variables, regions, sel, setSel, variable, runAnalysis, running, run, showError, go, tempUnit, setTempUnit, progress, cancelAnalysis } = useStore();
   const [layer, setLayer] = useState<Layer>("trend");
   const [month, setMonth] = useState<number | undefined>(undefined);
   const [trendGrid, setTrendGrid] = useState<TrendGrid | null>(null);
   const [valueGrid, setValueGrid] = useState<ValueGrid | null>(null);
   const [gridLoading, setGridLoading] = useState(false);
+  const [gridOp, setGridOp] = useState<GridOp>("grid-network");
 
   const parameters = useMemo(() => {
     const m = new Map<string, { name: string; available: boolean; description: string }>();
@@ -35,12 +39,38 @@ export function Explore() {
     return Array.from({ length: b - a + 1 }, (_, i) => a + i);
   }, [variable]);
   const units = variable?.display_units ?? "";
+  // Large map mode: the map card fills the workspace (and optionally the screen). Escape leaves it first,
+  // before the map's own Escape (clear selection) handler runs.
+  const mapRef = useRef<HTMLElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const fullscreenOk = typeof document !== "undefined" && !!document.fullscreenEnabled;
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || document.fullscreenElement) return;
+      e.stopPropagation(); setExpanded(false);
+    };
+    window.addEventListener("keydown", onKey, true);
+    document.body.classList.add("no-scroll");
+    return () => { window.removeEventListener("keydown", onKey, true); document.body.classList.remove("no-scroll"); };
+  }, [expanded]);
+  useEffect(() => {
+    const onFs = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
+  }, []);
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void mapRef.current?.requestFullscreen?.().catch(() => undefined);
+  }, []);
   const isTemp = units === "°C" || units === "°F";
   const toF = isTemp && tempUnit === "F";
   const shownTrend = useMemo(() => (trendGrid && toF ? trendGridF(trendGrid) : trendGrid), [trendGrid, toF]);
   const shownValues = useMemo(() => (valueGrid && toF ? valueGridF(valueGrid) : valueGrid), [valueGrid, toF]);
 
-  // Load the map layer for the chosen dataset and period (cached per combination).
+  // Load the map layer for the chosen dataset and period (cached per combination). Before fetching, ask the
+  // server whether this map is already computed so the message says what is really happening (Phase 8.5A).
   useEffect(() => {
     if (!variable?.available) return;
     const start = `${sel.startYear}-01`, end = `${sel.endYear}-12`;
@@ -48,14 +78,27 @@ export function Explore() {
     const hit = GRID_CACHE.get(key);
     if (hit) { layer === "trend" ? setTrendGrid(hit as TrendGrid) : setValueGrid(hit as ValueGrid); return; }
     let live = true;
+    const ctrl = new AbortController();
     setGridLoading(true);
-    const req = layer === "trend" ? api.trendGrid(variable.id, start, end) : api.valueGrid(variable.id, start, end, month);
+    setGridOp(layer === "trend" ? "grid-network" : "values-load");
+    if (layer === "trend") {
+      api.gridStatus("trend", variable.id, start, end)
+        .then((st) => live && setGridOp(st.cached ? "grid-cache" : "grid-compute"))
+        .catch(() => undefined);                       // the status check is optional; keep the neutral message
+    }
+    const req = layer === "trend" ? api.trendGrid(variable.id, start, end, ctrl.signal) : api.valueGrid(variable.id, start, end, month, ctrl.signal);
     req.then((g) => {
       GRID_CACHE.set(key, g);
       if (live) layer === "trend" ? setTrendGrid(g as TrendGrid) : setValueGrid(g as ValueGrid);
     }).catch((e) => live && showError(e)).finally(() => live && setGridLoading(false));
-    return () => { live = false; };
+    // Leaving this combination stops waiting for it (the browser drops the request; a server-side computation
+    // that already started still finishes and is cached for next time).
+    return () => { live = false; ctrl.abort(); };
   }, [layer, variable, sel.startYear, sel.endYear, month, showError]);
+  const gridInfo = useMemo(() => variable ? gridMessage(gridOp, {
+    dataset: `${variable.parameter_name}, ${variable.dataset_name}`, start: String(sel.startYear), end: String(sel.endYear),
+    cells: globalCells(variable.spatial_resolution_deg), month: month ? MONTHS[month - 1] : undefined,
+  }) : null, [gridOp, variable, sel.startYear, sel.endYear, month]);
 
   const pickParameter = (p: string) => {
     const first = variables.find((v) => v.parameter === p && v.available) ?? variables.find((v) => v.parameter === p);
@@ -69,7 +112,7 @@ export function Explore() {
       {/* ---------- set-up: variable → dataset → time range → place ---------- */}
       <section className="card pad col" aria-labelledby="setup">
         <h2 id="setup" style={{ fontSize: 22 }}>Set up your case</h2>
-        <div className="col" style={{ gap: 8 }}>
+        <div className="col" style={{ gap: 8 }} data-tour="variable">
           <span className="label">1 · Environmental variable</span>
           <div className="row" style={{ gap: 6 }}>
             {parameters.map(([id, p]) => (
@@ -90,7 +133,7 @@ export function Explore() {
             </div>
           )}
         </div>
-        <div className="col" style={{ gap: 8 }}>
+        <div className="col" style={{ gap: 8 }} data-tour="dataset">
           <span className="label">2 · Dataset</span>
           <div className="row" style={{ gap: 6 }}>
             {datasets.map((d) => (
@@ -104,7 +147,7 @@ export function Explore() {
             <span className="warn small">Datasets can disagree. For the Sahel, MERRA-2 and GLDAS give opposite temperature trends, so compare both before you trust one.</span>
           )}
         </div>
-        <div className="col" style={{ gap: 8 }}>
+        <div className="col" style={{ gap: 8 }} data-tour="years">
           <span className="label">3 · Time range</span>
           <div className="row">
             <label className="small muted">From{" "}
@@ -120,17 +163,17 @@ export function Explore() {
           </div>
           {sel.endYear - sel.startYear + 1 < 10 && <span className="small muted">Testing needs at least 10 years.</span>}
         </div>
-        <div className="col" style={{ gap: 8 }}>
+        <div className="col" style={{ gap: 8 }} data-tour="place">
           <span className="label">4 · Place</span>
           <PlacePicker />
         </div>
-        <button type="button" className="btn" disabled={running || !variable?.available || sel.startYear > sel.endYear} onClick={() => runAnalysis()}>
+        <button type="button" className="btn" data-tour="run" disabled={running || !variable?.available || sel.startYear > sel.endYear} onClick={() => runAnalysis()}>
           {running ? "Testing…" : "Run analysis"}
         </button>
       </section>
 
       {/* ---------- map ---------- */}
-      <section className="card pad col" aria-label="Map">
+      <section ref={mapRef} className={`card pad col mapcard${expanded ? " map-expanded" : ""}`} aria-label="Map" data-tour="map">
         <div className="row" style={{ justifyContent: "space-between" }}>
           <div className="seg" role="group" aria-label="Map layer">
             <button type="button" className={layer === "values" ? "on" : ""} aria-pressed={layer === "values"} onClick={() => setLayer("values")}>Values</button>
@@ -143,22 +186,52 @@ export function Explore() {
               {MONTHS.map((m, i) => <option key={m} value={i + 1}>Only {m}</option>)}
             </select>
           )}
+          <div className="row" style={{ gap: 6 }}>
+            {expanded && fullscreenOk && (
+              <button type="button" className="btn soft map-tool" onClick={toggleFullscreen}>{isFullscreen ? "Exit full screen" : "Full screen"}</button>
+            )}
+            <button type="button" className="btn soft map-tool" aria-pressed={expanded} onClick={() => setExpanded((v) => !v)}>
+              {expanded ? "Exit expanded view" : "Expand map"}
+            </button>
+          </div>
         </div>
-        <WorldMap layer={layer} trend={shownTrend} values={shownValues} loading={gridLoading} units={units}
+        <WorldMap layer={layer} trend={shownTrend} values={shownValues} loading={gridLoading} loadingInfo={gridInfo} units={units}
           selected={sel.place.bbox[2] - sel.place.bbox[0] >= 360 ? null : sel.place.bbox} selectedLabel={sel.place.label}
           onClear={() => runAnalysis({ place: WORLD })}
           onPick={(lon, lat) => { const p = cellPlace(lon, lat); runAnalysis({ place: p }); }}
           onArea={(bbox) => runAnalysis({ place: areaPlace(bbox) })} />
         <Legend layer={layer} trend={shownTrend} values={shownValues} units={units} />
+        {variable && (
+          <span className="small muted">
+            Map cells: {variable.spatial_resolution_deg}° processed grid, each cell an area average of the NASA product
+            (native resolution {variable.native_resolution_deg}°). Every cell is tested on its own; significance uses
+            Benjamini-Hochberg FDR across all cells of this map.
+          </span>
+        )}
       </section>
 
       {/* ---------- result ---------- */}
       <section className="card pad col result" aria-live="polite" aria-labelledby="result">
         <h2 id="result" style={{ fontSize: 22 }}>Result</h2>
-        {running && (
-          <div className="col"><div className="skel" style={{ height: 34, width: 200 }} /><div className="skel" style={{ height: 56 }} />
-            <div className="skel" style={{ height: 120 }} /><div className="skel" style={{ height: 220 }} /></div>
-        )}
+        {running && progress && (() => {
+          const p = regionalSteps(progress);
+          return (
+            <div className="col progress-box" role="status" aria-live="polite">
+              <b>{p.title}</b>
+              <ul className="steps-list">
+                {p.steps.map((st) => (
+                  <li key={st.label} className={`step-${st.state}`}>
+                    <span className="step-dot" aria-hidden="true">{st.state === "done" ? "✓" : st.state === "failed" ? "!" : ""}</span>
+                    {st.label}<span className="sr-only">: {st.state === "pending" ? "running" : st.state}</span>
+                  </li>
+                ))}
+              </ul>
+              <span className="small muted">Only this place is analysed; the world map is loaded separately.</span>
+              <button type="button" className="btn soft" style={{ alignSelf: "flex-start" }} onClick={cancelAnalysis}>Cancel</button>
+              <div className="skel" style={{ height: 120 }} />
+            </div>
+          );
+        })()}
         {!running && !result && (
           <div className="col" style={{ alignItems: "center", textAlign: "center", padding: "20px 0" }}>
             <Terra size={110} label="Terra the detective" />
@@ -168,6 +241,7 @@ export function Explore() {
         {!running && result && <ResultBody />}
       </section>
       <ChartCard />
+      {!running && <ExploreFurther />}
       <span className="footer" style={{ gridColumn: "1 / -1" }}>
         Preliminary · not yet validated · NASA data: GPM IMERG, GLDAS Noah, MERRA-2 ({variable?.spatial_resolution_deg ?? 0.5}° global grid, {years[0]} to {years[years.length - 1]}).{" "}
         <button type="button" className="btn soft" style={{ minHeight: 32, padding: "0 12px", fontSize: 12.5 }} onClick={() => go("report")}>Open report</button>
@@ -243,7 +317,30 @@ function ResultBody() {
         <button type="button" className="btn soft" onClick={() => go("detective")}>Ask the Detective</button>
         <button type="button" className="btn soft" onClick={() => go("hunt")}>Compare with another place</button>
       </div>
+      <NasaCheck variableId={v.id} provider={v.source.provider} bbox={place.bbox} start={t.start} end={t.end} coverage={v.coverage} />
       <span className="footer">Source: {v.source.product} v{v.source.version}, {v.source.provider}.</span>
     </div>
   );
+}
+
+// Lets the user repeat this exact analysis in NASA's own tool, to check our numbers independently.
+function NasaCheck({ variableId, provider, bbox, start, end, coverage }: { variableId: string; provider: string; bbox: [number, number, number, number]; start: string; end: string; coverage: { start: string; end: string } | null }) {
+  // Months outside the data the dataset really has (e.g. IMERG ends 2025-09) would make Giovanni reject the request.
+  const s0 = coverage && start < coverage.start ? coverage.start : start;
+  const e0 = coverage && end > coverage.end ? coverage.end : end;
+  const url = giovanniUrl(variableId, bbox, s0, e0);
+  const shownEnd = url?.match(/endtime=(\d{4}-\d{2})/)?.[1] ?? e0;
+  if (url) return (
+    <div className="nasacheck">
+      <span><b>Check it with NASA Giovanni.</b> Opens the same data, area and months ({s0} to {shownEnd}) as an area-averaged time series. <b>Press Login (top right in Giovanni) first:</b> without a free Earthdata login Giovanni only plots 4 months. Then press Plot Data. Giovanni uses NASA's original units (for example kelvin instead of °C), so the numbers look different but the pattern should match.</span>
+      <a className="btn soft" href={url} target="_blank" rel="noreferrer">Open in Giovanni ↗</a>
+    </div>
+  );
+  if (provider.includes("AppEEARS")) return (
+    <div className="nasacheck">
+      <span><b>From NASA AppEEARS.</b> These MODIS values were extracted with AppEEARS; you can request the same product for any area there.</span>
+      <a className="btn soft" href={APPEEARS_URL} target="_blank" rel="noreferrer">Open AppEEARS ↗</a>
+    </div>
+  );
+  return null;
 }

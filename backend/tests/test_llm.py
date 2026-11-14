@@ -466,3 +466,18 @@ def test_explain_still_template_even_with_configured_gemini(client, provider):
 
 def test_secret_not_in_settings_repr():
     assert SECRET not in repr(config.LLMSettings(api_key=SECRET))
+
+
+def test_cooldown_and_busy_fallbacks_name_the_real_reason(client, provider):
+    """Phase 8.5 E2E: after a Gemini service error the pause must not be reported as a request limit."""
+    provider.generate.side_effect = ProviderError("service")
+    first = client.post("/api/v1/chat", json=REQUEST).json()
+    second = client.post("/api/v1/chat", json=REQUEST).json()
+    assert first["mode"] == second["mode"] == "template" and provider.generate.await_count == 1
+    msgs = [w["message"] for w in second["warnings"] if w["code"] == "LLM_FALLBACK"]
+    assert msgs and "pauses AI answers" in msgs[0] and "request limit" not in msgs[0]
+    runtime.budget.cooldown_until = 0.0
+    assert runtime.budget.enter(10) and runtime.budget.enter(10)
+    busy = client.post("/api/v1/chat", json=REQUEST).json()
+    assert any("already being prepared" in w["message"] for w in busy["warnings"])
+    runtime.budget.leave(None); runtime.budget.leave(None)

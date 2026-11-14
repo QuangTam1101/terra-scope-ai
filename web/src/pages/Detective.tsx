@@ -140,14 +140,14 @@ export function Detective() {
           <button key={s} type="button" className="chip" onClick={() => ask(s)} disabled={busy || !ready}>{s}</button>
         ))}
       </div>
-      <form className="row" onSubmit={(e) => { e.preventDefault(); ask(text); }}>
+      <form className="row" data-tour="detective-input" onSubmit={(e) => { e.preventDefault(); ask(text); }}>
         <label htmlFor="q" style={{ position: "absolute", left: -9999 }}>Ask Terra</label>
         <input id="q" value={text} maxLength={2000} onChange={(e) => setText(e.target.value)} placeholder="Ask about the selected place or a method…"
           style={{ flex: 1, minHeight: 50, border: "2px solid var(--line)", borderRadius: 999, padding: "0 18px", font: "600 15px var(--body)", color: "var(--ink)" }} />
         <button type="submit" className="btn" disabled={busy || !ready || !text.trim()}>{busy ? "Checking…" : "Ask"}</button>
       </form>
     </div>
-    <aside className="col" style={{ gap: 16 }}>
+    <aside className="col" style={{ gap: 16 }} data-tour="detective-evidence">
       <section className="card pad col" style={{ gap: 8 }}>
         <h2 style={{ fontSize: 18 }}>Current context</h2>
         <span style={{ fontWeight: 800 }}>{contextVariable?.parameter_name} · {contextVariable?.dataset_name}</span>

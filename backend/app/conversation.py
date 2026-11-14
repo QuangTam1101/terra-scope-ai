@@ -10,6 +10,20 @@ from .tools import registry, PeriodInput, _region
 from .llm import runtime
 
 
+# Words that describe HOW to answer ("in the most understandable way", "in simple terms", "in Vietnamese"),
+# so a phrase after "in" containing them is not an unknown place name.
+_MANNER_WORDS = {
+    "way", "ways", "words", "terms", "language", "detail", "details", "short", "brief", "summary", "simple",
+    "simply", "plain", "easy", "easier", "understandable", "clear", "clearly", "layman", "laymans", "english",
+    "vietnamese", "general", "nutshell", "sentence", "sentences", "paragraph", "points", "bullet", "steps",
+    "kid", "child", "beginner", "beginners", "everyday", "non-technical", "nontechnical",
+}
+
+
+def _is_manner_phrase(phrase: str) -> bool:
+    return any(word.strip("'") in _MANNER_WORDS for word in re.split(r"[\s_-]+", phrase.casefold()))
+
+
 def prepare(req):
     text = req.message.casefold()
     ctx = req.context.model_copy(deep=True)
@@ -36,7 +50,11 @@ def prepare(req):
     before = ctx.model_dump(exclude={"trend_id", "intent"})
     reference_question = bool(ctx.trend_id and re.search(r"\bthat\b|\bhere\b|\bthis\b|result|p[- ]?value|significan|slope|interval|autocorrelation|fdr", text))
     concept = runtime.classify(req) == "education" and not reference_question
-    intent = ("compare" if re.search(r"compar|so sánh", text) else
+    # A selection that already names two regions stays a comparison even if the question says "trends"
+    # (Phase 8.5 E2E: "Why might A and B show different temperature trends?" was answered for A only).
+    two_places = ctx.intent == "compare" and ctx.region_b is not None
+    intent = ("compare" if re.search(r"compar|so sánh", text) or (two_places and not re.search(
+                  r"plot|time series|monthly observations|chuỗi|provenance|data source|dataset source|which dataset|nguồn", text)) else
               "series" if re.search(r"plot|time series|monthly observations|chuỗi", text) else
               "provenance" if re.search(r"provenance|data source|dataset source|which dataset|nguồn", text) else
               "trend" if re.search(r"trend|analy[sz]e|xu hướng", text) else ctx.intent or "trend")
@@ -103,7 +121,8 @@ def prepare(req):
         ctx.region = PresetRegion(type="preset", id=ids[0])
     if not ids:
         named = re.search(r"\b(?:in|with|region)\s+([a-z][a-z _-]*?)(?=\s+(?:from|between|during)\b|[?.!,]|$)", text)
-        if named and not named[1].startswith(("this", "that", "the current", "another", "the selected", "detail", "plain", "english")):
+        if named and not named[1].startswith(("this", "that", "the current", "another", "the selected", "detail", "plain", "english")) \
+                and not _is_manner_phrase(named[1]):
             raise ApiError(404, "NOT_FOUND", "Unknown region. Choose a catalog preset or a validated bounding box.")
     months = re.findall(r"\b(?:19|20)\d{2}-\d{2}\b", text)
     years = re.findall(r"\b(?:19|20)\d{2}\b", text)
@@ -146,7 +165,7 @@ def prepare(req):
         try:
             PeriodInput.model_validate({"variable_id": ctx.variable_id, "dataset_id": ctx.dataset_id, "start": ctx.start, "end": ctx.end})
         except ValidationError:
-            raise ApiError(400, "INVALID_TIME_RANGE", "Choose an ordered period of at most 288 months.") from None
+            raise ApiError(400, "INVALID_TIME_RANGE", "Choose an ordered period of at most 300 months (2001 to 2025).") from None
         service._check_time(v, ctx.start, ctx.end)
         for region in [ctx.region, ctx.region_b if intent == "compare" else None]:
             if region:
@@ -154,7 +173,7 @@ def prepare(req):
                     _region(region, v)
                 except ApiError as error:
                     if error.code == "RESOURCE_LIMIT":
-                        return ctx, None, "Select a smaller region for conversational analysis (at most 1000 grid cells and 1000 square degrees)."
+                        return ctx, None, "Select a smaller region for conversational analysis (at most 1000 square degrees, for example 30° × 30°)."
                     raise
     return ctx, {"trend": "analyze_trend", "compare": "compare_regions", "series": "get_time_series", "provenance": "get_dataset_provenance"}[intent], None
 
@@ -219,6 +238,17 @@ def respond(req, template, identifier=None):
             response = response.model_copy(update={'answer': response.answer + ' ' + statistical_followup(req.message, TrendResponse.model_validate(cached))})
         return decorate(response, ctx)
     settings = config.llm_settings()
+    if operation == "compare_regions" and ctx.region is not None and ctx.region_b is not None:
+        # Phase 8.5 E2E: the model sometimes analysed only region A for a two-region question. When the selection
+        # already says "compare", the backend runs the comparison itself and the model only explains the verified result.
+        result = registry.execute("compare_regions", {
+            "variable_id": ctx.variable_id, "dataset_id": ctx.dataset_id, "start": ctx.start, "end": ctx.end,
+            "region_a": ctx.region.model_dump(mode="json", exclude_none=True),
+            "region_b": ctx.region_b.model_dump(mode="json", exclude_none=True)})
+        if result.ok:
+            detail = ("Different trends in two places show what changed, not why; possible reasons are hypotheses "
+                      "that need separate evidence.")
+            return decorate(agent.explain_results(normalized, [result], detail, identifier), ctx)
     if settings.provider == "gemini" and settings.api_key:
         return decorate(agent.run(normalized, template, identifier), ctx)
     args = {}

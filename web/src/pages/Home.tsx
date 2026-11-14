@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useContext, type ReactNode } from "react";
+import { AppChrome } from "../chrome";
 import { useStore, WORLD } from "../store";
 import { Terra } from "../ui";
 
@@ -29,7 +30,24 @@ function Step({ n, icon, title, sub, eg, tint, last }: { n: number | string; ico
 
 // Mini animated maps for the map guide: one per gesture (CSS animations in styles.css, off for reduced motion).
 const LAND = "M8 30c10-12 30-14 44-8s18 18 6 26-34 8-44 2S0 40 8 30zM96 18c14-8 40-6 52 6s4 30-12 34-34 2-42-10-8-24 2-30zM70 70c8-6 26-6 32 2s-2 18-14 18-24-12-18-20z";
-const Cursor = () => <path d="M0 0l0 15 4-4 3 7 3-1-3-7 6 0z" fill="#2b2540" stroke="#fff" strokeWidth="1.2" strokeLinejoin="round" />;
+// Small mouse that moves on the mini map instead of an arrow pointer. (0,0) is the spot it points at: a small dot,
+// with the mouse just below and to the right so it never hides the selection. The button in use is orange.
+const Cursor = ({ button }: { button: "left" | "right" | "wheel" }) => {
+  const hl = "#e8735a";
+  return (
+    <g>
+      <circle r="2.2" fill={hl} stroke="#fff" strokeWidth="1" />
+      <g transform="translate(5 6) scale(1.3)">
+        <rect width="14" height="22" rx="7" fill="#fff" stroke="#2b2540" strokeWidth="1.6" />
+        {button === "left" && <path className="mouse-press" d="M0.8 8V7.5A6.4 6.4 0 0 1 7 0.8V8z" fill={hl} />}
+        {button === "right" && <path className="mouse-press" d="M13.2 8V7.5A6.4 6.4 0 0 0 7 0.8V8z" fill={hl} />}
+        <path d="M0.8 8.4h12.4M7 0.8v7.6" stroke="#2b2540" strokeWidth="1.2" />
+        <rect x="5.5" y="2.6" width="3" height="4.6" rx="1.5" fill={button === "wheel" ? hl : "#fff"} stroke="#2b2540" strokeWidth="1"
+          className={button === "wheel" ? "mouse-press" : undefined} />
+      </g>
+    </g>
+  );
+};
 function MapDemo({ kind }: { kind: "click" | "drag" | "pan" | "zoom" }) {
   return (
     <svg className={`mapdemo demo-${kind}`} viewBox="0 0 160 100" aria-hidden="true">
@@ -38,23 +56,31 @@ function MapDemo({ kind }: { kind: "click" | "drag" | "pan" | "zoom" }) {
       {kind === "click" && <>
         <circle className="demo-ripple" cx="80" cy="44" r="10" fill="none" stroke="#e8735a" strokeWidth="2" />
         <rect className="demo-pin" x="75" y="39" width="10" height="10" rx="2" fill="none" stroke="#2b2540" strokeWidth="2.5" />
-        <g transform="translate(80 44)"><Cursor /></g>
+        <g transform="translate(80 44)"><Cursor button="left" /></g>
       </>}
       {kind === "drag" && <>
-        <rect className="demo-box" x="44" y="22" width="70" height="50" rx="3" fill="rgba(232,115,90,.18)" stroke="#e8735a" strokeWidth="2.5" strokeDasharray="6 4" />
-        <g className="demo-dragcursor"><Cursor /></g>
+        <rect className="demo-box" x="44" y="22" width="70" height="40" rx="3" fill="rgba(232,115,90,.18)" stroke="#e8735a" strokeWidth="2.5" strokeDasharray="6 4" />
+        <g className="demo-dragcursor"><Cursor button="left" /></g>
       </>}
-      {kind === "pan" && <g className="demo-pancursor"><Cursor /></g>}
-      {kind === "zoom" && <g transform="translate(118 18)" stroke="#2b2540" strokeWidth="2.4" strokeLinecap="round" fill="#fff">
-        <rect x="-8" y="-8" width="22" height="22" rx="7" /><path d="M-2 3h10M3 -2v10" />
-      </g>}
+      {kind === "pan" && <g className="demo-pancursor"><Cursor button="right" /></g>}
+      {kind === "zoom" && <>
+        <g transform="translate(118 18)" stroke="#2b2540" strokeWidth="2.4" strokeLinecap="round" fill="#fff">
+          <rect x="-8" y="-8" width="22" height="22" rx="7" /><path d="M-2 3h10M3 -2v10" />
+        </g>
+        <g transform="translate(80 50)"><Cursor button="wheel" /></g>
+      </>}
     </svg>
   );
 }
+const GESTURE_KEY: Record<"click" | "drag" | "pan" | "zoom", string> = {
+  click: "Left click", drag: "Left button + drag", pan: "Right button + drag", zoom: "Scroll wheel",
+};
+
 function MapTip({ kind, title, how, result }: { kind: "click" | "drag" | "pan" | "zoom"; title: string; how: string; result: string }) {
   return (
     <div className="maptip">
       <MapDemo kind={kind} />
+      <span className="maptip-key">{GESTURE_KEY[kind]}</span>
       <b>{title}</b>
       <p className="how">{how}</p>
       <p className="res">{result}</p>
@@ -102,6 +128,7 @@ const card = (extra?: object) => ({ border: 0, padding: 18, textAlign: "left" as
 
 export function Home() {
   const { variables, regions, runAnalysis, go } = useStore();
+  const chrome = useContext(AppChrome);
   const runCase = (variableId: string, regionId: string) => {
     const v = variables.find((x) => x.id === variableId);
     const r = regions.find((x) => x.id === regionId);
@@ -124,6 +151,8 @@ export function Home() {
           <div className="row">
             <button type="button" className="btn" onClick={() => go("explore")}>Start</button>
             <button type="button" className="btn soft" onClick={() => runCase("merra2_air_temperature_2m", "mekong_delta")}>Try an example</button>
+            <button type="button" className="btn ghost" onClick={chrome.replayTutorial}>Replay tutorial</button>
+            <button type="button" className="btn ghost" onClick={chrome.toLanding}>About Terra-scope</button>
           </div>
         </div>
       </section>
@@ -150,7 +179,6 @@ export function Home() {
         <section className="card pad col" aria-labelledby="mouse" style={{ gap: 14, gridColumn: "1 / -1" }}>
           <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
             <h2 id="mouse" style={{ fontSize: 22 }}>Choosing a place on the map</h2>
-            <span className="small muted">Prefer typing? In step 4 use <b>Name</b> or <b>Coordinates</b> instead.</span>
           </div>
           <div className="maptips">
             <MapTip kind="click" title="Pick one place" how="Left-click once on the map."
@@ -161,7 +189,6 @@ export function Home() {
             <MapTip kind="zoom" title="Zoom in or out" how="Scroll the mouse wheel, or press + and − on the map."
               result="Zoom in first to draw small areas precisely." />
           </div>
-          <span className="small muted">To clear a selection, press × on its label, press Esc, or use Clear in step 4.</span>
         </section>
 
         {/* colours */}

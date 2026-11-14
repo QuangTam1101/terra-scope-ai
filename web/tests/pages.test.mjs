@@ -26,7 +26,7 @@ const series={variable_id:variable.id,region:trend.region,units:'mm/month',point
 const place={ref:{type:'preset',id:region.id},label:region.name,bbox:region.bbox};
 const run={key:trend.trend_id,trend,series,variable,place};
 const noop=()=>{};
-globalThis.phase6Store={page:'home',ready:true,variables:[variable],regions:[region],variable,sel:{variableId:variable.id,parameter:'precipitation',startYear:2001,endYear:2024,place},run,history:[run],go:noop,setSel:noop,runAnalysis:async()=>true,showError:noop,clearToast:noop,toast:null,tempUnit:'C',setTempUnit:noop,running:false,chatTurns:[{id:'chat1',question:'Explain the trend',context:{},response:{answer:trend.plain_summary,mode:'template',evidence:[{trend,cited_numbers:[]}],warnings:[],actions:[],disclaimer:'Backend evidence'}}],chatBusy:false,sendChat:async()=>{},clearChat:noop,chatContext:null,huntSelection:null,setHuntSelection:noop};
+globalThis.phase6Store={page:'home',ready:true,variables:[variable],regions:[region],variable,sel:{variableId:variable.id,parameter:'precipitation',startYear:2001,endYear:2024,place},run,history:[run],go:noop,setSel:noop,runAnalysis:async()=>true,showError:noop,clearToast:noop,toast:null,tempUnit:'C',setTempUnit:noop,running:false,chatTurns:[{id:'chat1',question:'Explain the trend',context:{},response:{answer:trend.plain_summary,mode:'template',evidence:[{trend,cited_numbers:[]}],warnings:[],actions:[],disclaimer:'Backend evidence'}}],chatBusy:false,sendChat:async()=>{},clearChat:noop,chatContext:null,huntSelection:null,setHuntSelection:noop,progress:null,cancelAnalysis:noop,comparisons:[],addComparison:noop,removeReportItem:noop,backendVersion:'0.2.0',makeCase:()=>null,openCase:async()=>({ok:0,failed:0,changed:[]})};
 const cachePrefix=join(resolve(tmpdir()),'terrascope-page-qa-');
 const qaCache=await mkdtemp(cachePrefix);
 const server=await createServer({cacheDir:qaCache,server:{middlewareMode:true,watch:null},appType:'custom',optimizeDeps:{noDiscovery:true,include:[]},plugins:[{
@@ -35,13 +35,13 @@ const server=await createServer({cacheDir:qaCache,server:{middlewareMode:true,wa
   load(id){if(id==='\0phase6-store')return `export const useStore=()=>globalThis.phase6Store; export const WORLD={ref:{type:'preset',id:'global'},label:'Whole world',bbox:[-180,-90,180,90]}; export const cellPlace=(lon,lat)=>({ref:{type:'bbox',bbox:[lon,lat,lon+1,lat+1]},label:'Cell',bbox:[lon,lat,lon+1,lat+1]}); export const areaPlace=(bbox)=>({ref:{type:'bbox',bbox},label:'Area',bbox});`;},
 }]});
 try {
-  for(const [name,text] of [['Home','Start'],['Explore','Raw Seasonal MK p'],['Hunt','Contradiction hunt'],['Detective','Ask Terra'],['Report','95% OLS anomaly CI']]) {
+  for(const [name,text] of [['Home','Start'],['Explore','Raw Seasonal MK p'],['Hunt','Contradiction hunt'],['Detective','Ask Terra'],['Report','OLS anomaly slope, 95% interval']]) {
     const module=await server.ssrLoadModule(`/src/pages/${name}.tsx`);
     test(`${name} renders offline with selected evidence and semantic controls`,()=>{
       const html=renderToStaticMarkup(createElement(module[name]));
       assert.ok(html.includes(text),name);
       assert.ok(html.includes('<button'),name);
-      if(name==='Report'){assert.ok(html.includes('GPM_3IMERGM'));assert.ok(html.includes('raw seasonal p'));assert.ok(html.includes('Export Markdown'));}
+      if(name==='Report'){assert.ok(html.includes('GPM_3IMERGM'));assert.ok(html.includes('Raw Seasonal MK p'));assert.ok(html.includes('not a Sen confidence interval'));assert.ok(html.includes('Export Markdown'));assert.ok(html.includes('Export reproducibility JSON'));}
       if(name==='Detective'){assert.ok(html.includes('role="log"'));assert.ok(html.includes('not statistically significant'));assert.ok(html.includes('Raw p:'));}
     });
   }

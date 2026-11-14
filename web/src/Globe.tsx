@@ -13,12 +13,12 @@ const MAX_ZOOM = 6;
 const D = Math.PI / 180;
 
 interface Props {
-  layer: Layer; trend: TrendGrid | null; values: ValueGrid | null; scale: number; loading: boolean;
+  layer: Layer; trend: TrendGrid | null; values: ValueGrid | null; scale: number; loading: boolean; loadingInfo?: { title: string; detail: string } | null;
   selected: BBox | null; selectedLabel?: string; lookup: Map<string, string>; cellDeg: number;
   onPick: (lon: number, lat: number) => void; onClear: () => void;
 }
 
-export function Globe({ layer, trend, values, scale, loading, selected, selectedLabel, lookup, cellDeg, onPick, onClear }: Props) {
+export function Globe({ layer, trend, values, scale, loading, loadingInfo, selected, selectedLabel, lookup, cellDeg, onPick, onClear }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const start: [number, number] = selected ? [(selected[0] + selected[2]) / 2, (selected[1] + selected[3]) / 2] : [106, 12];
   const [rot, setRot] = useState<{ lon: number; lat: number; k: number }>({ lon: start[0], lat: Math.max(-60, Math.min(60, start[1])), k: 1 });
@@ -182,7 +182,8 @@ export function Globe({ layer, trend, values, scale, loading, selected, selected
       </div>
       {loading && (
         <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "rgba(27,23,48,.55)", color: "#fff", borderRadius: 20,
-          font: "800 15px var(--body)" }}>Loading the globe…</div>
+          font: "800 15px var(--body)", textAlign: "center", padding: 20, pointerEvents: "none" }} role="status" aria-live="polite">
+          <span>{loadingInfo?.title ?? "Loading the globe…"}{loadingInfo?.detail && <><br /><span style={{ font: "600 13px var(--body)" }}>{loadingInfo.detail}</span></>}</span></div>
       )}
     </div>
   );

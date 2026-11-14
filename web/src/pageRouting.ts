@@ -7,7 +7,7 @@ export type RoutedPage = 'landing' | 'home' | 'explore' | 'hunt' | 'detective' |
  * - Any other hash: the application guide (Home), never an empty screen and never a redirect loop.
  */
 export function pageFromHash(hash: string): RoutedPage {
-  const page = hash.replace(/^#\/?/, '');
+  const page = hash.replace(/^#\/?/, '').split('?')[0];   // "#report?case=..." opens Report with a saved case
   if (page === '' || page === 'landing') return 'landing';
   return page === 'explore' || page === 'hunt' || page === 'detective' || page === 'report' ? page : 'home';
 }

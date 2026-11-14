@@ -23,13 +23,20 @@ export function Tour({ open, page, go, onClose, onReplay }: Props) {
   const [missing, setMissing] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const restoreFocus = useRef<HTMLElement | null>(null);
+  const wasOpen = useRef(false);
   const step = TOUR_STEPS[clampStep(index)];
   const last = index === TOUR_STEPS.length - 1;
 
   // Remember where focus was; give it back when the tour closes.
   useEffect(() => {
-    if (open) { restoreFocus.current = document.activeElement as HTMLElement | null; setIndex(0); }
-    else restoreFocus.current?.focus?.();
+    if (open) { wasOpen.current = true; restoreFocus.current = document.activeElement as HTMLElement | null; setIndex(0); }
+    else if (wasOpen.current) {
+      wasOpen.current = false;
+      // Give focus back to where it was; if that control is gone (e.g. the landing page button), use the main content.
+      const prev = restoreFocus.current;
+      if (prev && document.contains(prev)) prev.focus();
+      else { const main = document.querySelector<HTMLElement>("main"); if (main) { main.tabIndex = -1; main.focus(); } }
+    }
   }, [open]);
 
   // Move to the page of the step, then wait for its target element to exist.
@@ -44,9 +51,10 @@ export function Tour({ open, page, go, onClose, onReplay }: Props) {
       if (cancelled) return;
       const el = document.querySelector(step.target!) as HTMLElement | null;
       if (el && el.getBoundingClientRect().width > 0) {
-        const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-        el.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
-        window.setTimeout(() => !cancelled && setRect(el.getBoundingClientRect()), reduce ? 0 : 350);
+        // Instant scroll (smooth scrolling can stall in background tabs). Tall targets (the map on a phone) are
+        // aligned to their top so the start of the element is visible.
+        el.scrollIntoView({ block: el.getBoundingClientRect().height > window.innerHeight * 0.6 ? "start" : "center", behavior: "auto" });
+        setRect(el.getBoundingClientRect());
         return;
       }
       if (performance.now() - t0 > WAIT_MS) { setRect(null); setMissing(true); return; }
@@ -61,11 +69,15 @@ export function Tour({ open, page, go, onClose, onReplay }: Props) {
     if (!open || !step.target) return;
     const update = () => {
       const el = document.querySelector(step.target!) as HTMLElement | null;
-      if (el) setRect(el.getBoundingClientRect());
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setRect((old) => (old && old.left === r.left && old.top === r.top && old.width === r.width && old.height === r.height ? old : r));
     };
     window.addEventListener("resize", update);
     window.addEventListener("scroll", update, true);
-    return () => { window.removeEventListener("resize", update); window.removeEventListener("scroll", update, true); };
+    // Lazy pages and smooth scrolling move the target after the first measurement: re-measure while the step is shown.
+    const timer = window.setInterval(update, 250);
+    return () => { window.removeEventListener("resize", update); window.removeEventListener("scroll", update, true); window.clearInterval(timer); };
   }, [open, step]);
 
   const close = useCallback((completed: boolean) => onClose(completed), [onClose]);
@@ -99,14 +111,17 @@ export function Tour({ open, page, go, onClose, onReplay }: Props) {
   if (!open) return null;
 
   // Place the card below the target, else above, else centred; always inside the viewport.
-  const vw = window.innerWidth, vh = window.innerHeight;
+  // clientWidth/clientHeight exclude scrollbars and follow device emulation more reliably than innerWidth.
+  const vw = document.documentElement.clientWidth || window.innerWidth, vh = document.documentElement.clientHeight || window.innerHeight;
   const cardW = Math.min(380, vw - 24);
   let style: CSSProperties = { width: cardW, left: (vw - cardW) / 2, top: Math.max(24, vh / 2 - 150) };
   if (rect) {
     const left = Math.max(12, Math.min(rect.left + rect.width / 2 - cardW / 2, vw - cardW - 12));
-    if (rect.bottom + PAD + 230 < vh) style = { width: cardW, left, top: rect.bottom + PAD + 12 };
-    else if (rect.top - PAD - 230 > 0) style = { width: cardW, left, top: rect.top - PAD - 12, transform: "translateY(-100%)" };
-    else style = { width: cardW, left: Math.max(12, vw - cardW - 16), top: 16 };
+    const cardH = (cardRef.current?.offsetHeight ?? 260) + 16;   // measured height of the card, plus a margin
+    if (rect.bottom + PAD + cardH < vh) style = { width: cardW, left, top: rect.bottom + PAD + 12 };
+    else if (rect.top - PAD - cardH > 0) style = { width: cardW, left, bottom: vh - rect.top + PAD + 12 };
+    // Target fills the screen (e.g. the map on a phone): keep the card pinned inside the bottom of the viewport.
+    else style = { width: cardW, left: (vw - cardW) / 2, bottom: 12 };
   }
 
   return (

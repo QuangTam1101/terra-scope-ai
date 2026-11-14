@@ -87,6 +87,7 @@ class CallBudget:
         self.calls = deque()
         self.active = 0
         self.cooldown_until = 0.0
+        self.reason = "rate_limit"   # why the last enter() was refused: cooldown, busy or rate_limit
 
     def enter(self, limit: int) -> bool:
         with self.lock:
@@ -94,6 +95,8 @@ class CallBudget:
             while self.calls and now - self.calls[0] >= 60:
                 self.calls.popleft()
             if now < self.cooldown_until or len(self.calls) >= limit or self.active >= 2:
+                # Phase 8.5 E2E: say the real reason; a pause after a Gemini error is not "the request limit".
+                self.reason = "cooldown" if now < self.cooldown_until else "busy" if self.active >= 2 else "rate_limit"
                 return False
             self.calls.append(now)
             self.active += 1
@@ -123,6 +126,8 @@ FALLBACK_MESSAGES = {
     "missing_key": "Gemini is not configured. Using Template Mode.",
     "auth": "Gemini authentication failed. Check the backend key locally. Using Template Mode.",
     "rate_limit": "The AI request limit was reached. Try again later. Using Template Mode.",
+    "cooldown": "Gemini had a temporary error a moment ago, so Terra pauses AI answers for about a minute. Using Template Mode.",
+    "busy": "Two AI answers are already being prepared. Try again in a moment. Using Template Mode.",
     "timeout": "Gemini exceeded the response deadline. Using Template Mode.",
     "model_unavailable": "The configured Gemini model is unavailable. Using Template Mode.",
     "service": "Gemini is temporarily unavailable. Using Template Mode.",
@@ -182,7 +187,7 @@ def enhance(req: ChatRequest, template: Callable[[ChatRequest], ChatResponse], *
                               evidence=verified_summary(evidence) if evidence else None,
                               approved_statements=approved_statements(evidence) if evidence else {}, request_id=identifier)
     if not budget.enter(settings.requests_per_minute):
-        return use_template(base, "rate_limit")
+        return use_template(base, budget.reason)
     error = None
     http_status, detail = None, None
     try:
