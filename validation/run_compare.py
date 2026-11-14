@@ -5,7 +5,6 @@ import math
 import sys
 from pathlib import Path
 
-import numpy as np
 import requests
 
 HERE = Path(__file__).resolve().parent

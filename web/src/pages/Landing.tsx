@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type JSX } from "react";
+import { useEffect, useRef, type JSX } from "react";
 import { geoEquirectangular, geoOrthographic, geoPath } from "d3-geo";
 import heroTrend from "../assets/heroTrend.json";
 import { land } from "../WorldMap";
@@ -218,11 +218,16 @@ const TRUST_ICON: Record<string, () => JSX.Element> = {
     </svg>),
 };
 
+// Each limit comes with a real example from the app (backend /trends, MERRA-2, GLDAS and IMERG, checked 2026-11-15).
 const LIMITS = [
-  "A trend line describes the past. The trend analysis does not forecast the future.",
-  "A trend shows what changed, not why it changed.",
-  "\"Not significant\" does not mean \"no change\": a longer record may still reveal one.",
-  "Models and reanalyses are not direct measurements, and datasets can disagree.",
+  { title: "It describes the past, it does not forecast.",
+    text: "Mekong Delta air temperature rose about +0.19 °C per decade from 2001 to 2025. That is how fast it changed, not a prediction for next year." },
+  { title: "It shows what changed, not why.",
+    text: "A warming trend could come from many causes. Terra-scope measures the change; it does not test the cause." },
+  { title: "\"Not proven yet\" does not mean \"no change\".",
+    text: "Mekong Delta rainfall rose +3.43 mm/month per decade (2001 to 2024), but p = 0.077, so the test cannot confirm it yet. A longer record may." },
+  { title: "Datasets can disagree.",
+    text: "Over the Sahel, MERRA-2 shows cooling (−0.21 °C per decade) while GLDAS shows warming (+0.80). Both are models, not thermometers, so the app always names the dataset." },
 ] as const;
 
 const S = { fill: "none", stroke: "currentColor", strokeWidth: 2.2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -496,7 +501,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
               <ul className="lp-reply-list">
                 <li><span className="lp-reply-icon" aria-hidden="true"><svg viewBox="0 0 32 32" width="24" height="24"><path d="M16 25V8M9 14l7-7 7 7" stroke="#c4621a" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg></span><b>+3.43 mm/month per decade</b></li>
                 <li><span className="lp-reply-icon lp-reply-p" aria-hidden="true">p</span><b>p = 0.077</b><span>(needs below 0.05)</span></li>
-                <li className="lp-reply-verdict"><span className="badge np">{VERDICT_TEXT.np}</span><span>It could still be natural ups and downs.</span></li>
+                <li className="lp-reply-verdict"><span>It could still be natural ups and downs.</span></li>
               </ul>
               <span className="lp-reply-src">NASA GPM IMERG, 2001 to 2024, 288 months</span>
             </div>
@@ -579,7 +584,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
           <div className="lp-limits">
             <h3>What Terra-scope does not claim</h3>
             <ul className="lp-list">
-              {LIMITS.map((l) => <li key={l}>{l}</li>)}
+              {LIMITS.map((l) => <li key={l.title}><b>{l.title}</b> {l.text}</li>)}
             </ul>
           </div>
           <div className="lp-team">

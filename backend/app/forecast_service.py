@@ -9,7 +9,7 @@ from functools import lru_cache
 import pandas as pd
 from fastapi import APIRouter, Query
 
-from . import config
+from . import config  # noqa: F401  (import first: puts data-pipeline on sys.path)
 from .errors import ApiError
 from .forecast_schemas import (DataStatus, ForecastMapResponse, ForecastRequest, ForecastResponse, RealityCheckResponse)
 from .service import _num, _region_label, get_variable, resolve_region

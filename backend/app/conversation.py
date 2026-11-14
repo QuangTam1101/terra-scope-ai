@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from . import agent, catalog, config, service
 from .errors import ApiError
 from .schemas import (ChatContext, ChatResponse, ChatWarning, ChatAction, ChatActionParams,
-                      PresetRegion, TrendResponse, CompareResponse, ToolResult)
+                      PresetRegion, TrendResponse, ToolResult)
 from .tools import registry, PeriodInput, _region
 from .llm import runtime
 

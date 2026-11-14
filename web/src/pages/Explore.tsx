@@ -18,7 +18,7 @@ const GRID_CACHE = new Map<string, TrendGrid | ValueGrid>();
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 export function Explore() {
-  const { variables, regions, sel, setSel, variable, runAnalysis, running, run, showError, go, tempUnit, setTempUnit, progress, cancelAnalysis, audience } = useStore();
+  const { variables, sel, setSel, variable, runAnalysis, running, run, showError, go, tempUnit, setTempUnit, progress, cancelAnalysis, audience } = useStore();
   const sci = audience === "scientist";
   const [layer, setLayer] = useState<Layer>("trend");
   const [timelapse, setTimelapse] = useState(false);   // 2D time-lapse replaces the static map while on
@@ -108,8 +108,7 @@ export function Explore() {
     const first = variables.find((v) => v.parameter === p && v.available) ?? variables.find((v) => v.parameter === p);
     if (first) setSel({ parameter: p, variableId: first.id });
   };
-  const presetValue = sel.place.ref.type === "preset" ? sel.place.ref.id : "";
-  const result = run && run.variable.id === sel.variableId ? run : run;
+  const result = run;
 
   return (
     <div className="explore">

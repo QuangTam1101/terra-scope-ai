@@ -1,5 +1,4 @@
 """Real Gemini function-call protocol. Planning has tools, composition has JSON, never both."""
-import json
 
 from google import genai
 from google.genai import errors, types

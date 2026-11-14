@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 from . import bridge, catalog, service
 from .errors import ApiError
 from .scientific_schemas import MethodAdvice
-from .schemas import (BBoxRegion, CompareRequest, CompareResponse, DataSource, Month, PresetRegion,
+from .schemas import (BBoxRegion, CompareRequest, CompareResponse, Month, PresetRegion,
                       RegionsResponse, SeriesRequest, SeriesResponse, TrendRequest, TrendResponse,
                       VariableItem, VariablesResponse, ToolResult, ToolError, ToolWarning, RegionCatalog, Provenance)
 
