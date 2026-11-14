@@ -5,7 +5,7 @@ const LIMITS = [
   "A trend shows what changed, not why it changed.",
   "Trend lines are estimated past trends, not forecasts.",
   "Data are averaged on a 1° grid (about 110 km); small areas mix land and sea.",
-  "GLDAS is a land model: land only, with no irrigation or flooding of rice fields.",
+  "GLDAS is a land-model product, not a direct local measurement; consult product documentation for represented processes.",
   "There is no salinity variable, so salt intrusion cannot be tested.",
   "All results are preliminary and not yet validated against independent sources.",
 ];
@@ -18,9 +18,9 @@ export function Report() {
     const rows = history.map((h) => `| ${h.place.label} | ${h.variable.parameter_name} · ${h.variable.dataset_name} | ${h.trend.start} to ${h.trend.end} | ${signed(h.trend.slope_per_decade)} ${h.variable.display_units} | ${ci(h.trend.slope_ci)} | ${pval(h.trend.p_value)} | ${VERDICT_TEXT[verdictOf(h.trend)]} |`);
     const md = [
       "# Terra-scope AI evidence report", "", "Preliminary · not yet validated", "",
-      "| Place | Variable · dataset | Period | Sen's slope per decade | 95% CI | Mann–Kendall p | Verdict |",
+      "| Place | Variable · dataset | Period | Sen's slope per decade | 95% OLS anomaly CI (not Sen CI) | Raw Seasonal MK p | Verdict |",
       "|---|---|---|---|---|---|---|", ...rows, "",
-      "## Method", "Monthly area averages on a 1° grid; Seasonal Mann–Kendall test with Sen's slope; Hamed–Rao autocorrelation-adjusted p; 95% CI from a linear fit on anomalies; maps use Benjamini–Hochberg FDR.", "",
+      "## Method", "Monthly area averages on a 1° grid; raw Seasonal MK p determines the regional verdict. Seasonal Sen slope estimates rate per decade. Hamed–Rao MK on anomalies is a separate diagnostic. The 95% OLS anomaly slope interval is not a Sen interval and has no HAC adjustment. Grid BH-FDR uses raw cell p-values without serial-dependence correction.", "",
       "## NASA datasets", ...used.map((v) => `- ${v.source.product} v${v.source.version}, ${v.source.provider}: ${v.source.url}`), "",
       "## Limitations", ...LIMITS.map((l) => `- ${l}`), "",
     ].join("\n");
@@ -43,7 +43,7 @@ export function Report() {
         ) : (
           <div className="table-box">
             <table>
-              <thead><tr><th>Place</th><th>Variable · dataset</th><th>Sen's slope per decade</th><th>95% CI</th><th>Mann–Kendall p</th><th>Autocorr.-adjusted p</th><th>Verdict</th></tr></thead>
+              <thead><tr><th>Place</th><th>Variable · dataset</th><th>Sen's slope per decade</th><th>95% OLS anomaly CI (not Sen CI)</th><th>Raw Seasonal MK p</th><th>Autocorr.-adjusted p (separate test)</th><th>Verdict</th></tr></thead>
               <tbody>{history.map((h) => (
                 <tr key={h.key}>
                   <td style={{ minWidth: 160 }}>{h.place.label}</td>
@@ -65,7 +65,7 @@ export function Report() {
       </section>
       <section className="card pad col">
         <h2 style={{ fontSize: 22 }}>How the evidence was tested</h2>
-        <p style={{ margin: 0, lineHeight: 1.55 }}>Monthly values are averaged over the chosen area on a 1° grid. Seasons are removed, then the Seasonal Mann–Kendall test checks whether the change is steady enough to be unlikely by chance, and Sen's slope gives the rate per decade. A second test (Hamed–Rao) adjusts for months that depend on each other. Maps correct for testing thousands of cells at once (Benjamini–Hochberg FDR).</p>
+        <p style={{ margin: 0, lineHeight: 1.55 }}>Monthly area averages are tested by Seasonal Mann–Kendall, comparing matching calendar months. Seasonal Sen slope estimates rate per decade. The regional verdict uses raw seasonal p; Hamed–Rao on anomalies is reported separately. The OLS anomaly confidence interval targets a different estimator and has no HAC adjustment. Maps use BH-FDR on raw cell p-values without serial-dependence correction. These assumptions require scientific review.</p>
       </section>
       <section className="card pad col">
         <h2 style={{ fontSize: 22 }}>NASA datasets</h2>

@@ -50,26 +50,50 @@ export interface ExplainResponse {
 
 export interface ChatContext {
   variable_id?: string; dataset_id?: string; region?: RegionRef; start?: string; end?: string; trend_id?: string;
+  region_b?: RegionRef; intent?: "trend" | "compare" | "series" | "provenance" | "advisor";
+  parameter?: string;
 }
 export interface ChatHistoryTurn { role: "user" | "assistant"; content: string }
-export interface ChatRequest { message: string; context: ChatContext; history: ChatHistoryTurn[] }
+export interface ChatRequest { message: string; context: ChatContext; history: ChatHistoryTurn[]; use_tools?: boolean }
 export interface ChatWarning {
-  code: "TEMPLATE_MODE" | "ANALYSIS_WARNING" | "CONTEXT_REQUIRED" | "UNSUPPORTED_QUESTION";
+  code: "TEMPLATE_MODE" | "ANALYSIS_WARNING" | "CONTEXT_REQUIRED" | "UNSUPPORTED_QUESTION" | "LLM_FALLBACK";
   message: string;
 }
 export interface ChatAction {
-  type: "navigate"; page: "explore"; label: string;
-  params: { variable_id: string; region: RegionRef; start: string; end: string };
+  type: "navigate"; page: "explore" | "hunt" | "report"; label: string;
+  params: { variable_id: string; region: RegionRef; region_b?: RegionRef | null; start: string; end: string };
 }
 export interface ChatEvidence {
+  scientific_advice?: MethodAdvice | null;
   trend: TrendResponse & {
     method: string; slope_method: string; ci_level: number; alpha: number; autocorrelation_adjusted: boolean;
   };
   cited_numbers: ExplainResponse["cited_numbers"];
 }
 export interface ChatResponse {
-  answer: string; mode: "template"; evidence: ChatEvidence[]; warnings: ChatWarning[];
+  answer: string; mode: "template" | "llm"; evidence: ChatEvidence[]; warnings: ChatWarning[];
   actions: ChatAction[]; disclaimer: string; analysis_id?: string;
+  tool_results?: ChatToolResult[]; resolved_context?: ChatContext | null; clarification?: string | null;
+  suggested_questions?: string[];
+}
+export interface ChatToolResult {
+  tool: string; ok: boolean;
+  data: SeriesResponse | TrendResponse | CompareResponse | { variable: Variable; processing_notes: string[] }
+    | { variables: Variable[] } | { catalog: RegionsResponse; supported_selection_types: string[] } | MethodAdvice | null;
+  warnings: { code: string; message: string }[]; provenance: DataSource[];
+  error: { category: string; message: string; retryable: boolean } | null;
+}
+
+export interface ScientificRule { rule_id: string; explanation: string; evidence_references: string[] }
+export interface MethodGuidance extends ScientificRule { method: string; status: "applied" | "recommended" | "available_not_applied" | "requires_review" | "unsupported" }
+export interface MethodAdvice {
+  analysis_id: string; applied_methods: MethodGuidance[]; recommended_methods: MethodGuidance[];
+  available_methods: MethodGuidance[]; unsupported_methods: MethodGuidance[];
+  assumptions: ScientificRule[]; warnings: ScientificRule[]; explanations: ScientificRule[];
+  recommendation_status: string; evidence_references: string[];
+  trust_assessment?: { status: "supported" | "limited" | "requires_review" | "not_assessed";
+    decision_basis: string; estimated_direction: string; magnitude: number | null; units: string;
+    statistical_evidence: string; limitations: ScientificRule[]; cannot_conclude: string[]; missing_metadata: string[] } | null;
 }
 
 export class ApiError extends Error {
@@ -104,6 +128,7 @@ const qs = (o: Record<string, string | number | undefined>) =>
   "?" + Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join("&");
 
 export const api = {
+  llmStatus: () => call<{ provider: string; model: string; configured: boolean }>("/llm/status"),
   variables: () => call<{ variables: Variable[] }>("/variables").then((r) => r.variables),
   regions: () => call<RegionsResponse>("/regions"),
   series: (variable_id: string, region: RegionRef, start: string, end: string) =>

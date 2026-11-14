@@ -1,0 +1,134 @@
+{
+  "date": "2026-11-14",
+  "statistical_approval": "pending",
+  "protected_code_sha256": {
+    "backend/app/service.py": "0608bd86a23c714de57049fb91f1ff02c834d31c78db325907ffd738e90c5694",
+    "backend/app/bridge.py": "e845364fc50b413b7802690d2030a93ae0e3099cbfaf8ffc88eeebb8c8c59bcb",
+    "backend/app/catalog.py": "a57d8c1246d65882c873ddc50a4c23fa8e8e86b9f285047b748c0bb0d5020950",
+    "data-pipeline/pipeline/trends.py": "472556f545de6a98c6b7808a1bb48f44f97ef49fb83355f762cfb27ac4bed287",
+    "data-pipeline/pipeline/grid.py": "1552fb2b884fb80f5544d912a284f0bb90943c69d883c7357f2a03a7090a8850",
+    "data-pipeline/pipeline/contradictions.py": "2c0a21d5fabe0e7f1657be66faa4db1e66e0dbf324e4bdd93896718049a618cb",
+    "data-pipeline/pipeline/units.py": "cc9dbb79d646335f52665c8a5242d1b131f2ccf829ef39c5d56389d64fad53c3",
+    "data-pipeline/pipeline/giovanni_adapter.py": "cc841d781b5cb923b445ca6de67f13a1052a29bb27942e2d3f7c65b023985f10"
+  },
+  "versions": {
+    "pymannkendall": "1.4.3",
+    "scipy": "1.18.1",
+    "numpy": "2.5.4",
+    "xarray": "2026.9.0"
+  },
+  "products": [
+    {
+      "variable_id": "imerg_precip",
+      "region": "mekong_delta",
+      "units": "mm/month",
+      "source": {
+        "product": "GPM_3IMERGM",
+        "version": "07",
+        "provider": "NASA GES DISC",
+        "url": "https://disc.gsfc.nasa.gov/datasets/GPM_3IMERGM_07/summary",
+        "citation": "GPM IMERG Final Monthly V07 (GPM_3IMERGM.07), NASA GES DISC qua Giovanni/Harmony"
+      },
+      "cube_metadata": {
+        "units": "mm/month",
+        "dataset": "GPM_3IMERGM.07",
+        "time_count": 288
+      },
+      "valid_months": 288,
+      "regional_min": 1.614118,
+      "regional_max": 575.677673,
+      "monthly_cadence": true,
+      "slope_per_decade": 3.163604736328125,
+      "raw_p": 0.11031644898805326,
+      "adjusted_p": 0.4504139636836846,
+      "significant": false,
+      "alpha": 0.05,
+      "ci_method": "ols_anomaly",
+      "ci": [
+        -1.926055478660075,
+        19.235539582039863
+      ]
+    },
+    {
+      "variable_id": "gldas_soil_moisture_0_10cm",
+      "region": "mekong_delta",
+      "units": "m3/m3",
+      "source": {
+        "product": "GLDAS_NOAH025_M",
+        "version": "2.1",
+        "provider": "NASA GES DISC",
+        "url": "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
+        "citation": "GLDAS Noah 0.25\u00b0 Monthly v2.1 (GLDAS_NOAH025_M.2.1) qua Giovanni/Harmony"
+      },
+      "cube_metadata": {
+        "units": "m3/m3",
+        "dataset": "GLDAS_NOAH025_M.2.1",
+        "time_count": 288
+      },
+      "valid_months": 288,
+      "regional_min": 0.140739,
+      "regional_max": 0.393796,
+      "monthly_cadence": true,
+      "slope_per_decade": -0.00083962585881441,
+      "raw_p": 0.6011759045831846,
+      "adjusted_p": 0.9781397271857428,
+      "significant": false,
+      "alpha": 0.05,
+      "ci_method": "ols_anomaly",
+      "ci": [
+        -0.0035363653772850423,
+        0.0056311887507803525
+      ]
+    },
+    {
+      "variable_id": "merra2_air_temperature_2m",
+      "region": "hanoi",
+      "units": "degC",
+      "source": {
+        "product": "M2IMNXASM",
+        "version": "5.12.4",
+        "provider": "NASA GMAO / GES DISC",
+        "url": "https://disc.gsfc.nasa.gov/datasets/M2IMNXASM_5.12.4/summary",
+        "citation": "MERRA-2 M2IMNXASM v5.12.4, NASA GMAO qua Giovanni/Harmony"
+      },
+      "cube_metadata": {
+        "units": "degC",
+        "dataset": "M2IMNXASM.5.12.4",
+        "time_count": 288
+      },
+      "valid_months": 288,
+      "regional_min": 10.533197,
+      "regional_max": 29.41189,
+      "monthly_cadence": true,
+      "slope_per_decade": 0.27617021040483114,
+      "raw_p": 0.00019104258527824491,
+      "adjusted_p": 0.05218531994054265,
+      "significant": true,
+      "alpha": 0.05,
+      "ci_method": "ols_anomaly",
+      "ci": [
+        0.031124155688129485,
+        0.4351596352787784
+      ]
+    }
+  ],
+  "synthetic_tie_comparison": {
+    "current_grid_p": 1.4887711743154682e-37,
+    "tie_corrected_reference": {
+      "s": 648.0,
+      "var_s": 2376.0,
+      "z": 13.27336577727138,
+      "p": 3.304006476300492e-40,
+      "slope_per_decade": 3.333333333333333
+    },
+    "current_grid_reference": {
+      "s": 648.0,
+      "var_s": 2552.0,
+      "z": 12.80748764636969,
+      "p": 1.4887711743155113e-37,
+      "slope_per_decade": 3.333333333333333
+    },
+    "approval": "not implemented"
+  },
+  "cube_metadata_unchanged": true
+}

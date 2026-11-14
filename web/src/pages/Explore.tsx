@@ -195,7 +195,7 @@ function ChartCard() {
       <TrendChart lines={[{ series, trend: t }]} anomaly={anomaly} units={v.display_units} />
       <div className="row small muted" style={{ gap: 18 }}>
         <span><b style={{ color: t.slope_per_decade !== null && t.slope_per_decade < 0 ? "#2f6fb3" : "#c4621a" }}>━</b> Theil–Sen trend ({t.significant ? "solid: significant" : "dashed: not significant"})</span>
-        <span>▒ 95% CI from a linear fit on anomalies</span>
+        <span>OLS anomaly slope interval is shown numerically; it is not a Sen confidence band.</span>
         <span>Thin line: each month{anomaly ? ", minus that month's long-term average" : ""}</span>
         <span>Estimated past trend, not a forecast</span>
       </div>
@@ -224,9 +224,9 @@ function ResultBody() {
       <p style={{ margin: 0, font: "600 15px/1.5 var(--body)" }}>{t.plain_summary}</p>
       <div className="grid2">
         <Stat value={signed(t.slope_per_decade)} label={`Sen's slope per decade (${u})`} title="Theil–Sen slope from the Seasonal Mann–Kendall test" />
-        <Stat value={ci(t.slope_ci)} label="95% CI" title="CI from a linear fit on anomalies" />
-        <Stat value={pval(t.p_value)} label="Mann–Kendall p" title="Seasonal Mann–Kendall test" />
-        <Stat value={pval(t.p_value_autocorr_adjusted)} label="Autocorrelation-adjusted p" title="Hamed–Rao modified Mann–Kendall" />
+        <Stat value={ci(t.slope_ci)} label="95% OLS anomaly CI" title="Targets OLS slope, not seasonal Sen slope; no HAC adjustment" />
+        <Stat value={pval(t.p_value)} label="Raw Seasonal MK p (verdict basis)" title="The regional verdict uses raw seasonal p < alpha" />
+        <Stat value={pval(t.p_value_autocorr_adjusted)} label="Autocorrelation-adjusted p (diagnostic)" title="Separate Hamed–Rao MK on anomalies; not substituted for the regional verdict" />
       </div>
       <div className="col" style={{ gap: 6 }}>
         <span style={{ font: "800 13px var(--body)" }}>Data quality</span>
