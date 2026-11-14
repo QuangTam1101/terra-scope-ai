@@ -3,6 +3,7 @@ import { forecastApi, type Confidence, type DataStatus, type ForecastPoint, type
 import { cellPlace, useStore } from "../store";
 import { OutlookMap } from "../OutlookMap";
 import { PlacePicker } from "../PlacePicker";
+import { LocalOutlook } from "./LocalOutlook";
 import { plain, signed, Stat } from "../ui";
 
 // Drawing and wording only: every number (forecast, 80% range, probabilities, skill, explanations) comes from the backend.
@@ -88,20 +89,18 @@ const GLOSSARY: [string, string][] = [
   ["Seasonal outlook", "A statement about the odds for a whole month, not a weather forecast for a specific day."],
 ];
 
-export function Forecast() {
+function RegionalForecast({ sci }: { sci: boolean }) {
   const { variables, sel, setSel, variable, showError, ready } = useStore();
-  const [audience, setAudience] = useState<Audience>(() => { try { return localStorage.getItem("fcAudience") === "scientist" ? "scientist" : "simple"; } catch { return "simple"; } });
   const [mode, setMode] = useState<Mode>("outlook");
   const [months, setMonths] = useState(13);
   const [res, setRes] = useState<ForecastResponse | null>(null);
   const [status, setStatus] = useState<DataStatus | null>(null);
   const [reality, setReality] = useState<RealityCheck | null>(null);
   const [loading, setLoading] = useState(false);
-  const sci = audience === "scientist";
   const avail = variables.filter((v) => v.available);
   const today = nowMonth();
 
-  const chooseAudience = (a: Audience) => { setAudience(a); if (a === "simple") setMode("outlook"); try { localStorage.setItem("fcAudience", a); } catch { /* private mode */ } };
+  useEffect(() => { if (!sci) setMode("outlook"); }, [sci]);
   useEffect(() => { setRes(null); }, [sel.variableId, sel.place, mode]);
   useEffect(() => { forecastApi.reality().then(setReality).catch(() => setReality(null)); }, []);
   useEffect(() => {
@@ -143,16 +142,9 @@ export function Forecast() {
     <div className="col" style={{ gap: 16 }}>
       {/* ---------- set-up ---------- */}
       <section className="card pad col" aria-labelledby="fc-setup">
-        <div className="row" style={{ justifyContent: "space-between" }}>
-          <h2 id="fc-setup" style={{ fontSize: 22, margin: 0 }}>Climate outlook</h2>
-          <div className="seg" role="group" aria-label="Level of detail">
-            <button type="button" className={!sci ? "on" : ""} aria-pressed={!sci} onClick={() => chooseAudience("simple")}>Simple</button>
-            <button type="button" className={sci ? "on" : ""} aria-pressed={sci} onClick={() => chooseAudience("scientist")}>Scientist</button>
-          </div>
-        </div>
+        <h2 id="fc-setup" style={{ fontSize: 22, margin: 0 }}>Regional forecast (any area)</h2>
         <span className="small muted">
-          How likely is a wetter, drier, warmer or cooler month than normal? An AI model reads NASA satellite data and NOAA ocean-climate signals
-          (El Niño and others), and also tells you how much to trust the answer.
+          For a whole area instead of one place. Uses the satellite archive on the server (to 2024-12) and NOAA climate indices; for a forecast that starts from today use the local outlook above.
         </span>
         <span className="label">1 · What do you want to know?</span>
         <div className="row" style={{ gap: 6 }}>
@@ -391,5 +383,24 @@ function RealityCard({ reality, sci, mode }: { reality: RealityCheck | null; sci
       </p>
       {sci && <span className="small muted">n = {r.n_months} months · 80% range contained the measurement {pct(r.coverage_80)} of the time (region averages make the range conservative) · baseline {r.baseline_period} · source: {reality.source}.</span>}
     </Section>
+  );
+}
+
+
+export function Forecast() {
+  const [audience, setAudience] = useState<Audience>(() => { try { return localStorage.getItem("fcAudience") === "scientist" ? "scientist" : "simple"; } catch { return "simple"; } });
+  const sci = audience === "scientist";
+  const choose = (a: Audience) => { setAudience(a); try { localStorage.setItem("fcAudience", a); } catch { /* private mode */ } };
+  return (
+    <div className="col" style={{ gap: 16 }}>
+      <div className="row" style={{ justifyContent: "flex-end" }}>
+        <div className="seg" role="group" aria-label="Level of detail">
+          <button type="button" className={!sci ? "on" : ""} aria-pressed={!sci} onClick={() => choose("simple")}>Simple</button>
+          <button type="button" className={sci ? "on" : ""} aria-pressed={sci} onClick={() => choose("scientist")}>Scientist</button>
+        </div>
+      </div>
+      <LocalOutlook sci={sci} />
+      {sci && <RegionalForecast sci />}
+    </div>
   );
 }

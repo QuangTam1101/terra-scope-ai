@@ -11,12 +11,14 @@ from fastapi import APIRouter, Query
 
 from . import config
 from .errors import ApiError
-from .forecast_schemas import (DataStatus, ForecastMapResponse, ForecastRequest, ForecastResponse, RealityCheckResponse)
+from .forecast_schemas import (DataStatus, ForecastMapResponse, ForecastRequest, ForecastResponse, LocalOutlookRequest,
+                               LocalOutlookResponse, RealityCheckResponse)
 from .service import _num, _region_label, get_variable, resolve_region
 
 from pipeline import api as papi  # noqa: E402
 from pipeline import forecast as pforecast  # noqa: E402
 from pipeline import indices as pindices  # noqa: E402
+from pipeline import live as plive  # noqa: E402
 
 router = APIRouter(prefix="/api/v1")
 
@@ -181,7 +183,7 @@ def _explanation(v, label: str, f: dict, pts: list[dict], metrics: dict, mode: s
     if shown:
         for c in shown:
             d = c["effect_p_above"] if tilt == "above" else c["effect_p_below"]
-            lines.append(f"Why: {GROUP_TEXT.get(c['group'], c['group'])} {'raises' if d > 0 else 'lowers'} the odds of a {tilt}-normal month by about {abs(d) * 100:.0f} point{'' if round(abs(d) * 100) == 1 else 's'}.")
+            lines.append(f"Why: {GROUP_TEXT.get(c['group'], c['group'])} {'raises' if d > 0 else 'lowers'} the odds of {'an' if tilt == 'above' else 'a'} {tilt}-normal month by about {abs(d) * 100:.0f} point{'' if round(abs(d) * 100) == 1 else 's'}.")
     else:
         lines.append("Why: no single factor stands out, so the forecast stays close to the seasonal norm.")
     an = f["analogs"]
@@ -295,6 +297,240 @@ def reality_check() -> dict:
     return r
 
 
+# ---------------------------------------------------------------- local outlook (fresh NASA POWER observations)
+THEMES = {"rain": ("precip", "Rain"), "soil": ("soil_moisture", "Soil moisture"), "heat": ("t2m", "Temperature")}
+WEIGHT = {"high": 1.0, "moderate": 0.7, "low": 0.35, "none": 0.0}
+LOCAL_LIMITS = ["This is a seasonal outlook (the odds for whole months), not a weather forecast. Individual storms, typhoons, floods or heat waves cannot be predicted months ahead.",
+                "'Normal' means the 2001 to 2016 climate of your 1° square (about 110 km), the middle third of what happened in that calendar month.",
+                "The drought and rain levels are screening indicators built from soil moisture, rain and temperature. They are not an official drought or flood declaration.",
+                "Numbers describe the whole 1° square, not one street or farm."]
+
+
+@lru_cache(maxsize=2)
+def _live_metrics_file(mtime: float) -> dict:
+    p = pforecast.MODEL_DIR / "live_backtest.json"
+    return json.loads(p.read_text()) if p.exists() else {}
+
+
+def _live_metrics(pipeline_id: str) -> dict:
+    p = pforecast.MODEL_DIR / "live_backtest.json"
+    return _live_metrics_file(p.stat().st_mtime if p.exists() else 0.0).get(pipeline_id, {})
+
+
+def _live_conf(lm: dict, band: str, lead: int) -> str:
+    """Confidence label from the REAL-DATA backtest: RPSS of the nearest tested lead time (latitude band first, then all places)."""
+    src = lm.get("by_latband", {}).get(band) or {}
+    if not src:
+        src = {k: {"rpss": v["model"]["rpss"]} for k, v in lm.get("by_horizon", {}).items()}
+    if not src:
+        return "none"
+    h = min(src, key=lambda k: abs(int(k) - lead))
+    r = src[h]["rpss"]
+    return "high" if r >= 0.15 else "moderate" if r >= 0.07 else "low" if r >= 0.02 else "none"
+
+
+def _word(z) -> str:
+    if z is None:
+        return "unknown"
+    return "much below normal" if z <= -1.0 else "below normal" if z <= -0.43 else "near normal" if z < 0.43 else "above normal" if z < 1.0 else "much above normal"
+
+
+def _lm_summary(pipeline_id: str) -> dict:
+    lm = _live_metrics(pipeline_id)
+    return {str(h): {"right_third": round(r["model"]["tercile_accuracy"], 3), "rpss": round(r["model"]["rpss"], 3), "skill": round(r["model"]["skill_vs_clim"], 3)}
+            for h, r in lm.get("by_horizon", {}).items()}
+
+
+def _reliable_text(key: str) -> str:
+    pid, label = THEMES[key]
+    lm = _live_metrics(pid).get("by_horizon", {})
+    good = [int(h) for h, r in lm.items() if r["model"]["rpss"] >= 0.07]
+    best = max(lm.items(), key=lambda kv: kv[1]["model"]["rpss"], default=None)
+    if not lm:
+        return f"{label}: not tested yet."
+    if not good:
+        return f"{label}: no reliable skill (it cannot beat the seasonal norm)."
+    h, r = max(good), lm[str(max(good))]["model"]
+    return f"{label}: useful up to {h} months ahead (right third {r['tercile_accuracy'] * 100:.0f}% of the time at {h} months, 33% by chance)."
+
+
+def _theme(pipeline_id: str, label: str, lat: float, lon: float, today: str) -> dict | None:
+    try:
+        f = pforecast.forecast_live(pipeline_id, lat, lon, not_before=pd.Timestamp(today + "-01"), not_after=pd.Timestamp(today + "-01") + pd.DateOffset(months=2))
+    except (ValueError, FileNotFoundError):
+        return None                                    # for example soil moisture over the sea, or no model trained for this variable
+    except Exception as e:
+        raise ApiError(503, "LIVE_DATA_UNAVAILABLE", "Could not read the latest NASA observations for this place. Try again in a minute.",
+                       {"variable": pipeline_id, "reason": type(e).__name__}, retryable=True)
+    lm = _live_metrics(pipeline_id)
+    pts, all_pts = [], []
+    for i, t in enumerate(f["time"]):
+        conf = _live_conf(lm, f["band"], f["horizons"][i])
+        pt = {"t": t, "lead_months": f["horizons"][i], "forecast": _num(f["forecast"][i], 5), "lower": _num(f["lower"][i], 5), "upper": _num(f["upper"][i], 5),
+                    "climatology": _num(f["climatology"][i], 5), "z_forecast": _num(f["z_forecast"][i], 3), "p_below": round(f["p_below"][i], 3),
+                    "p_near": round(f["p_near"][i], 3), "p_above": round(f["p_above"][i], 3),
+                    "normal_range": (_num(f["tercile_lower"][i], 5), _num(f["tercile_upper"][i], 5)),
+                    "signal": f["signal"][i] if conf != "none" else "none", "confidence": conf}
+        all_pts.append(pt)
+        if t >= today:
+            pts.append(pt)
+    near = pts[:3]
+    if near:
+        avg = {k: round(sum(p[k] for p in near) / len(near), 3) for k in ("p_below", "p_near", "p_above")}
+        rank = ["none", "low", "moderate", "high"]
+        conf = min((p["confidence"] for p in near), key=rank.index)
+        tilt = "above" if avg["p_above"] >= 0.45 and avg["p_above"] > avg["p_below"] else "below" if avg["p_below"] >= 0.45 and avg["p_below"] > avg["p_above"] else "none"
+        if conf == "none":
+            tilt = "none"
+        nearwin = {"months": [p["t"] for p in near], **avg, "tilt": tilt, "confidence": conf}
+    else:
+        nearwin = None
+    return {"variable": pipeline_id, "label": label, "points": pts, "all_points": all_pts, "near": nearwin, "raw": f, "live_metrics": lm}
+
+
+def _obs3(raw_obs: list[dict], col: str):
+    vals = [o.get(f"z_{col}") for o in raw_obs[-3:] if o.get(f"z_{col}") is not None]
+    return round(sum(vals) / len(vals), 2) if vals else None
+
+
+def _hazards(th: dict, obs: list[dict]) -> list[dict]:
+    soil_z, rain_z, heat_z = _obs3(obs, "soil"), _obs3(obs, "precip"), _obs3(obs, "t2m")
+    out = []
+
+    def near(key):
+        t = th.get(key)
+        return t["near"] if t and t.get("near") else None
+    ns, nr, nh = near("soil"), near("rain"), near("heat")
+
+    # --- drought watch: observed dryness + forecast dryness (soil moisture and rain), weighted by tested confidence
+    zs = [z for z in (soil_z, rain_z) if z is not None]
+    obs_dry = max(0.0, min(1.0, -(sum(zs) / len(zs)) / 1.2)) if zs else 0.0
+    parts = [(max(0.0, min(1.0, (n["p_below"] - 1 / 3) / 0.3)), WEIGHT[n["confidence"]]) for n in (ns, nr) if n]
+    wsum = sum(w for _, w in parts)
+    fc_dry = sum(v * w for v, w in parts) / wsum if wsum else 0.0
+    score = 0.5 * obs_dry + 0.5 * fc_dry if wsum else obs_dry
+    level = "none" if score < 0.2 else "watch" if score < 0.4 else "elevated" if score < 0.65 else "high"
+    names = {"none": "No drought signal", "watch": "Drought watch", "elevated": "Elevated drought risk", "high": "High drought risk"}
+    basis = []
+    if soil_z is not None:
+        basis.append(f"Soil moisture over the last 3 months: {_word(soil_z)} ({soil_z:+.1f} standard deviations).")
+    if rain_z is not None:
+        basis.append(f"Rain over the last 3 months: {_word(rain_z)} ({rain_z:+.1f}).")
+    if ns:
+        basis.append(f"Next 3 months: {ns['p_below'] * 100:.0f}% chance of drier-than-normal soil (confidence: {ns['confidence']}).")
+    if nr:
+        basis.append(f"Next 3 months: {nr['p_below'] * 100:.0f}% chance of less rain than normal (confidence: {nr['confidence']}).")
+    conf_d = ns["confidence"] if ns else "none"
+    out.append({"id": "drought", "title": "Drought watch", "level": level, "level_label": names[level], "score": round(score, 2), "confidence": conf_d,
+                "summary": (f"{names[level]}. " + ("Soil is already dry and the odds lean dry." if level in ("elevated", "high") else
+                            "Keep an eye on soil moisture and rain." if level == "watch" else "Soil and rain look near or above normal, and no dry tilt is expected.")),
+                "basis": basis})
+
+    # --- rain outlook (honest about the weak rainfall skill)
+    if nr:
+        t = nr
+        lvl = "none" if t["tilt"] == "none" else ("watch" if t["tilt"] == "above" else "dry")
+        txt = ("No reliable signal: the tests show the model cannot beat the seasonal norm for rainfall here."
+               if t["confidence"] == "none" else
+               f"{t['p_above'] * 100:.0f}% chance of a wetter-than-normal period over the next 3 months (confidence: {t['confidence']})."
+               if t["tilt"] == "above" else
+               f"{t['p_below'] * 100:.0f}% chance of a drier-than-normal period over the next 3 months (confidence: {t['confidence']})."
+               if t["tilt"] == "below" else "No clear tilt toward wetter or drier than normal.")
+        out.append({"id": "rain", "title": "Rain outlook", "level": lvl, "level_label": {"none": "No clear tilt", "watch": "Wetter than normal likely", "dry": "Drier than normal likely"}[lvl],
+                    "confidence": t["confidence"], "summary": txt,
+                    "basis": [f"Chance of below / near / above normal rain: {t['p_below'] * 100:.0f}% / {t['p_near'] * 100:.0f}% / {t['p_above'] * 100:.0f}%.",
+                              "Storms and floods cannot be forecast months ahead; this only shows the odds for a wetter or drier period."]})
+    # --- heat outlook
+    if nh:
+        t = nh
+        lvl = "none" if t["tilt"] != "above" else ("very" if t["p_above"] >= 0.7 else "likely")
+        out.append({"id": "heat", "title": "Heat outlook", "level": lvl,
+                    "level_label": {"none": "No clear tilt", "likely": "Warmer than normal likely", "very": "Much warmer than normal very likely"}[lvl] if t["tilt"] != "below" else "Cooler than normal likely",
+                    "confidence": t["confidence"],
+                    "summary": (f"{t['p_above'] * 100:.0f}% chance of warmer-than-normal months ahead (confidence: {t['confidence']})." if t["tilt"] == "above" else
+                                f"{t['p_below'] * 100:.0f}% chance of cooler-than-normal months ahead (confidence: {t['confidence']})." if t["tilt"] == "below" else
+                                "No clear tilt toward warmer or cooler than normal."),
+                    "basis": ([f"Temperature over the last 3 months: {_word(heat_z)} ({heat_z:+.1f})."] if heat_z is not None else []) +
+                             [f"Chance of below / near / above normal temperature: {t['p_below'] * 100:.0f}% / {t['p_near'] * 100:.0f}% / {t['p_above'] * 100:.0f}%.",
+                              "Most places lean 'above normal' partly because the world has warmed since the 2001 to 2016 reference period."]})
+    return out
+
+
+def local_outlook(req: LocalOutlookRequest) -> dict:
+    today = _today_month()
+    if not any(pforecast.model_path(pid, "full").exists() for pid, _ in THEMES.values()):
+        raise ApiError(503, "MODEL_NOT_READY", "The forecast models are not on the server yet. Run data-pipeline/train_forecast.py.")
+    plive.refresh_indices()                                   # at most one download every 3 days; falls back to the saved copy
+    th = {}
+    for key, (pid, label) in THEMES.items():
+        th[key] = _theme(pid, label, req.lat, req.lon, today)
+    if not any(th.values()):
+        raise ApiError(422, "NO_DATA", "No data for this location.", {"lat": req.lat, "lon": req.lon})
+    base = next(t for t in th.values() if t)
+    raw = base["raw"]
+    obs = raw["observed"]
+    last = obs[-1] if obs else {}
+    now_items = []
+    if last:
+        def item(key, label, col, kind):
+            z = last.get(f"z_{col}")
+            if z is None:
+                return
+            if kind == "temp":
+                diff = last[f"raw_{col}"] - last[f"normal_{col}"]
+                detail = f"{diff:+.1f} °C compared with a normal {pd.Timestamp(last['t'] + '-01'):%B}"
+            elif kind == "rain":
+                pct = 100 * last[f"raw_{col}"] / max(last[f"normal_{col}"], 1e-6)
+                detail = f"{pct:.0f}% of the normal rain for {pd.Timestamp(last['t'] + '-01'):%B}"
+            else:
+                detail = f"{_word(z)} soil moisture for {pd.Timestamp(last['t'] + '-01'):%B}"
+            now_items.append({"key": key, "label": label, "state": _word(z), "z": z, "detail": detail,
+                              "last3_z": _obs3(obs, col), "last3_state": _word(_obs3(obs, col))})
+        item("heat", "Temperature", "t2m", "temp")
+        item("rain", "Rain", "precip", "rain")
+        item("soil", "Soil moisture", "soil", "soil")
+    hz = _hazards(th, obs)
+    # --- explanation of the most important signal (heat/soil have real skill; rain usually does not)
+    star = max((t for t in th.values() if t and t["near"]), key=lambda t: max(t["near"]["p_above"], t["near"]["p_below"]) * WEIGHT[t["near"]["confidence"]], default=base)
+    v = type("V", (), {"pipeline_id": star["variable"], "name": star["label"]})
+    metrics = dict(star["live_metrics"], train_end=raw["train_end"], cal_end="2024-12-01")
+    expl = _explanation(v, "your place", star["raw"], star["all_points"], metrics, "satellite")
+    # --- trust: measured on real data after the model's training period
+    lmeta = {}
+    for key, (pid, label) in THEMES.items():
+        lm = _live_metrics(pid)
+        if lm:
+            lmeta = lmeta or {"period": lm.get("test_period"), "places": lm.get("n_cells")}
+    trust = {"tested": lmeta, "by_theme": {k: _lm_summary(THEMES[k][0]) for k in THEMES},
+             "summary": ("Checked against real NASA measurements from {} to {} at {} places the model had not been trained on. ".format(
+                 (lmeta.get("period") or ["?", "?"])[0], (lmeta.get("period") or ["?", "?"])[1], lmeta.get("places", "?")) if lmeta else "No real-data check is available yet. ")
+             + " ".join(_reliable_text(k) for k in THEMES)}
+    cell = raw["cell"]
+    place = {"lat": req.lat if False else round(float(cell["lat"]), 1), "lon": round(float(cell["lon"]), 1), "label": req.label or "Your place",
+             "note": "Only this 1° square centre was used to fetch data; the exact coordinates you gave are not sent anywhere."}
+    data_through = raw["origin"][:7]
+    as_of = {"today": today, "data_through": data_through, "source": "NASA POWER monthly observations (MERRA-2 / IMERG corrected)",
+             "indices_through": plive.indices_last_update(), "note": f"Latest complete month of observations: {data_through}. The model starts from there."}
+    themes_out = {}
+    for k, t in th.items():
+        if t:
+            themes_out[k] = {"variable": t["variable"], "label": t["label"], "units": papi.VARIABLES[t["variable"]][1], "points": t["points"], "near": t["near"]}
+    sci = {"origin": data_through, "cell": cell, "conditions": raw["conditions"], "analogs": raw["analogs"], "observed": obs,
+           "live_backtest": {THEMES[k][0]: _live_metrics(THEMES[k][0]) for k in THEMES}, "explanation": expl["scientific"],
+           "contributions": {k: t["raw"]["contributions"] for k, t in th.items() if t}, "method": FORECAST_METHOD,
+           "data_inputs": DATA_INPUTS, "hazard_rules": {"drought": "score = 0.5 * observed dryness (mean z of soil and rain, last 3 months, scaled by 1.2) + 0.5 * forecast dryness "
+                                                      "(P(below) of soil and rain over the next 3 months above 1/3, weighted by tested confidence); levels at 0.2 / 0.4 / 0.65"}}
+    return {"place": place, "as_of": as_of, "now": {"month": last.get("t"), "items": now_items}, "hazards": hz, "themes": themes_out, "trust": trust,
+            "explanation": {k: v_ for k, v_ in expl.items() if k != "scientific"}, "limits": LOCAL_LIMITS, "scientific": sci}
+
+
+def live_backtest() -> dict:
+    p = pforecast.MODEL_DIR / "live_backtest.json"
+    if not p.exists():
+        raise ApiError(503, "LIVE_BACKTEST_NOT_READY", "Run data-pipeline/live_backtest.py first.")
+    return json.loads(p.read_text())
+
+
 # ---------------------------------------------------------------- routes
 @router.post("/forecast", response_model=ForecastResponse)
 def forecast_route(req: ForecastRequest):
@@ -315,3 +551,13 @@ def forecast_status_route(variable_id: str, mode: str = Query("outlook", pattern
 @router.get("/forecast/reality-check", response_model=RealityCheckResponse)
 def forecast_reality_check_route():
     return reality_check()
+
+
+@router.post("/local-outlook", response_model=LocalOutlookResponse)
+def local_outlook_route(req: LocalOutlookRequest):
+    return local_outlook(req)
+
+
+@router.get("/forecast/live-backtest")
+def live_backtest_route():
+    return live_backtest()

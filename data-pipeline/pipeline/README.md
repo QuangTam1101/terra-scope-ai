@@ -22,6 +22,7 @@ Luồng chính của web: **cube lưới 1° toàn cầu** (`grid.py`) → `api.
 | `checks.py` | 03 §H, §I, §J; 01 S7 | Kiểm tra sau chuẩn hoá | `SANITY`, `sanity_report`, `cross_check_temp`, `cross_check_et`, `trend_ready` | `test_trends.py` |
 | `trends.py` | 01 S8; 05 (FDR) | Xu hướng | `anomaly`, `trend_one`, `bh_fdr`, `trends_table` | `test_trends.py` |
 | `contradictions.py` | 05; 01 S8b | Anomaly detection / clustering (Contradiction Hunter) | `hunt_global`, `monthly_z`, `scan_type_a`, `pair_difference_test`, `find_opposite_trends`, `twins_type_c`, `anomaly_events_type_b`, `permute_years`, `sen_slope_per_year` | `test_contradictions.py`, `test_grid.py` |
+| `live.py` | 05 §10 | Quan sát mới từ NASA POWER (nhiệt độ, mưa, ẩm đất, bốc hơi) + GISTEMP + tự làm mới chỉ số NOAA | `power_monthly`, `power_z`, `last_complete`, `cell_center`, `gistemp_global`, `indices_extended` | `test_live.py` |
 | `forecast.py`, `indices.py` | 05 §7 | Dự báo 1–18 tháng: khoảng 80% (conformal), xác suất tercile, co về khí hậu, giải thích, năm tương tự; 9 chỉ số NOAA | `fit`, `forecast_region`, `forecast_map`, `load_model`, `latest_origin`, `indices.download` | `test_forecast.py` |
 | `api.py` | 01 mục 7 | Lớp phân tích cho web và AI Detective: trả dict JSON gồm số liệu + nguồn + phương pháp + giới hạn | `VARIABLES`, `LIMITATIONS`, `load_cube`, `list_variables`, `trend_map`, `analyze_region`, `compare_regions`, `find_contradictions` | `test_api.py` |
 | `report.py` | 01 mục 7 (tính năng 5) | Evidence report Markdown từ kết quả `api` | `evidence_report` | `test_api.py` |

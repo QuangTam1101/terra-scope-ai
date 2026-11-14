@@ -20,6 +20,10 @@ def trained(client, tmp_path_factory):
     (d / "reality_check.json").write_text(json.dumps({"source": "test", "origin": "2024-12", "generated": "2026-11-14", "regions": {"global": {"outlook": {
         "months": ["2025-01"], "actual": [0.1], "forecast": [0.2], "lower": [-0.2], "upper": [0.5], "persistence": 0.3, "baseline_period": "2001-2022",
         "mae_model": 0.1, "mae_climatology": 0.1, "mae_persistence": 0.2, "coverage_80": 1.0, "n_months": 1}}}}))
+    lm = {"model": {"rpss": 0.2, "tercile_accuracy": 0.5, "skill_vs_clim": 0.3}}
+    (d / "live_backtest.json").write_text(json.dumps({"precip": {"test_period": ["2025-01", "2026-09"], "n_cells": 8,
+        "by_horizon": {"1": lm, "3": lm, "6": {"model": {"rpss": 0.0, "tercile_accuracy": 0.34, "skill_vs_clim": 0.0}}},
+        "by_latband": {"tropics": {"1": {"rpss": 0.2}, "3": {"rpss": 0.2}, "6": {"rpss": 0.0}}}}}))
     old, old_today = fs.pforecast.MODEL_DIR, fs._today_month
     fs.pforecast.MODEL_DIR = d
     fs._today_month = lambda: "2026-11"
@@ -77,3 +81,57 @@ def test_forecast_errors(client, trained):
     assert _post(client, months=99).status_code in (400, 422)
     r = client.post("/api/v1/forecast", json={"variable_id": "gldas_soil_moisture_0_10cm", "region": {"type": "bbox", "bbox": BBOX}})
     assert r.status_code == 503 and r.json()["error"]["code"] == "MODEL_NOT_READY"
+
+
+# ---------------------------------------------------------------- local outlook (NASA POWER mocked, no network)
+def _power_frame():
+    import numpy as np
+    import pandas as pd
+    months = pd.date_range("2001-01-01", "2026-09-01", freq="MS")
+    rng = np.random.default_rng(1)
+    x = {c: np.zeros(len(months)) for c in ("t2m", "precip", "soil", "evap")}
+    for c in x:
+        e = rng.normal(size=len(months))
+        for i in range(1, len(months)):
+            x[c][i] = 0.8 * x[c][i - 1] + 0.6 * e[i]
+    return pd.DataFrame({"t2m": 25 + 2 * x["t2m"], "precip": 150 + 40 * x["precip"], "soil": 0.4 + 0.05 * x["soil"], "evap": 3 + 0.5 * x["evap"]}, index=months)
+
+
+@pytest.fixture
+def offline(monkeypatch, trained):
+    import pandas as pd
+    frame = _power_frame()
+    calls = []
+    monkeypatch.setattr(fs.plive, "power_monthly", lambda la, lo, **k: (calls.append((la, lo)), frame)[1])
+    monkeypatch.setattr(fs.plive, "gistemp_global", lambda *a, **k: pd.Series(0.5, index=frame.index))
+    monkeypatch.setattr(fs.plive, "refresh_indices", lambda *a, **k: False)
+    monkeypatch.setattr(fs, "THEMES", {"rain": ("precip", "Rain")})
+    return calls
+
+
+def test_local_outlook_for_one_place(client, offline):
+    r = client.post("/api/v1/local-outlook", json={"lat": 8.31, "lon": 102.62, "label": "Test place"})
+    assert r.status_code == 200, r.text
+    j = r.json()
+    assert j["place"]["lat"] == 8.5 and j["place"]["lon"] == 102.5 and j["place"]["label"] == "Test place"
+    assert offline == [(8.5, 102.5)]                                   # chỉ tâm ô 1° được gửi ra ngoài, không phải toạ độ gốc
+    assert j["as_of"]["today"] == "2026-11" and j["as_of"]["data_through"] == "2026-09"
+    assert j["now"]["items"] and {h["id"] for h in j["hazards"]} >= {"drought", "rain"}
+    th = j["themes"]["rain"]
+    assert th["points"][0]["t"] == "2026-11" and th["near"]["months"] == ["2026-11", "2026-12", "2027-01"]
+    assert th["near"]["confidence"] in ("high", "moderate", "low", "none")
+    assert j["trust"]["tested"]["places"] == 8 and "Rain" in j["trust"]["summary"]
+    assert j["explanation"]["simple"] and j["limits"] and j["scientific"]["live_backtest"]["precip"]
+
+
+def test_local_outlook_never_invents_confidence(client, offline):
+    j = client.post("/api/v1/local-outlook", json={"lat": 8.3, "lon": 102.6}).json()
+    for p in j["themes"]["rain"]["points"]:
+        if p["lead_months"] >= 6:                                      # live backtest ghi RPSS = 0 ở 6 tháng → nhãn phải là none
+            assert p["confidence"] == "none" and p["signal"] == "none"
+
+
+def test_local_outlook_validation_and_live_backtest_route(client, offline):
+    assert client.post("/api/v1/local-outlook", json={"lat": 120, "lon": 0}).status_code in (400, 422)
+    assert client.post("/api/v1/local-outlook", json={"lat": 60.0, "lon": 10.0}).status_code == 422      # ngoài lưới của mô hình
+    assert client.get("/api/v1/forecast/live-backtest").json()["precip"]["n_cells"] == 8

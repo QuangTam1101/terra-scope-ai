@@ -223,3 +223,24 @@ export const forecastApi = {
   status: (variable_id: string, mode: Mode) => call<DataStatus>(`/forecast/status?variable_id=${encodeURIComponent(variable_id)}&mode=${mode}`),
   reality: () => call<RealityCheck>("/forecast/reality-check"),
 };
+
+// ---------- Local outlook (one place, from fresh NASA observations) ----------
+export interface LocalHazard { id: string; title: string; level: string; level_label: string; confidence: Confidence; summary: string; basis: string[]; score?: number }
+export interface LocalNear { months: string[]; p_below: number; p_near: number; p_above: number; tilt: "above" | "below" | "none"; confidence: Confidence }
+export interface LocalTheme { variable: string; label: string; units: string; points: ForecastPoint[]; near: LocalNear | null }
+export interface NowItem { key: string; label: string; state: string; z: number; detail: string; last3_z: number | null; last3_state: string }
+export interface LocalOutlook {
+  place: { lat: number; lon: number; label: string; note: string };
+  as_of: { today: string; data_through: string; source: string; indices_through: Record<string, string>; note: string };
+  now: { month: string | null; items: NowItem[] };
+  hazards: LocalHazard[];
+  themes: Record<string, LocalTheme>;
+  trust: { tested: { period?: [string, string]; places?: number }; by_theme: Record<string, Record<string, { right_third: number; rpss: number; skill: number }>>; summary: string };
+  explanation: { month: string; headline: string; simple: string[]; contributions: Contribution[]; conditions: Condition[] };
+  limits: string[];
+  scientific: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+}
+export const localApi = {
+  outlook: (lat: number, lon: number, label?: string) =>
+    call<LocalOutlook>("/local-outlook", { method: "POST", body: JSON.stringify({ lat, lon, label }) }, 120000),
+};

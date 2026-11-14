@@ -56,7 +56,7 @@
 | **Contradiction Hunter B** (dị thường ngược cùng tháng) | ndvi, lst, et | Lưới | z-score + gộp cụm không gian | ✅ Có, tốn công gộp cụm | P2 |
 | **Contradiction Hunter D** (mâu thuẫn giữa biến) | AppEEARS + Giovanni | Lưới, vùng | Tương quan anomaly, luật vật lý | ⚠️ Làm được bản đơn giản | P2 |
 | "Biến nào giải thích NDVI?" | ndvi ~ precip, t2m, soil_moisture | Vùng | Hồi quy tuyến tính trên anomaly | ⚠️ Có, nhưng dễ bị hiểu thành nhân quả | P2, diễn đạt cẩn thận |
-| Dự báo 1–18 tháng + khoảng 80% + xác suất tercile | 5 biến lưới | Lưới, vùng | Ridge + GBM phân vị/phân loại + conformal (CPU); 9 chỉ số NOAA | ✅ Có (§10). Có ích ở 1–3 tháng với nhiệt độ, ẩm đất, bốc hơi (chế độ Satellite); chế độ Outlook từ hôm nay chỉ có skill yếu | P1 |
+| Dự báo 1–12 tháng cho MỘT nơi từ quan sát mới (NASA POWER) + xác suất tercile + mức hạn hán / mưa / nhiệt | 5 biến lưới + POWER | Điểm (ô 1°) | Ridge + GBM phân vị/phân loại + conformal (CPU); 9 chỉ số NOAA | ✅ Có (§10). Kiểm chứng trên số đo thật 2025–2026: nhiệt độ và ẩm đất dùng được 1–6 tháng, mưa không có skill | P0 |
 | Deep learning / embedding | — | — | — | ❌ Không: dữ liệu nhỏ, không giải thích được, tốn thời gian | Không làm |
 
 ---
@@ -355,7 +355,27 @@ Có thể bổ sung sự kiện khác (03, K15).
 - 9 chỉ số NOAA, mỗi file < 70 KB, tải bằng `pipeline/indices.py` (lưu ở `processed_data/indices/climate_indices.csv`): Niño 1+2/3/4/3.4 (CPC, ERSSTv5), SOI, IOD/DMI, QBO (PSL), PDO (NCEI), NAO (CPC).
 - NASA GISS GISTEMP v4 chỉ dùng để kiểm chứng dự báo với số đo thật, không dùng để huấn luyện.
 
-### Hai chế độ
+### Chế độ mặc định cho người dùng: "Live" (từ quan sát mới)
+**Code:** [`pipeline/live.py`](../pipeline/live.py), `forecast.forecast_live`, `forecast.live_backtest`, [`live_backtest.py`](../live_backtest.py); backend `POST /api/v1/local-outlook`; web `web/src/pages/LocalOutlook.tsx`.
+
+Vấn đề gốc của hai chế độ cũ là **độ mới của dữ liệu**: cube trong git dừng ở 12/2024 nên "từ bây giờ" chỉ còn chế độ Outlook (chỉ số khí hậu) với skill yếu. Chế độ Live lấy quan sát hàng tháng mới nhất từ **NASA POWER** (API công khai, không cần khoá; nhiệt độ T2M, mưa PRECTOTCORR, độ ẩm đất GWETTOP, bốc hơi EVLAND, đến tháng gần nhất, hiện là 9/2026), đổi sang z-score theo khí hậu 2001–2020 của chính ô đó, rồi đưa vào các đặc trưng "lag" của mô hình Satellite. Nhiệt độ toàn cầu sau 12/2024 lấy từ NASA GISTEMP; chỉ số NOAA giữ giá trị gần nhất tối đa 6 tháng (NAO, QBO 3 tháng), file chỉ số tự tải lại sau 3 ngày.
+- Quyền riêng tư: chỉ **tâm ô 1°** (làm tròn) được gửi tới NASA; toạ độ gốc không rời máy chủ; kết quả cache trên đĩa (`data-pipeline/cache/`, không commit).
+- Ba đầu ra theo mối quan tâm: **Drought watch** (quan sát khô 3 tháng gần nhất của ẩm đất và mưa + xác suất khô 3 tháng tới, trọng số theo độ tin cậy đã đo; mức 0,2 / 0,4 / 0,65), **Rain outlook** (chỉ nói thẳng khi không có skill), **Heat outlook**. Đây là chỉ báo sàng lọc, không phải tuyên bố hạn hán hay lũ chính thức; bão và lũ cụ thể không dự báo được trước nhiều tháng.
+- Nhãn độ tin cậy của từng tháng lấy từ RPSS của backtest trên số đo thật bên dưới (đới vĩ độ trước, rồi toàn bộ).
+
+**Kiểm chứng trên số đo THẬT sau giai đoạn mô hình đã thấy** (`live_backtest.py`): dự báo từ mỗi tháng gốc 2025-01 đến 2026-09 tại 60 ô đất liền và 20 ô biển chọn ngẫu nhiên (seed cố định; ô biển chỉ cho t2m và mưa), so với POWER đo được. Skill điểm so với khí hậu / RPSS / tỉ lệ đúng tercile (ngẫu nhiên 33%) / skill của "giữ nguyên anomaly tháng gốc", tại 1 / 3 / 6 / 12 tháng:
+
+| Biến | Skill | RPSS | Đúng tercile | Persistence |
+|---|---|---|---|---|
+| t2m | +0,37 / +0,26 / +0,23 / +0,11 | +0,20 / +0,16 / +0,16 / +0,08 | 55% / 54% / 54% / 49% | +0,09 / −0,32 / −0,43 / −0,12 |
+| tair_land | +0,37 / +0,27 / +0,21 / +0,13 | +0,22 / +0,17 / +0,15 / +0,08 | 55% / 52% / 51% / 45% | +0,09 / −0,32 / −0,43 / −0,12 |
+| soil_moisture | +0,69 / +0,36 / +0,17 / +0,06 | +0,50 / +0,29 / +0,19 / +0,05 | 70% / 60% / 53% / 44% | +0,74 / +0,35 / +0,11 / +0,11 |
+| evap_gldas | +0,30 / +0,10 / +0,07 / +0,01 | +0,16 / +0,04 / 0,00 / −0,03 | 50% / 43% / 44% / 38% | +0,02 / −0,55 / −0,59 / −0,41 |
+| precip | +0,01 / 0,00 / 0,00 / 0,00 | +0,02 / 0,00 / 0,00 / 0,00 | 41% / 37% / 36% / 34% | −0,63 / −0,80 / −0,87 / −0,66 |
+
+Đọc số liệu: nhiệt độ và ẩm đất có skill thật và vượt persistence từ 2 tháng trở đi (ẩm đất ở 1–2 tháng ngang persistence, vì ẩm đất rất bền); **mưa không có skill**, nên web không đưa tín hiệu mưa. Hạn chế: chỉ 20 tháng kiểm tra, các ô gần nhau tương quan, giai đoạn 2025–2026 ấm nên xác suất "cao hơn bình thường" của nhiệt độ có lợi thế; POWER là điểm lưới gốc (0,5°×0,625°) chứ không phải trung bình ô 1° như lúc huấn luyện, và GWETTOP không phải cùng sản phẩm với GLDAS ẩm đất (cùng z, khác đơn vị).
+
+### Hai chế độ còn lại (cho nhà khoa học, theo vùng)
 - **Satellite** (`full`): dùng quan sát vệ tinh đến tháng cuối của cube (12/2024), ô lân cận 5×5, các biến khác tại ô, 9 chỉ số NOAA; dự báo tối đa 12 tháng kể từ tháng cuối.
 - **Outlook** (`outlook`): chỉ dùng chỉ số NOAA đến tháng cuối có đủ ENSO/SOI/PDO (6/2026) và xu hướng nóng lên; dự báo tối đa 18 tháng, dùng được khi cube vệ tinh đã cũ. Xu hướng nóng lên (°C/năm theo ô, làm mượt 5×5, trộn 50% với TB toàn cầu) tách thành một thành phần riêng; với nhiệt độ hệ số κ cố định 1, với biến khác κ hiệu chỉnh trên giai đoạn hiệu chỉnh.
 
@@ -399,6 +419,7 @@ Dự báo làm từ 12/2024 so với anomaly đo được; sai số tuyệt đ�
 ### Chạy lại
 ```
 cd data-pipeline
+../.venv/bin/python live_backtest.py             # kiểm chứng chế độ Live bằng số đo thật (cần mạng, khoảng 2 phút)
 ../.venv/bin/python train_forecast.py            # Satellite, 5 biến
 ../.venv/bin/python train_forecast.py --outlook  # Outlook, 5 biến
 ../.venv/bin/python reality_check.py             # đối chiếu với NASA GISTEMP

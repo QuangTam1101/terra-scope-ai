@@ -149,3 +149,22 @@ class RealityCheckResponse(BaseModel):
     origin: Month
     generated: str
     regions: dict[str, dict[str, RealityRegion]]
+
+
+# ---------- Local outlook (one place, plain-language hazards, from fresh NASA observations) ----------
+class LocalOutlookRequest(BaseModel):
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+    label: Optional[str] = Field(None, max_length=120, description="Display name only; never sent to any external service")
+
+
+class LocalOutlookResponse(BaseModel):
+    place: dict[str, Any]
+    as_of: dict[str, Any]
+    now: dict[str, Any]
+    hazards: list[dict[str, Any]]
+    themes: dict[str, Any]
+    trust: dict[str, Any]
+    explanation: dict[str, Any]
+    limits: list[str]
+    scientific: dict[str, Any]
