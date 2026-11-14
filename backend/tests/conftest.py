@@ -24,6 +24,26 @@ LON = np.arange(100.5, 110, 1.0)     # 100.5 … 109.5
 TIME = pd.date_range("2001-01-01", "2020-12-01", freq="MS")
 
 
+@pytest.fixture(autouse=True)
+def isolate_llm(monkeypatch):
+    """Never use developer credentials or construct a live Gemini client in tests."""
+    from google import genai
+    from app.llm import runtime
+
+    monkeypatch.setenv("GEMINI_API_KEY", "")
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-4-argon")
+    monkeypatch.setenv("LLM_TIMEOUT_SECONDS", "30")
+    monkeypatch.setenv("LLM_MAX_OUTPUT_TOKENS", "1024")
+    monkeypatch.setenv("LLM_REQUESTS_PER_MINUTE", "10")
+    monkeypatch.setattr(runtime, "budget", runtime.CallBudget())
+
+    def forbidden_client(*args, **kwargs):
+        pytest.fail("Live Gemini clients are forbidden in unit tests; mock the SDK boundary")
+
+    monkeypatch.setattr(genai, "Client", forbidden_client)
+
+
 def _cube(name, base, amp, trend_west, trend_east, noise, land_only=False, seed=0):
     rng = np.random.default_rng(seed)
     years = (np.arange(len(TIME)) / 12.0)[:, None, None]

@@ -7,6 +7,7 @@ import hashlib
 import json
 import threading
 from functools import lru_cache
+from uuid import uuid4
 from contextlib import asynccontextmanager
 from typing import Optional
 
@@ -14,9 +15,9 @@ from fastapi import APIRouter, FastAPI, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-from . import bridge, catalog, config, errors, service
+from . import bridge, catalog, chat, config, errors, service
 from .errors import ApiError
-from .schemas import (CompareRequest, CompareResponse, ExplainRequest, ExplainResponse, GridResponse,
+from .schemas import (ChatRequest, ChatResponse, CompareRequest, CompareResponse, ExplainRequest, ExplainResponse, GridResponse,
                       HealthResponse, RegionsResponse, SeriesRequest, SeriesResponse, TrendRequest, TrendResponse,
                       ValueGridResponse, VariablesResponse)
 
@@ -65,6 +66,17 @@ def health():
 @api.get("/variables", response_model=VariablesResponse)
 def variables():
     return service.variables()
+
+
+@api.get("/llm/status")
+def llm_status():
+    settings = config.llm_settings()
+    import re
+    model = settings.model if re.fullmatch(r"gemini-[a-zA-Z0-9.-]{1,80}", settings.model) else "invalid"
+    if settings.api_key and settings.api_key in model:
+        model = "redacted"
+    return {"provider": settings.provider if settings.provider in {"gemini", "template"} else "unsupported",
+            "model": model, "configured": bool(settings.api_key) and settings.valid}
 
 
 @api.get("/regions", response_model=RegionsResponse)
@@ -147,6 +159,13 @@ def compare(req: CompareRequest):
 @api.post("/explain", response_model=ExplainResponse)
 def explain(req: ExplainRequest):
     return service.explain(req)
+
+
+@api.post("/chat", response_model=ChatResponse, response_model_exclude_unset=True)
+def chat_response(req: ChatRequest, response: Response):
+    identifier = uuid4().hex
+    response.headers["X-Request-ID"] = identifier
+    return chat.respond(req, request_id=identifier)
 
 
 @api.get("/jobs/{job_id}")
