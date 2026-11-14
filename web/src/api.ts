@@ -187,3 +187,39 @@ export function errorText(e: unknown): string {
   };
   return map[e.code] ?? e.message;
 }
+
+// ---------- AI forecast ----------
+export type Confidence = "high" | "moderate" | "low" | "none";
+export type Mode = "outlook" | "satellite";
+export interface ForecastPoint {
+  t: string; lead_months: number; forecast: number | null; lower: number | null; upper: number | null; climatology: number | null;
+  z_forecast: number | null; p_below: number; p_near: number; p_above: number; normal_range: [number | null, number | null];
+  signal: "above" | "below" | "none"; confidence: Confidence;
+}
+export interface SkillRow { lead_months: number; skill_vs_climatology: number | null; skill_vs_persistence: number | null; rpss: number | null; tercile_accuracy: number | null; coverage_80: number | null }
+export interface Analog { origin: string; target: string; distance: number; z_outcome: number; state: Record<string, number> }
+export interface Condition { key: string; label: string; value: number; unit: string; as_of: string; phase: string; description: string }
+export interface Contribution { group: string; description: string; effect_p_above: number; effect_p_below: number; effect_z: number }
+export interface Explanation { month: string; headline: string; simple: string[]; contributions: Contribution[]; conditions: Condition[]; scientific: Record<string, any> } // eslint-disable-line @typescript-eslint/no-explicit-any
+export interface DataStatus { today: string; satellite_data_end: string; indices_end: Record<string, string>; origin: string; mode: string; note: string }
+export interface ForecastResponse {
+  variable_id: string; region: RegionOut; units: string; mode: Mode; origin: string; interval: number; points: ForecastPoint[];
+  backtest: SkillRow[]; drivers: Record<string, number>; analogs: Analog[]; analog_horizon: number; data_inputs: string[];
+  data_status: DataStatus; explanation: Explanation; method: string; plain_summary: string; source: DataSource; warnings: string[];
+}
+export interface ForecastMapCell { lat: number; lon: number; z_forecast: number; signal: "above" | "below" | "none"; p_below: number; p_above: number }
+export interface ForecastMap { variable_id: string; mode: Mode; origin: string; t: string; lead_months: number; interval: number; cells: ForecastMapCell[]; warnings: string[] }
+export interface RealityRegion {
+  months: string[]; actual: (number | null)[]; forecast: number[]; lower: number[]; upper: number[]; persistence: number; baseline_period: string;
+  mae_model: number; mae_climatology: number; mae_persistence: number; coverage_80: number; n_months: number;
+}
+export interface RealityCheck { source: string; origin: string; generated: string; regions: Record<string, Record<string, RealityRegion>> }
+
+export const forecastApi = {
+  forecast: (variable_id: string, region: RegionRef, mode: Mode, months: number) =>
+    call<ForecastResponse>("/forecast", { method: "POST", body: JSON.stringify({ variable_id, region, mode, months }) }, 120000),
+  map: (variable_id: string, mode: Mode, month: string) =>
+    call<ForecastMap>(`/forecast/map?variable_id=${encodeURIComponent(variable_id)}&mode=${mode}&month=${month}`, undefined, 120000),
+  status: (variable_id: string, mode: Mode) => call<DataStatus>(`/forecast/status?variable_id=${encodeURIComponent(variable_id)}&mode=${mode}`),
+  reality: () => call<RealityCheck>("/forecast/reality-check"),
+};

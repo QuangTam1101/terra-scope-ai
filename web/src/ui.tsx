@@ -69,6 +69,7 @@ const P = { fill: "none", stroke: "currentColor", strokeWidth: 2.2, strokeLineca
 export const Icon = {
   home: () => <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path {...P} d="M4 11l8-7 8 7v9H4z" /><path {...P} d="M10 20v-6h4v6" /></svg>,
   globe: () => <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle {...P} cx="12" cy="12" r="9" /><path {...P} d="M3 12h18M12 3c-3 3-3 15 0 18M12 3c3 3 3 15 0 18" /></svg>,
+  forecast: () => <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path {...P} d="M3 17l5-6 4 3 6-8" /><path {...P} d="M15 6h4v4" /><path {...P} d="M3 21h18" /></svg>,
   hunt: () => <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path {...P} d="M7 4v16M17 4v16M4 8l3-4 3 4M14 16l3 4 3-4" /></svg>,
   detective: () => <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle {...P} cx="11" cy="11" r="6" /><path {...P} d="M16 16l5 5" /></svg>,
   report: () => <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path {...P} d="M6 3h9l4 4v14H6z" /><path {...P} d="M9 12h7M9 16h7" /></svg>,

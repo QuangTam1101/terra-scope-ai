@@ -7,7 +7,7 @@ import type { RegionalProgress } from "./progress";
 import type { ReportComparison } from "./report/model";
 import { CASE_SCHEMA, type CaseItem, type SavedCase } from "./cases";
 
-export type Page = "landing" | "home" | "explore" | "hunt" | "detective" | "report";
+export type Page = "landing" | "home" | "explore" | "forecast" | "hunt" | "detective" | "report";
 
 export interface Place { ref: RegionRef; label: string; bbox: BBox }
 export interface Selection { parameter: string; variableId: string; startYear: number; endYear: number; place: Place }

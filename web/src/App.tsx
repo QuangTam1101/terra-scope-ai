@@ -9,6 +9,7 @@ import { Component, lazy, Suspense, useCallback, useMemo, useRef, useState, type
 
 // Home does not need the map atlas or analysis/chat pages at first load.
 const Explore = lazy(() => import('./pages/Explore').then((m) => ({ default: m.Explore })));
+const Forecast = lazy(() => import('./pages/Forecast').then((m) => ({ default: m.Forecast })));
 const Hunt = lazy(() => import('./pages/Hunt').then((m) => ({ default: m.Hunt })));
 const Detective = lazy(() => import('./pages/Detective').then((m) => ({ default: m.Detective })));
 const Report = lazy(() => import('./pages/Report').then((m) => ({ default: m.Report })));
@@ -29,6 +30,7 @@ import type { JSX } from "react";
 const NAV: { id: Page; label: string; icon: () => JSX.Element }[] = [
   { id: "home", label: "Home", icon: Icon.home },
   { id: "explore", label: "Explore", icon: Icon.globe },
+  { id: "forecast", label: "Forecast", icon: Icon.forecast },
   { id: "hunt", label: "Hunt", icon: Icon.hunt },
   { id: "detective", label: "Detective", icon: Icon.detective },
   { id: "report", label: "Report", icon: Icon.report },
@@ -75,6 +77,7 @@ function Shell() {
         <PageBoundary key={page}><Suspense fallback={<div className="card pad" role="status" aria-live="polite">Loading page…</div>}>
         {page === "home" && <Home />}
         {page === "explore" && <Explore />}
+        {page === "forecast" && <Forecast />}
         {page === "hunt" && <Hunt />}
         {page === "detective" && <Detective />}
         {page === "report" && <Report />}
