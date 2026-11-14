@@ -61,6 +61,10 @@ Khi chưa có cube, các endpoint phân tích trả `503 DATA_NOT_READY` và `/v
 | `POST /api/v1/compare` | `contradictions.pair_difference_test` | `is_contradiction` khi ngược chiều **và** hiệu significant |
 | `POST /api/v1/explain` | dùng lại kết quả `/trends` | Bản **template, chưa có LLM** (`model: "template-v1 (no language model)"`) |
 | `POST /api/v1/chat` | dùng lại `/trends` + dịch vụ `/explain` | Chat typed, `mode: "template"`; không gọi LLM |
+| `POST /api/v1/forecast` | `pipeline/forecast.py` | Dự báo khí hậu AI: `mode` = `outlook` (từ hôm nay, tối đa 18 tháng, chỉ dùng chỉ số NOAA) hoặc `satellite` (tối đa 12 tháng từ tháng cuối của cube). Trả giá trị, khoảng 80%, xác suất tercile, nhãn độ tin cậy, giải thích (đơn giản và khoa học), bảng backtest. Code ở `app/forecast_service.py` |
+| `GET /api/v1/forecast/map` | `forecast.forecast_map` | Bản đồ triển vọng toàn cầu cho một tháng đích (`month=YYYY-MM`) |
+| `GET /api/v1/forecast/status` | `forecast.latest_origin` | Dữ liệu đang dùng đến tháng nào (cube vệ tinh, từng chỉ số NOAA) |
+| `GET /api/v1/forecast/reality-check` | `models/reality_check.json` | Dự báo trước đây so với số đo thật của NASA GISTEMP |
 | `GET /api/v1/jobs/{id}` |: | Luôn `404`: mọi endpoint trả kết quả ngay |
 | `POST /api/v1/reports` |: | **Chưa làm** (P2) |
 

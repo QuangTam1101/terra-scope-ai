@@ -56,7 +56,7 @@
 | **Contradiction Hunter B** (dị thường ngược cùng tháng) | ndvi, lst, et | Lưới | z-score + gộp cụm không gian | ✅ Có, tốn công gộp cụm | P2 |
 | **Contradiction Hunter D** (mâu thuẫn giữa biến) | AppEEARS + Giovanni | Lưới, vùng | Tương quan anomaly, luật vật lý | ⚠️ Làm được bản đơn giản | P2 |
 | "Biến nào giải thích NDVI?" | ndvi ~ precip, t2m, soil_moisture | Vùng | Hồi quy tuyến tính trên anomaly | ⚠️ Có, nhưng dễ bị hiểu thành nhân quả | P2, diễn đạt cẩn thận |
-| Dự báo tương lai | — | — | — | ❌ Không: ngoài phạm vi challenge, 288 điểm/chuỗi quá ít | Không làm |
+| Dự báo 1–18 tháng + khoảng 80% + xác suất tercile | 5 biến lưới | Lưới, vùng | Ridge + GBM phân vị/phân loại + conformal (CPU); 9 chỉ số NOAA | ✅ Có (§10). Có ích ở 1–3 tháng với nhiệt độ, ẩm đất, bốc hơi (chế độ Satellite); chế độ Outlook từ hôm nay chỉ có skill yếu | P1 |
 | Deep learning / embedding | — | — | — | ❌ Không: dữ liệu nhỏ, không giải thích được, tốn thời gian | Không làm |
 
 ---
@@ -343,3 +343,64 @@ Có thể bổ sung sự kiện khác (03, K15).
 | 6 | Đặc trưng "song sinh" | Độ cao, NDVI TB, biên độ mùa NDVI, LST ngày TB, chênh ngày–đêm LST, ET TB, ET/PET TB, mưa TB năm; cùng lớp `LC_Type1` |
 | 7 | Lưới | 1° cho mọi biến (Giovanni: trung bình khối; MODIS: 1 pixel/ô); 0.5° nếu còn giờ |
 | 8 | Số lần hoán vị | 100 |
+
+---
+
+## 10. Dự báo chuỗi thời gian (AI)
+
+**Code:** [`pipeline/forecast.py`](../pipeline/forecast.py), [`pipeline/indices.py`](../pipeline/indices.py), [`train_forecast.py`](../train_forecast.py), [`reality_check.py`](../reality_check.py); test `tests/test_forecast.py`, `backend/tests/test_forecast_api.py`; backend `backend/app/forecast_service.py`; web `web/src/pages/Forecast.tsx`.
+
+### Dữ liệu
+- 5 cube NASA lưới 1°, 2001–2024: IMERG (mưa), GLDAS (ẩm đất, nhiệt độ đất liền, bốc hơi), MERRA-2 (nhiệt độ 2 m).
+- 9 chỉ số NOAA, mỗi file < 70 KB, tải bằng `pipeline/indices.py` (lưu ở `processed_data/indices/climate_indices.csv`): Niño 1+2/3/4/3.4 (CPC, ERSSTv5), SOI, IOD/DMI, QBO (PSL), PDO (NCEI), NAO (CPC).
+- NASA GISS GISTEMP v4 chỉ dùng để kiểm chứng dự báo với số đo thật, không dùng để huấn luyện.
+
+### Hai chế độ
+- **Satellite** (`full`): dùng quan sát vệ tinh đến tháng cuối của cube (12/2024), ô lân cận 5×5, các biến khác tại ô, 9 chỉ số NOAA; dự báo tối đa 12 tháng kể từ tháng cuối.
+- **Outlook** (`outlook`): chỉ dùng chỉ số NOAA đến tháng cuối có đủ ENSO/SOI/PDO (6/2026) và xu hướng nóng lên; dự báo tối đa 18 tháng, dùng được khi cube vệ tinh đã cũ. Xu hướng nóng lên (°C/năm theo ô, làm mượt 5×5, trộn 50% với TB toàn cầu) tách thành một thành phần riêng; với nhiệt độ hệ số κ cố định 1, với biến khác κ hiệu chỉnh trên giai đoạn hiệu chỉnh.
+
+### Mô hình (CPU, scikit-learn)
+- Mỗi biến một mô hình toàn cục dự báo z-score tại t+h; ridge theo horizon + GBM hồi quy phân vị (khoảng 80%, conformal) + GBM phân loại tercile (xác suất dưới / gần / trên mức bình thường theo mùa, hiệu chỉnh nhiệt độ τ).
+- Co về khí hậu: hệ số λ(horizon, đới vĩ độ) hồi quy trên giai đoạn hiệu chỉnh, kẹp ∈ [0, 1]; không có skill thì dự báo = mức bình thường theo mùa.
+- Giải thích: đặt từng nhóm thông tin về "bình thường" rồi đo xác suất đổi bao nhiêu; bảng năm tương tự theo Niño 3.4, SOI, PDO, IOD.
+- Nhãn độ tin cậy (high / moderate / low / none) lấy từ RPSS của backtest theo đới vĩ độ và horizon gần nhất.
+
+### Backtest
+Train ≤ 2016, hiệu chỉnh 2017–2019, kiểm tra 2020–2024; ô kiểm tra không nằm trong train; khí hậu và ngưỡng tercile chỉ tính trên giai đoạn train. Bản production: Satellite train ≤ 2020 và hiệu chỉnh 2021–2024; Outlook train ≤ 2022 và hiệu chỉnh 2023–2024; cả hai trên mọi ô. Số liệu đầy đủ: `models/metrics.json`, `models/metrics_outlook.json`.
+
+Skill điểm so với khí hậu (0 = bằng khí hậu) / RPSS xác suất (0 = bằng đoán 1/3 mỗi loại):
+
+| Biến | Satellite, skill h=1 / 3 / 6 / 12 | Satellite, RPSS h=1 / 3 | Outlook, skill h=3 / 6 / 12 / 18 | Outlook, RPSS h=3 / 18 |
+|---|---|---|---|---|
+| t2m | +0,37 / +0,18 / +0,03 / −0,02 | +0,20 / +0,08 | −0,03 / −0,03 / −0,04 / −0,05 | +0,01 / 0,00 |
+| tair_land | +0,33 / +0,22 / +0,08 / +0,05 | +0,20 / +0,13 | +0,07 / +0,06 / +0,04 / +0,04 | +0,04 / +0,05 |
+| soil_moisture | +0,38 / +0,13 / +0,01 / −0,01 | +0,29 / +0,12 | +0,02 / +0,01 / +0,01 / +0,01 | +0,03 / +0,03 |
+| evap_gldas | +0,32 / +0,13 / +0,08 / +0,05 | +0,21 / +0,09 | +0,09 / +0,10 / +0,10 / +0,10 | 0,00 / 0,00 |
+| precip | 0,00 / 0,00 / 0,00 / 0,00 | +0,05 / +0,04 | +0,02 / +0,02 / +0,02 / +0,02 | +0,04 / +0,04 |
+
+### Kiểm chứng với số đo thật (NASA GISTEMP, tháng mô hình chưa từng thấy)
+Dự báo làm từ 12/2024 so với anomaly đo được; sai số tuyệt đối trung bình (°C), baseline "bình thường" = 0 và "giữ nguyên anomaly tháng cuối" (persistence):
+
+| Vùng | Chế độ | Mô hình | Bình thường | Persistence |
+|---|---|---|---|---|
+| Toàn cầu | Satellite, 2025 (12 tháng) | 0,20 | 0,46 | 0,10 |
+| Toàn cầu | Outlook, 2025-01 đến 2026-06 (18 tháng) | 0,29 | 0,44 | 0,10 |
+| Bắc bán cầu | Outlook | 0,31 | 0,53 | 0,25 |
+| Nam bán cầu | Outlook | 0,27 | 0,35 | 0,10 |
+
+### Kết luận trung thực
+- Satellite có ích ở 1–3 tháng với nhiệt độ, ẩm đất, bốc hơi; từ 6 tháng trở đi gần như không hơn khí hậu. Nhờ λ, mô hình không tệ hơn khí hậu một cách có hệ thống.
+- **Outlook từ hôm nay chỉ có skill yếu.** Với MERRA-2 t2m skill điểm trong backtest hơi âm (−0,03 đến −0,05); tair_land và mưa có RPSS nhỏ (+0,04). Web gắn nhãn "low" hoặc "none" thay vì khẳng định.
+- Với nhiệt độ toàn cầu, mô hình tốt hơn "bình thường" nhưng **không thắng persistence**, và vẫn dự báo thấp hơn thực tế khoảng 0,2 đến 0,3 °C (xu hướng nóng lên bị đánh giá thấp). Điểm mạnh nằm ở mẫu hình theo không gian và xác suất, không phải ở số trung bình toàn cầu.
+- Mưa: dự báo điểm bằng khí hậu; xác suất tercile chỉ có skill nhỏ.
+- Độ phủ khoảng 80% thực tế 73–81% ở ô lưới; khoảng và xác suất của vùng lớn là trung bình các ô nên bảo thủ.
+- Skill là thống kê, không khẳng định nhân quả. Đây là dự báo theo mùa, không phải dự báo thời tiết từng ngày.
+
+### Chạy lại
+```
+cd data-pipeline
+../.venv/bin/python train_forecast.py            # Satellite, 5 biến
+../.venv/bin/python train_forecast.py --outlook  # Outlook, 5 biến
+../.venv/bin/python reality_check.py             # đối chiếu với NASA GISTEMP
+```
+Các file `models/*.joblib` (khoảng 275 MB) không nằm trong git; cần train lại (khoảng 25 phút mỗi chế độ trên CPU Mac khi máy rảnh) trước khi dùng `/forecast`. `metrics*.json` và `reality_check.json` có trong git.

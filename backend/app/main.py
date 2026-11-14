@@ -15,7 +15,7 @@ from fastapi import APIRouter, FastAPI, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-from . import bridge, catalog, chat, config, errors, hunt, service
+from . import bridge, catalog, chat, config, errors, forecast_service, hunt, service
 from .errors import ApiError
 from pydantic import BaseModel, Field
 from .schemas import (ChatRequest, ChatResponse, CompareRequest, CompareResponse, ExplainRequest, ExplainResponse, GridResponse,
@@ -297,3 +297,4 @@ def job_status(job_id: str):
 
 
 app.include_router(api)
+app.include_router(forecast_service.router)
