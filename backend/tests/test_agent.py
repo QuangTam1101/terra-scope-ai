@@ -169,3 +169,33 @@ def test_real_sdk_function_schema_and_call_parsing(monkeypatch):
         assert second.parts[0].text == "Done"
     asyncio.run(execute())
     assert len(captured) == 2 and len(function_declarations()) == 7
+
+
+def test_rejected_prose_gets_one_retry_without_rerunning_tools(client, fake_agent):
+    """Phase 8.5: one rejected draft is re-requested once; tools are not rerun; two rejections still fall back."""
+    session, composer = fake_agent
+    composer.generate.side_effect = [ProviderReply(answer="The slope is 999 and it is significant.", statement_ids=[]),
+                                     ProviderReply(answer="", statement_ids=["uncertainty"])]
+    b = client.post("/api/v1/chat", json=REQUEST).json()
+    assert b["mode"] == "llm" and "999" not in b["answer"]
+    assert composer.generate.call_count == 2 and session.turn.call_count == 2 and len(b["tool_results"]) == 1
+
+
+def test_two_rejected_drafts_fall_back_after_exactly_two_attempts(client, fake_agent):
+    _, composer = fake_agent
+    composer.generate.side_effect = None
+    composer.generate.return_value = ProviderReply(answer="The slope is 999 and it is significant.", statement_ids=[])
+    b = client.post("/api/v1/chat", json=REQUEST).json()
+    assert b["mode"] == "template" and composer.generate.call_count == 2 and "999" not in b["answer"]
+
+
+def test_compare_intent_runs_the_comparison_itself_and_model_only_explains(client, fake_agent):
+    """Phase 8.5 E2E: the model once analysed only region A. A compare selection now always runs compare_regions."""
+    session, composer = fake_agent
+    composer.generate.return_value = ProviderReply(answer="", statement_ids=["contextual_explanation"])
+    ctx = {**ARGS, "intent": "compare", "region_b": {"type": "preset", "id": "hanoi"}}
+    b = client.post("/api/v1/chat", json={"message": "Why might these two places show different rainfall trends?", "context": ctx, "use_tools": True}).json()
+    assert [t["tool"] for t in b["tool_results"]] == ["compare_regions"] and b["tool_results"][0]["ok"]
+    assert b["mode"] == "llm" and session.turn.call_count == 0 and composer.generate.call_count == 1
+    data = b["tool_results"][0]["data"]
+    assert data["a"]["region"]["id"] == "mekong_delta" and data["b"]["region"]["id"] == "hanoi"

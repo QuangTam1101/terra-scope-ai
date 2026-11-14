@@ -43,6 +43,21 @@ export interface CompareResponse {
   is_contradiction: boolean; verdict: "opposite_significant" | "opposite_not_significant" | "same_direction" | "insufficient_data";
   plain_summary: string; warnings: string[];
 }
+export interface HuntTile { bbox: BBox; n_valid: number; share_up: number; share_down: number; mean_slope: number }
+export interface HuntRegional { trend_id: string; slope_per_decade: number | null; p_value: number | null; significant: boolean | null; quality: Quality; start: string; end: string; units: string; region: RegionOut; source: DataSource }
+export interface HuntCandidate {
+  rank: number; type: "opposite_direction" | "dataset_disagreement"; a: HuntTile; b: HuntTile; reasons: string[];
+  metrics: { weaker_share: number; slope_gap: number; distance_deg?: number };
+  classification: "statistical_evidence" | "inconclusive" | "descriptive" | "unsupported"; classification_text: string;
+  test: { compare_id: string; verdict: CompareResponse["verdict"]; difference: CompareResponse["difference"] } | null;
+  regional: { a: HuntRegional; b: HuntRegional } | null;
+}
+export interface HuntResponse {
+  mode: "regions" | "datasets"; variable_id: string; variable_id_b: string | null; start: string; end: string; extent: BBox;
+  criteria: { tile_deg: number; dominant_share: number; min_valid_cells: number; ranking: string[] };
+  tiles_scanned: number; candidates: HuntCandidate[]; compatibility: string | null; runtime_ms: number;
+  limits: { max_tiles: number; max_candidates: number; max_retests: number }; warnings: string[];
+}
 export interface ExplainResponse {
   answer: string; cited_numbers: { label: string; value: number; units: string; source_field: string }[];
   actions: { type: string; params: Record<string, unknown> }[]; disclaimer: string; model: string; warnings: string[];
@@ -103,9 +118,11 @@ export class ApiError extends Error {
 async function call<T>(path: string, init?: RequestInit, timeoutMs = 45000): Promise<T> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  // A caller's signal (user cancel / newer request) and the timeout both abort the same fetch.
+  init?.signal?.addEventListener("abort", () => ctrl.abort(), { once: true });
   try {
     const res = await fetch(BASE + path, {
-      ...init, signal: init?.signal ?? ctrl.signal,
+      ...init, signal: ctrl.signal,
       headers: { Accept: "application/json", "Content-Type": "application/json", ...(init?.headers ?? {}) },
     });
     const body = await res.json().catch(() => null);
@@ -116,33 +133,42 @@ async function call<T>(path: string, init?: RequestInit, timeoutMs = 45000): Pro
     return body as T;
   } catch (err) {
     if (err instanceof ApiError) throw err;
-    if ((err as Error).name === "AbortError") throw new ApiError("NETWORK_ERROR", "The server took too long to answer.", undefined, true);
+    if ((err as Error).name === "AbortError") {
+      if (init?.signal?.aborted) throw new ApiError("CANCELLED", "Cancelled.", undefined, false);
+      throw new ApiError("NETWORK_ERROR", "The server took too long to answer.", undefined, true);
+    }
     throw new ApiError("NETWORK_ERROR", "Cannot reach the Terra-scope server. Is the backend running?", undefined, true);
   } finally {
     clearTimeout(timer);
   }
 }
 
-const post = <T,>(path: string, body: unknown) => call<T>(path, { method: "POST", body: JSON.stringify(body) });
+const post = <T,>(path: string, body: unknown, signal?: AbortSignal) => call<T>(path, { method: "POST", body: JSON.stringify(body), signal });
 const qs = (o: Record<string, string | number | undefined>) =>
   "?" + Object.entries(o).filter(([, v]) => v !== undefined).map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join("&");
 
 export const api = {
+  health: () => call<{ status: string; version: string; available_variables: string[] }>("/health"),
   llmStatus: () => call<{ provider: string; model: string; configured: boolean }>("/llm/status"),
   variables: () => call<{ variables: Variable[] }>("/variables").then((r) => r.variables),
   regions: () => call<RegionsResponse>("/regions"),
-  series: (variable_id: string, region: RegionRef, start: string, end: string) =>
-    post<SeriesResponse>("/series", { variable_id, region, start, end }),
-  trends: (variable_id: string, region: RegionRef, start: string, end: string) =>
-    post<TrendResponse>("/trends", { variable_id, region, start, end, method: "seasonal_mk", alpha: 0.05 }),
-  trendGrid: (variable_id: string, start: string, end: string) =>
-    call<TrendGrid>("/trends/grid" + qs({ variable_id, start, end }), undefined, 90000),
-  valueGrid: (variable_id: string, start: string, end: string, month?: number) =>
-    call<ValueGrid>("/values/grid" + qs({ variable_id, start, end, month }), undefined, 90000),
+  series: (variable_id: string, region: RegionRef, start: string, end: string, signal?: AbortSignal) =>
+    post<SeriesResponse>("/series", { variable_id, region, start, end }, signal),
+  trends: (variable_id: string, region: RegionRef, start: string, end: string, signal?: AbortSignal) =>
+    post<TrendResponse>("/trends", { variable_id, region, start, end, method: "seasonal_mk", alpha: 0.05 }, signal),
+  trendGrid: (variable_id: string, start: string, end: string, signal?: AbortSignal) =>
+    call<TrendGrid>("/trends/grid" + qs({ variable_id, start, end }), signal ? { signal } : undefined, 90000),
+  valueGrid: (variable_id: string, start: string, end: string, month?: number, signal?: AbortSignal) =>
+    call<ValueGrid>("/values/grid" + qs({ variable_id, start, end, month }), signal ? { signal } : undefined, 90000),
+  /** Is a map already computed? Cheap, no computation on the server. */
+  gridStatus: (kind: "trend" | "values", variable_id: string, start: string, end: string, month?: number) =>
+    call<{ kind: string; cached: boolean; available: boolean; cell_size_deg: number | null }>("/grids/status" + qs({ kind, variable_id, start, end, month }), undefined, 8000),
   compare: (variable_id: string, region_a: RegionRef, region_b: RegionRef, start: string, end: string) =>
     post<CompareResponse>("/compare", { variable_id, region_a, region_b, start, end, method: "seasonal_mk", alpha: 0.05 }),
   explain: (question: string, context: Record<string, unknown>) => post<ExplainResponse>("/explain", { question, context }),
   chat: (request: ChatRequest) => post<ChatResponse>("/chat", request),
+  discover: (body: { variable_id: string; variable_id_b?: string | null; start: string; end: string; extent: BBox; tile_deg: number; max_candidates: number }, signal?: AbortSignal) =>
+    call<HuntResponse>("/hunt/discover", { method: "POST", body: JSON.stringify(body), signal }, 180000),
 };
 
 // Friendly copy for each error code (contract §4.11).
@@ -153,8 +179,11 @@ export function errorText(e: unknown): string {
     REGION_TOO_SMALL: "This area is smaller than one grid cell. Pick a larger area.",
     REGION_TOO_LARGE: "This area is too large.",
     DATA_NOT_READY: "This dataset is not on the server yet.",
-    INVALID_TIME_RANGE: "The start year must be before the end year, inside 2001 to 2024.",
+    INVALID_TIME_RANGE: e.message || "The start year must be before the end year, inside the years the dataset covers.",
     NETWORK_ERROR: e.message,
+    CANCELLED: "Analysis cancelled.",
+    INCOMPATIBLE_DATASETS: e.message,
+    RESOURCE_LIMIT: e.message,
   };
   return map[e.code] ?? e.message;
 }

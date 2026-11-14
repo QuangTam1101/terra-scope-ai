@@ -11,7 +11,7 @@ ERROR_CATEGORIES = {
     "tool_executed",
     "agent_limit",
     "sdk_call_started", "success", "context_limit", "unsupported_question", "context_required",
-    "config", "missing_key", "auth", "rate_limit", "timeout", "model_unavailable", "service",
+    "config", "missing_key", "auth", "rate_limit", "cooldown", "busy", "timeout", "model_unavailable", "service",
     "network", "invalid_request", "invalid_response", "grounding",
 }
 DETAIL_CATEGORIES = {

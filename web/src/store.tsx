@@ -3,6 +3,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { api, errorText, type BBox, type ChatContext, type ChatHistoryTurn, type ChatResponse, type Region, type RegionRef, type SeriesResponse, type TrendResponse, type Variable } from "./api";
 import { pointPlace, setGridCell } from "./places";
 import { pageFromHash } from './pageRouting';
+import type { RegionalProgress } from "./progress";
+import type { ReportComparison } from "./report/model";
+import { CASE_SCHEMA, type CaseItem, type SavedCase } from "./cases";
 
 export type Page = "landing" | "home" | "explore" | "hunt" | "detective" | "report";
 
@@ -16,7 +19,15 @@ interface Store {
   variables: Variable[]; regions: Region[]; ready: boolean;
   sel: Selection; setSel: (patch: Partial<Selection>) => void;
   run: Run | null; running: boolean; runAnalysis: (override?: Partial<Selection>) => Promise<boolean>;
+  /** Real per-request state of the running regional analysis (Phase 8.5A); null when idle. */
+  progress: RegionalProgress | null; cancelAnalysis: () => void;
   history: Run[];
+  /** Comparisons the user added to the report (Hunt, dataset agreement). */
+  comparisons: ReportComparison[]; addComparison: (c: ReportComparison) => void; removeReportItem: (key: string) => void;
+  backendVersion: string;
+  /** Phase 8.5D4: snapshot of the report's analyses as a reproducible case, and reopening one (recomputed). */
+  makeCase: (title: string) => SavedCase | null;
+  openCase: (c: SavedCase) => Promise<{ ok: number; failed: number; changed: string[] }>;
   tempUnit: TempUnit; setTempUnit: (u: TempUnit) => void;
   toast: string | null; showError: (e: unknown) => void; clearToast: () => void;
   variable: Variable | undefined;
@@ -64,10 +75,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [run, setRun] = useState<Run | null>(null);
   const [running, setRunning] = useState(false);
   const [history, setHistory] = useState<Run[]>([]);
+  const [comparisons, setComparisons] = useState<ReportComparison[]>([]);
+  const [backendVersion, setBackendVersion] = useState("unknown");
+  const addComparison = useCallback((c: ReportComparison) => setComparisons((x) => [c, ...x.filter((y) => y.key !== c.key)].slice(0, 8)), []);
+  const removeReportItem = useCallback((key: string) => { setComparisons((x) => x.filter((y) => y.key !== key)); setHistory((h) => h.filter((r) => r.key !== key)); }, []);
   const [toast, setToast] = useState<string | null>(null);
   const [tempUnit, setTempUnitState] = useState<TempUnit>(() => { try { return localStorage.getItem("tempUnit") === "F" ? "F" : "C"; } catch { return "C"; } });
   const setTempUnit = useCallback((u: TempUnit) => { setTempUnitState(u); try { localStorage.setItem("tempUnit", u); } catch { /* private mode */ } }, []);
   const reqId = useRef(0);
+  const runCtrl = useRef<AbortController | null>(null);
+  const [progress, setProgress] = useState<RegionalProgress | null>(null);
   // Session memory survives page navigation; a reload starts a new conversation.
   const [chatTurns, setChatTurns] = useState<ChatExchange[]>([]);
   const [chatBusy, setChatBusy] = useState(false);
@@ -106,6 +123,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const showError = useCallback((e: unknown) => setToast(errorText(e)), []);
 
   useEffect(() => {
+    api.health().then((h) => setBackendVersion(h.version)).catch(() => undefined);
     Promise.all([api.variables(), api.regions()])
       .then(([v, r]) => {
         setVariables(v); setRegions(r.regions); setGridCell(r.limits.cell_size_deg); setReady(true);
@@ -126,25 +144,89 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const variable = variables.find((v) => v.id === s.variableId);
     if (!variable) return false;
     const id = ++reqId.current;
+    runCtrl.current?.abort();                         // a newer analysis replaces the old one
+    const ctrl = new AbortController(); runCtrl.current = ctrl;
     const start = `${s.startYear}-01`, end = `${s.endYear}-12`;
+    const base: RegionalProgress = { place: s.place.label, parameter: variable.parameter_name, dataset: variable.dataset_name,
+      start, end, series: "pending", trend: "pending" };
+    setProgress(base);
+    const mark = (k: "series" | "trend", st: "done" | "failed") => { if (id === reqId.current) setProgress((p) => p && { ...p, [k]: st }); };
     setRunning(true);
     try {
       const [series, trend] = await Promise.all([
-        api.series(s.variableId, s.place.ref, start, end),
-        api.trends(s.variableId, s.place.ref, start, end),
+        api.series(s.variableId, s.place.ref, start, end, ctrl.signal).then((x) => { mark("series", "done"); return x; }, (e) => { mark("series", "failed"); throw e; }),
+        api.trends(s.variableId, s.place.ref, start, end, ctrl.signal).then((x) => { mark("trend", "done"); return x; }, (e) => { mark("trend", "failed"); throw e; }),
       ]);
-      if (id !== reqId.current) return false;           // a newer run started meanwhile
+      if (id !== reqId.current) return false;           // a newer run started meanwhile: never show a stale result
       const r: Run = { key: trend.trend_id, series, trend, variable, place: s.place };
       setRun(r);
       setHistory((h) => [r, ...h.filter((x) => x.key !== r.key)].slice(0, 12));
       return true;
     } catch (e) {
-      if (id === reqId.current) showError(e);
+      if (id === reqId.current && !ctrl.signal.aborted) showError(e);
       return false;
     } finally {
-      if (id === reqId.current) setRunning(false);
+      if (id === reqId.current) { setRunning(false); setProgress(null); runCtrl.current = null; }
     }
   }, [sel, variables, showError]);
+
+  const refOf = (r: { type: string; id?: string | null; bbox: BBox }): RegionRef =>
+    r.type === "preset" && r.id ? { type: "preset", id: r.id } : { type: "bbox", bbox: r.bbox };
+
+  const makeCase = useCallback((title: string): SavedCase | null => {
+    const items: CaseItem[] = [
+      ...history.map((h): CaseItem => ({ kind: "trend", variable_id: h.variable.id, region: h.place.ref, place_label: h.place.label, bbox: h.place.bbox,
+        start: h.trend.start, end: h.trend.end, method: "seasonal_mk", alpha: 0.05,
+        saved_result: { trend_id: h.trend.trend_id, slope_per_decade: h.trend.slope_per_decade, p_value: h.trend.p_value,
+          significant: h.trend.significant, units: h.trend.units, product: h.trend.source.product, version: h.trend.source.version } })),
+      ...comparisons.filter((c) => c.kind === "regions" && c.test).map((c): CaseItem => ({ kind: "compare", variable_id: c.a.trend.variable_id,
+        region_a: refOf(c.a.trend.region), region_b: refOf(c.b.trend.region), label_a: c.a.label, label_b: c.b.label,
+        start: c.a.trend.start, end: c.a.trend.end, method: "seasonal_mk", alpha: 0.05,
+        saved_result: { compare_id: c.test!.compare_id, verdict: c.test!.verdict, slope_diff_per_decade: c.test!.difference.slope_diff_per_decade, p_value: c.test!.difference.p_value } })),
+      ...comparisons.filter((c) => c.kind === "datasets").flatMap((c): CaseItem[] => [c.a, c.b].map((side) => ({ kind: "trend", variable_id: side.trend.variable_id,
+        region: refOf(side.trend.region), place_label: side.label, bbox: side.trend.region.bbox, start: side.trend.start, end: side.trend.end,
+        method: "seasonal_mk", alpha: 0.05 }))),
+    ].slice(0, 12);
+    if (!items.length) return null;
+    const id = `case-${Date.now().toString(36)}`;
+    return { schema: CASE_SCHEMA, id, title: title.trim().slice(0, 120) || "Saved case", created_at: new Date().toISOString(), backend_version: backendVersion, items };
+  }, [history, comparisons, backendVersion]);
+
+  const openCase = useCallback(async (c: SavedCase) => {
+    let ok = 0, failed = 0; const changed: string[] = [];
+    const close = (a: number | null | undefined, b: number | null | undefined) => a === b || (a != null && b != null && Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a)));
+    const label = (r: RegionRef, fallback: string) => (r.type === "preset" ? regions.find((x) => x.id === r.id)?.name ?? fallback : fallback);
+    for (const it of c.items) {
+      const variable = variables.find((v) => v.id === it.variable_id);
+      if (!variable) { failed++; continue; }
+      try {
+        if (it.kind === "trend") {
+          const [series, trend] = await Promise.all([api.series(it.variable_id, it.region, it.start, it.end), api.trends(it.variable_id, it.region, it.start, it.end)]);
+          const place: Place = { ref: it.region, label: label(it.region, it.place_label), bbox: trend.region.bbox };
+          const r: Run = { key: trend.trend_id, series, trend, variable, place };
+          setHistory((h) => [r, ...h.filter((x) => x.key !== r.key)].slice(0, 12));
+          if (it.saved_result && (!close(it.saved_result.slope_per_decade, trend.slope_per_decade) || !close(it.saved_result.p_value, trend.p_value)))
+            changed.push(`${place.label} (${variable.dataset_name}, ${it.start} to ${it.end})`);
+        } else {
+          const [cmp, sa, sb] = await Promise.all([api.compare(it.variable_id, it.region_a, it.region_b, it.start, it.end),
+            api.series(it.variable_id, it.region_a, it.start, it.end), api.series(it.variable_id, it.region_b, it.start, it.end)]);
+          const la = label(it.region_a, it.label_a), lb = label(it.region_b, it.label_b);
+          setComparisons((x) => [{ key: cmp.compare_id, kind: "regions" as const, title: `${variable.parameter_name}: ${la} vs ${lb}`,
+            a: { label: la, dataset: variable.dataset_name, trend: cmp.a, series: sa }, b: { label: lb, dataset: variable.dataset_name, trend: cmp.b, series: sb },
+            units: variable.display_units, variableName: variable.parameter_name, test: cmp }, ...x.filter((y) => y.key !== cmp.compare_id)].slice(0, 8));
+          if (it.saved_result && (it.saved_result.verdict !== cmp.verdict || !close(it.saved_result.p_value, cmp.difference.p_value))) changed.push(`${la} vs ${lb}`);
+        }
+        ok++;
+      } catch { failed++; }
+    }
+    return { ok, failed, changed };
+  }, [variables, regions]);
+
+  const cancelAnalysis = useCallback(() => {
+    if (!runCtrl.current) return;
+    reqId.current++; runCtrl.current.abort(); runCtrl.current = null;
+    setRunning(false); setProgress(null);
+  }, []);
 
   // Everything the pages read goes through the chosen temperature unit (the API always answers in °C).
   const shown = useMemo(() => {
@@ -155,11 +237,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [tempUnit, variables, run, history]);
 
   const value = useMemo<Store>(() => ({
-    page, go, variables: shown.variables, regions, ready, sel, setSel, run: shown.run, running, runAnalysis, history: shown.history,
+    page, go, variables: shown.variables, regions, ready, sel, setSel, run: shown.run, running, runAnalysis, progress, cancelAnalysis, history: shown.history, comparisons, addComparison, removeReportItem, backendVersion, makeCase, openCase,
     toast, showError, clearToast: () => setToast(null), tempUnit, setTempUnit,
     variable: shown.variables.find((v) => v.id === sel.variableId),
     chatTurns, chatBusy, sendChat, clearChat, chatContext, huntSelection, setHuntSelection,
-  }), [page, go, shown, regions, ready, sel, setSel, running, runAnalysis, toast, showError, tempUnit, setTempUnit,
+  }), [page, go, shown, regions, ready, sel, setSel, running, runAnalysis, progress, cancelAnalysis, comparisons, addComparison, removeReportItem, backendVersion, makeCase, openCase, toast, showError, tempUnit, setTempUnit,
        chatTurns, chatBusy, sendChat, clearChat, chatContext, huntSelection]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

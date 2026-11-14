@@ -15,8 +15,9 @@ from fastapi import APIRouter, FastAPI, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-from . import bridge, catalog, chat, config, errors, service
+from . import bridge, catalog, chat, config, errors, hunt, service
 from .errors import ApiError
+from pydantic import BaseModel, Field
 from .schemas import (ChatRequest, ChatResponse, CompareRequest, CompareResponse, ExplainRequest, ExplainResponse, GridResponse,
                       HealthResponse, RegionsResponse, SeriesRequest, SeriesResponse, TrendRequest, TrendResponse,
                       ValueGridResponse, VariablesResponse)
@@ -149,6 +150,127 @@ def values_grid(request: Request, variable_id: str, start: str = Query(..., exam
                 bbox: Optional[str] = Query(None, description="west,south,east,north"),
                 month: Optional[int] = Query(None, description="1–12: only average this calendar month")):
     return _grid_response(request, "values", variable_id, start, end, bbox, month)
+
+
+@api.get("/grids/status")
+def grids_status(kind: str = Query(..., pattern="^(trend|values)$"), variable_id: str = Query(...),
+                 start: str = Query(...), end: str = Query(...), bbox: Optional[str] = Query(None),
+                 month: Optional[int] = Query(None), alpha: float = Query(config.DEFAULT_ALPHA, gt=0, lt=0.5)):
+    """Cheap check (no computation): is this map already computed? Lets the web say "loading a saved map"
+    instead of "computing the global grid" (Phase 8.5A). Unknown variables answer cached=false."""
+    args = (variable_id, start, end, bbox, alpha) if kind == "trend" else (variable_id, start, end, bbox, month)
+    v = catalog.VARIABLES.get(variable_id)
+    if v is None or not bridge.is_available(v.pipeline_id):
+        return {"kind": kind, "cached": False, "available": False, "cell_size_deg": None}
+    key = _grid_key(kind, args)
+    cached = (config.GRID_CACHE_DIR / f"{kind}_{variable_id}_{key}.json.gz").exists()
+    return {"kind": kind, "cached": cached, "available": True,
+            "cell_size_deg": bridge.meta(v.pipeline_id)["cell_size_deg"]}
+
+
+class DiscoverRequest(BaseModel):
+    variable_id: str
+    variable_id_b: Optional[str] = None        # set for a two-dataset scan
+    start: str = Field(..., pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
+    end: str = Field(..., pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
+    extent: list[float] = Field(..., min_length=4, max_length=4)
+    tile_deg: float = Field(5.0, ge=1.0, le=20.0)
+    max_candidates: int = Field(5, ge=1, le=hunt.MAX_CANDIDATES)
+
+
+def _grid_cells(variable_id: str, start: str, end: str) -> list[dict]:
+    packed, _ = _grid_bytes("trend", variable_id, start, end, None, config.DEFAULT_ALPHA)   # cached map, computed once
+    return json.loads(gzip.decompress(packed))["cells"]
+
+
+def _region_out(t: dict) -> dict:
+    keep = ("trend_id", "slope_per_decade", "p_value", "significant", "quality", "start", "end", "units", "region", "source")
+    return {k: t[k] for k in keep}
+
+
+def _ds_name(variable_id: str) -> str:
+    return catalog.VARIABLE_PARAMETER.get(variable_id, ("", variable_id))[1]
+
+
+@api.post("/hunt/discover")
+def hunt_discover(req: DiscoverRequest):
+    """Phase 8.5C: bounded discovery of candidate disagreements (rules in app/hunt.py). Runs in the thread pool
+    (sync def), reuses the cached trend maps and re-tests at most hunt.MAX_RETESTS candidates."""
+    timer = hunt.Timer()
+    extent = tuple(float(x) for x in req.extent)
+    hunt.check_extent(extent, req.tile_deg)
+    v = service.get_variable(req.variable_id)
+    service._check_time(v, req.start, req.end)
+    criteria = {"tile_deg": req.tile_deg, "dominant_share": hunt.DOMINANT_SHARE, "min_valid_cells": hunt.MIN_VALID,
+                "ranking": ["weaker side's FDR-significant share (desc)", "absolute mean-slope gap (desc)", "distance (asc)", "tile position"]}
+    limits = {"max_tiles": hunt.MAX_TILES, "max_candidates": hunt.MAX_CANDIDATES, "max_retests": hunt.MAX_RETESTS}
+    warnings = ["Exploratory scan: candidates are places worth investigating, not conclusions. Tiles summarise per-cell tests "
+                "with Benjamini-Hochberg FDR on raw cell p-values without serial-dependence correction."]
+    if req.variable_id_b is None:
+        pairs, scanned = hunt.region_candidates(_grid_cells(v.id, req.start, req.end), extent, req.tile_deg, req.max_candidates)
+        out = []
+        for i, p in enumerate(pairs):
+            cand = {"rank": i + 1, "type": "opposite_direction", "a": p["a"], "b": p["b"],
+                    "metrics": {"weaker_share": p["weaker_share"], "slope_gap": p["slope_gap"], "distance_deg": p["distance_deg"]},
+                    "reasons": [f"Tile A: {p['a']['share_up']:.0%} of {p['a']['n_valid']} cells are significant increases (FDR).",
+                                f"Tile B: {p['b']['share_down']:.0%} of {p['b']['n_valid']} cells are significant decreases (FDR).",
+                                f"Mean Sen slopes of the tiles differ by {p['slope_gap']:.3g} {v.display_units} per decade."],
+                    "test": None, "regional": None, "classification": "descriptive",
+                    "classification_text": "Map pattern only; not tested as two regions (only the top candidates are re-tested)."}
+            if i < hunt.MAX_RETESTS:
+                try:
+                    cmp = service.compare(CompareRequest(variable_id=v.id, region_a={"type": "bbox", "bbox": p["a"]["bbox"]},
+                                                         region_b={"type": "bbox", "bbox": p["b"]["bbox"]}, start=req.start, end=req.end))
+                    cls, text = hunt.classify_compare(cmp["verdict"])
+                    cand.update(test={"compare_id": cmp["compare_id"], "verdict": cmp["verdict"], "difference": cmp["difference"]},
+                                regional={"a": _region_out(cmp["a"]), "b": _region_out(cmp["b"])},
+                                classification=cls, classification_text=text)
+                except ApiError as e:
+                    cand.update(classification="unsupported", classification_text=e.message)
+            out.append(cand)
+        return {"mode": "regions", "variable_id": v.id, "variable_id_b": None, "start": req.start, "end": req.end,
+                "extent": list(extent), "criteria": criteria, "tiles_scanned": scanned, "candidates": out,
+                "compatibility": None, "runtime_ms": timer.ms(), "limits": limits, "warnings": warnings}
+
+    vb = service.get_variable(req.variable_id_b)
+    note = hunt.compatibility(v.id, vb.id)
+    if note is None or v.display_units != vb.display_units:
+        raise ApiError(400, "INCOMPATIBLE_DATASETS",
+                       f"{v.name} ({v.id}) and {vb.name} ({vb.id}) do not measure the same quantity in the same units, so they are not compared.",
+                       {"a": v.id, "b": vb.id})
+    service._check_time(vb, req.start, req.end)
+    ma, mb = bridge.meta(v.pipeline_id), bridge.meta(vb.pipeline_id)
+    if not ma or not mb or ma["cell_size_deg"] != mb["cell_size_deg"]:
+        raise ApiError(400, "INCOMPATIBLE_DATASETS", "The two products are not on the same processed grid.")
+    rows, scanned = hunt.dataset_candidates(_grid_cells(v.id, req.start, req.end), _grid_cells(vb.id, req.start, req.end),
+                                            extent, req.tile_deg, req.max_candidates)
+    na, nb = _ds_name(v.id), _ds_name(vb.id)
+    out = []
+    for i, r in enumerate(rows):
+        reasons = []
+        if "opposite_direction" in r["reasons"]:
+            reasons.append(f"Mean Sen slope over the tile: {na} {r['a']['mean_slope']:+.3g} vs {nb} {r['b']['mean_slope']:+.3g} "
+                           f"{v.display_units} per decade (opposite signs).")
+        if "different_significance_picture" in r["reasons"]:
+            reasons.append(f"Significant cells (FDR): {na} {r['a']['share_up']:.0%} up / {r['a']['share_down']:.0%} down; "
+                           f"{nb} {r['b']['share_up']:.0%} up / {r['b']['share_down']:.0%} down.")
+        cand = {"rank": i + 1, "type": "dataset_disagreement", "a": r["a"], "b": r["b"], "reasons": reasons, "rule": r["reasons"],
+                "metrics": {"weaker_share": r["weaker_share"], "slope_gap": r["slope_gap"]},
+                "classification": "descriptive",
+                "classification_text": "Descriptive disagreement between products: no approved statistical test of the difference.",
+                "test": None, "regional": None}
+        if i < hunt.MAX_RETESTS:
+            region = {"type": "bbox", "bbox": r["a"]["bbox"]}
+            try:
+                ta = service.trends(TrendRequest(variable_id=v.id, region=region, start=req.start, end=req.end))
+                tb = service.trends(TrendRequest(variable_id=vb.id, region=region, start=req.start, end=req.end))
+                cand["regional"] = {"a": _region_out(ta), "b": _region_out(tb)}
+            except ApiError as e:
+                cand["classification_text"] += f" Regional trends unavailable: {e.message}"
+        out.append(cand)
+    return {"mode": "datasets", "variable_id": v.id, "variable_id_b": vb.id, "start": req.start, "end": req.end,
+            "extent": list(extent), "criteria": criteria, "tiles_scanned": scanned, "candidates": out, "compatibility": note,
+            "runtime_ms": timer.ms(), "limits": limits, "warnings": warnings + ["No product is treated as ground truth."]}
 
 
 @api.post("/compare", response_model=CompareResponse)

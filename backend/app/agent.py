@@ -204,8 +204,18 @@ async def orchestrate(req, settings, limits, identifier, results):
     request = GenerationInput("data", req.message, runtime.bounded_history(req),
                               {"tool_results": [agent_payload(r) for r in results]}, allowed, identifier)
     # Separate request: no tools mixed with response_json_schema.
-    draft = await create_composer(settings).generate(request)
-    extra = validate_and_render(draft, request, settings.api_key)
+    composer = create_composer(settings)
+    draft = await composer.generate(request)
+    try:
+        extra = validate_and_render(draft, request, settings.api_key)
+    except ProviderError as rejected:
+        if rejected.code != "grounding":
+            raise
+        # Phase 8.5 E2E: the model sometimes drafts prose the grounding check rejects. Ask once more for the
+        # explanation only; the verified tool results are reused (no tool is rerun) and the second draft must pass the
+        # same check, otherwise the caller falls back to Template Mode as before.
+        draft = await composer.generate(request)
+        extra = validate_and_render(draft, request, settings.api_key)
     return response_from_results(results, req.context, mode="llm", extra=extra)
 
 
@@ -219,7 +229,7 @@ def run(req, template, identifier=None):
         return runtime.fallback(template(req), "config")
     results = []
     if not runtime.budget.enter(settings.requests_per_minute):
-        return runtime.fallback(template(req), "rate_limit")
+        return runtime.fallback(template(req), runtime.budget.reason)
     error = None
     try:
         limits = AgentLimits.load()
@@ -252,15 +262,22 @@ def explain_results(req, results, detail, identifier=None):
     if settings.provider != "gemini" or not settings.api_key or not settings.valid:
         return base
     if not runtime.budget.enter(settings.requests_per_minute):
-        return runtime.fallback(base, "rate_limit")
+        return runtime.fallback(base, runtime.budget.reason)
     identifier = request_id(identifier)
     error, status, reason = None, None, None
     try:
         request = GenerationInput("data", req.message, runtime.bounded_history(req),
             {"tool_results": [agent_payload(r) for r in results]}, {"contextual_explanation": detail}, identifier)
         async def compose():
-            draft = await create_composer(settings).generate(request)
-            return validate_and_render(draft, request, settings.api_key)
+            composer = create_composer(settings)
+            draft = await composer.generate(request)
+            try:
+                return validate_and_render(draft, request, settings.api_key)
+            except ProviderError as rejected:
+                if rejected.code != "grounding":
+                    raise
+                draft = await composer.generate(request)        # one more draft of the same verified evidence
+                return validate_and_render(draft, request, settings.api_key)
         rendered = asyncio.run(asyncio.wait_for(compose(), timeout=settings.timeout))
         return response_from_results(results, req.context, mode="llm", extra=rendered)
     except ProviderError as failure:

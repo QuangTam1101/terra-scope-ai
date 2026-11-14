@@ -115,3 +115,19 @@ def test_ambiguous_dataset_preserves_explicit_new_region_and_dates(client):
 def test_explicit_conflicting_dataset_is_not_silently_overridden(client):
     response = ask(client, 'Analyze MERRA-2 imerg_precip in Hanoi from 2001 to 2020.')
     assert response.status_code == 422 and response.json()['error']['code'] == 'UNSUPPORTED_DATASET'
+
+
+@pytest.mark.parametrize('message', ['Tell me about the result in the most understandable way.',
+                                     'Explain this in simple terms.', 'Summarise it in plain words.',
+                                     'Explain the trend in Vietnamese.', 'Describe it in a short paragraph.'])
+def test_answer_style_phrases_are_not_unknown_regions(client, message):
+    # Regression (Phase 7 QA): "in <manner>" was parsed as a place name and returned 404 Unknown region.
+    b = first(client)
+    response = ask(client, message, b['resolved_context'])
+    assert response.status_code == 200, response.text
+    assert response.json()['resolved_context']['region']['id'] == 'mekong_delta'
+
+
+def test_unknown_place_after_in_is_still_rejected(client):
+    b = first(client)
+    assert ask(client, 'What about the trend in Atlantis?', b['resolved_context']).status_code == 404

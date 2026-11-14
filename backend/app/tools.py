@@ -13,8 +13,10 @@ from .schemas import (BBoxRegion, CompareRequest, CompareResponse, DataSource, M
                       RegionsResponse, SeriesRequest, SeriesResponse, TrendRequest, TrendResponse,
                       VariableItem, VariablesResponse, ToolResult, ToolError, ToolWarning, RegionCatalog, Provenance)
 
-MAX_MONTHS = 288
-MAX_CELLS = 1000
+MAX_MONTHS = 300  # 2001-01 to 2025-12 (0.5 degree data); was 288 for the 2001 to 2024 cubes
+# Cell budget for one agent region. 1000 deg² (MAX_AREA) is about 1000 cells on the old 1° grid but about 4000 on the
+# 0.5° grid, so the cell budget follows the area cap instead of rejecting areas the area cap allows.
+MAX_CELLS = 4500
 MAX_AREA = 1000
 MAX_RESULT_BYTES = 65536
 MAX_ARGUMENT_BYTES = 4096
@@ -66,7 +68,7 @@ class PeriodInput(VariableInput):
         if a > b:
             raise ValueError("start must not be after end")
         if b - a + 1 > MAX_MONTHS:
-            raise ValueError("At most 288 months per tool call")
+            raise ValueError(f"At most {MAX_MONTHS} months per tool call")
         return self
 
 
@@ -89,7 +91,7 @@ def _region(ref, variable):
         raise ApiError(400, "RESOURCE_LIMIT", "Agent regions are limited to 1000 square degrees; select a smaller area.")
     meta = bridge.meta(variable.pipeline_id)
     if meta and ((e - w) / meta["cell_size_deg"] + 1) * ((n - s) / meta["cell_size_deg"] + 1) > MAX_CELLS:
-        raise ApiError(400, "RESOURCE_LIMIT", "Agent region exceeds the grid-cell budget.")
+        raise ApiError(400, "RESOURCE_LIMIT", f"Agent region exceeds the grid-cell budget ({MAX_CELLS} cells).")
     return converted
 
 
@@ -139,7 +141,7 @@ _TOOLS = {
                        lambda _: VariablesResponse.model_validate(service.variables())),
         ToolDefinition("list_available_regions", "Discover authoritative presets and safe spatial selection types.", EmptyInput, RegionCatalog,
                        lambda _: RegionCatalog(catalog=RegionsResponse.model_validate(service.regions()), supported_selection_types=["preset", "bbox"])),
-        ToolDefinition("get_time_series", "Read at most 288 monthly observations with quality, units and provenance.", AnalysisInput, SeriesResponse,
+        ToolDefinition("get_time_series", "Read at most 300 monthly observations with quality, units and provenance.", AnalysisInput, SeriesResponse,
                        lambda args: _analysis(args, "series"), True),
         ToolDefinition("analyze_trend", "Compute a regional seasonal MK/Sen trend. Raw and adjusted tests and OLS interval attribution remain distinct.", AnalysisInput, TrendResponse,
                        lambda args: _analysis(args, "trend"), True),
