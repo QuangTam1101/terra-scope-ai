@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from appeears import load_env  # noqa: E402
 
-START, END = "2001-01-01", "2024-12-31"    # khoảng phân tích chung
+START, END = "2001-01-01", "2025-12-31"    # khoảng phân tích chung
 RAW = ROOT / "data" / "raw"
 URS = "urs.earthdata.nasa.gov"
 

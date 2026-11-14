@@ -1,18 +1,21 @@
 # Terra-scope AI (NASA Space Apps 2026): data pipeline, toàn cầu
 
-Phạm vi: **toàn cầu** (từ 14/11/2026; trước đó là bbox Mekong), 2001–2024, trọng tâm mưa + độ ẩm đất. Tổng quan, nguồn,
-cách chạy: [README.md](README.md). Kỹ thuật làm sạch và lý do: [preprocess/README.md](preprocess/README.md). Mỗi
-`data/raw/<nguồn>/README.md` mô tả dữ liệu của nguồn đó.
+Phạm vi: **toàn cầu** (từ 14/11/2026; trước đó là bbox Mekong), 2001–2025 (`START`/`END` ở `download/common.py` và
+`preprocess/eda.py`), trọng tâm mưa + độ ẩm đất. Tổng quan, nguồn, cách chạy: [README.md](README.md). Kỹ thuật làm
+sạch, kiểm chứng và lý do: [preprocess/README.md](preprocess/README.md). Mỗi `data/raw/<nguồn>/README.md` mô tả dữ
+liệu của nguồn đó.
 
 ## Quy ước
 - Tài liệu bằng tiếng Việt. Người dùng không muốn file code thừa: mỗi nguồn một script trong `download/`, phần dùng
-  chung ở `download/common.py`; tiền xử lý chỉ có `preprocess/eda.py` và `preprocess/clean.py`. Đổi quyết định nào thì
-  rà lại mọi README và code liên quan cho khớp.
+  chung ở `download/common.py`; tiền xử lý chỉ có `preprocess/eda.py`, `preprocess/clean.py` và `preprocess/verify.py`
+  (kiểm chứng: cố ý không import hàm xử lý nào của `clean.py`, để là bằng chứng độc lập). Đổi quyết định nào thì rà
+  lại mọi README và code liên quan cho khớp.
 - `data/raw/` giữ file **như nhà phát hành giao** (toàn cầu, không cắt, không gộp, không đổi đơn vị). Mọi xử lý ở
   `preprocess/`, đầu ra `data/processed/`, báo cáo sinh tự động ở `reports/` (`02_cleaning.json` giữ dòng của sản
   phẩm chạy trước; chạy lại một sản phẩm chỉ thay dòng đó).
 - Chạy từ thư mục gốc bằng `.venv/bin/python download/<script>.py`. Script bỏ qua file kết quả đã có, nên chạy lại
-  là tiếp tục. `preprocess/clean.py --check` tự kiểm phần nội suy.
+  là tiếp tục. `preprocess/clean.py --check` tự kiểm phần nội suy;
+  sửa `clean.py` thì chạy lại `preprocess/verify.py` (tính lại độc lập từ file thô, phải khớp 100 % ô).
 - Tài khoản Earthdata nằm trong `.env` (`EARTHDATA_USER`, `EARTHDATA_PASS`), đọc qua `appeears.load_env()`. Người
   dùng tự điền; không in, không hỏi nội dung. Duyệt app Earthdata, tạo tài khoản (EODMS cho RCM…) là việc của người dùng.
 - Repo nhóm: `terra-scope-ai/` (checkout riêng), branch `data-pipeline`, thư mục `data-pipeline/`. Chỉ push khi người
@@ -26,18 +29,26 @@ cách chạy: [README.md](README.md). Kỹ thuật làm sạch và lý do: [prep
   toàn cầu (cách đang dùng). Biến IMERG trong HOSS là `Grid/precipitation` (file trả về có group `Grid`, trục
   `(time, lon, lat)`). Dùng `harmony_job()` trong `download/common.py`, đừng dùng `client.wait_for_processing` (hỏi
   `/jobs/status`, đôi khi bị 400). Job > ~300 granule bị Harmony tự `paused` sau bước xem trước; `harmony_job()` tự
-  `client.resume()`. Chỗ chậm là tải từng file, không phải xử lý; máy ngủ (gập máy khi chạy pin) thì kết nối treo, nên client tạo với `download_timeout=120` và `harmony_job()` tự tải lại. Lỗi `403` nghĩa
-  là tài khoản chưa duyệt app của trung tâm dữ liệu (GES DISC cho Giovanni).
+  `client.resume()`. Chỗ chậm là tải từng file, không phải xử lý (mỗi tiến trình ~18 file/phút; chạy vài tiến trình,
+  mỗi tiến trình một năm khác nhau, không bao giờ hai tiến trình cùng một thư mục). Máy ngủ (gập máy khi chạy pin) thì
+  kết nối treo: client tạo với `download_timeout=120`, `harmony_job()` tự tải lại; nếu tiến trình vẫn đứng (0 CPU,
+  số file không tăng) thì kill theo PID (đừng `pkill -f`, dễ trúng lệnh khác) rồi chạy lại, job tiếp tục từ
+  `job_id.txt`. Lỗi `403` nghĩa là tài khoản chưa duyệt app của trung tâm dữ liệu (GES DISC cho Giovanni).
+  IMERG Final ra sau ~3,5 tháng (14/11/2026 mới tới 09/2025).
 - **Tên file Harmony bắt đầu bằng số thứ tự job**, không theo thời gian: sắp xếp theo ngày trong tên granule.
 - **Lịch julian:** IMERG (HOSS) và mọi NetCDF của AppEEARS ghi `time` bằng `cftime.DatetimeJulian`. Đổi sang pandas
   bằng `to_datetimeindex(unsafe=True, time_unit="ns")`, giữ nguyên ngày/tháng/năm.
 - **MERRA-2 có tâm ô tại −180°** (ô vắt qua kinh tuyến 180): khi nội suy theo lon phải cộng phần chồng lấn của lưới
   nguồn dịch ±360°, nếu không cột 179,75° của lưới đích bị mất.
+- **Toạ độ float32:** IMERG, SeaWiFS lưu lat/lon float32 (lệch tới 1,5e-5°). Biên ô tính thẳng từ đó làm một mẩu ô
+  bên cạnh lọt vào trung bình (0 mm thành 2e-6, lệch ~1e-4); `edges()` trong `clean.py` làm tròn hai biên ngoài rồi
+  chia đều. Ô phủ đúng 50 % là chuyện thường (ô ven bờ), nên so ngưỡng với dung sai 1e-9.
 - **GLDAS:** ô băng (3,95 % ô đất liền) có θ = 1 ở mọi tầng `SoilMoi*` và `RootMoist` hằng 100 kg/m²; RootMoist không
   nhận ra băng từ giá trị nên `clean.py` dùng tầng 0–10 cm cùng tháng. **`RootMoist` có độ sâu vùng rễ thay đổi theo
   lớp thực vật**: ô nông nghiệp = đúng tổng 0–100 cm, ô rừng ≈ 0,93 × tổng 0–200 cm. Không chia cho độ dày cố định.
 - **SMAP SPL3SMP (36 km, EASE-Grid 2.0, EPSG:6933):** `latitude`/`longitude` trong file chỉ có ở ô có dữ liệu; tính từ
-  `x`, `y` bằng pyproj. Bit 0 của `retrieval_qual_flag` = 1 là chất lượng không khuyến nghị (~48 % ô có giá trị).
+  `x`, `y` bằng pyproj. Bit 0 của `retrieval_qual_flag` = 1 là chất lượng không khuyến nghị (~42 % ô có giá trị;
+  rừng nhiệt đới ~100 %, nên SMAP sạch chỉ phủ 60 % đất liền, gần như không có Amazon, Congo, Mekong).
 - **GSOM `PRCP_ATTRIBUTES` = `a,M,Q,S`**: số ngày thiếu, cờ đo, cờ chất lượng, mã nguồn (tài liệu GSOM của NCEI). Cờ
   chất lượng luôn rỗng; GSOM vẫn tính tổng tháng khi thiếu 1–5 ngày; nguồn `S` (synop GTS) NCEI khuyên dùng thận trọng.
 - **CRU `stn = 0`**: không có trạm, giá trị là khí hậu trung bình, không phải quan trắc → loại.

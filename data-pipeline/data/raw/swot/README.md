@@ -4,7 +4,7 @@
 **Script:** `download/swot.py TÊN W S E N` (đăng nhập bằng `.env`; tìm granule qua CMR, tải zip shapefile từ PO.DAAC).
 
 **Không tải sẵn toàn cầu**: riêng 2023–2024 đã ≥ 30 000 granule mỗi loại, ≥ 132 GB (sông) + ≥ 554 GB (hồ). **SWOT chỉ
-có từ 04/2023** (vệ tinh phóng 12/2022), quá ngắn để tính xu hướng 2001–2024; dùng làm bối cảnh mực nước gần đây của
+có từ 04/2023** (vệ tinh phóng 12/2022), quá ngắn để tính xu hướng 2001–2025; dùng làm bối cảnh mực nước gần đây của
 vùng đang xem. Một bbox cỡ hồ Tonlé Sap cắt qua ~350 granule mỗi loại.
 
 ```bash
@@ -15,9 +15,9 @@ vùng đang xem. Một bbox cỡ hồ Tonlé Sap cắt qua ~350 granule mỗi lo
 
 | File | Nội dung |
 |---|---|
-| `SWOT_L2_HR_RiverSP_reach_D_<TÊN>_2023-2024.parquet` | bảng (không có hình): một dòng = một đoạn sông (reach) × một lượt quét |
+| `SWOT_L2_HR_RiverSP_reach_D_<TÊN>_2023-2025.parquet` | bảng (không có hình): một dòng = một đoạn sông (reach) × một lượt quét |
 | `SWOT_L2_HR_RiverSP_reach_D_<TÊN>_reaches.parquet` | GeoParquet: hình (đường) của mỗi đoạn sông, một dòng mỗi `reach_id` |
-| `SWOT_L2_HR_LakeSP_prior_D_<TÊN>_2023-2024.parquet` | GeoParquet: một dòng = một hồ × một lượt quét; hình là mặt nước quan sát được ở lượt đó |
+| `SWOT_L2_HR_LakeSP_prior_D_<TÊN>_2023-2025.parquet` | GeoParquet: một dòng = một hồ × một lượt quét; hình là mặt nước quan sát được ở lượt đó |
 
 Sản phẩm `SWOT_L2_HR_RiverSP_reach_D` và `SWOT_L2_HR_LakeSP_prior_D` (bản D), mọi granule cắt qua bbox từ 2023-01-01.
 Giữ nguyên các cột của NASA, thêm cột `granule` (tên lượt quét). WGS 84 (EPSG:4326). File zip tải về `downloads/` rồi

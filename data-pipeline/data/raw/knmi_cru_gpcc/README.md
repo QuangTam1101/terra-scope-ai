@@ -15,7 +15,7 @@ bắt xác minh "người thật" nên không tải tự động qua KNMI đư�
 | `cru_ts4.10.{2001.2010,2011.2020,2021.2025}.pre.dat.nc` | CRU TS 4.10 (Đại học East Anglia) | 0,5°, 360 × 720 | 2001-01 → 2025-12 (300 tháng) | `crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/` |
 | `full_data_monthly_v2022_{2001_2010,2011_2020}_025.nc` | GPCC Full Data Monthly v2022 (DWD, Đức) | 0,25°, 720 × 1440 | 2001-01 → 2020-12 (240 tháng) | `opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/025/` |
 
-Cả hai chỉ có trên đất liền (ô biển là fill). **GPCC v2022 dừng ở 2020**, nên trên cả 2001–2024 chỉ CRU có đủ.
+Cả hai chỉ có trên đất liền (ô biển là fill). **GPCC v2022 dừng ở 2020**, nên trên cả 2001–2025 chỉ CRU có đủ.
 
 ## Biến
 

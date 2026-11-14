@@ -5,7 +5,7 @@ toàn cầu; bản tháng dạng lưới toàn cầu của cùng các sản ph�
 Chạy:    .venv/bin/python download/hydrology_timeseries.py TÊN LAT LON [VAR_ID ...]   (mặc định: mọi biến trong VARIABLES)
 Kết quả: data/raw/hydrology_timeseries/<VAR_ID>/<TÊN>.csv
          Đầu file: metadata của NASA (sản phẩm, đơn vị, undef, toạ độ ô lưới); sau đó bảng "Timestamp (UTC),Data"
-         2001–2024. Giá trị là của ô lưới chứa điểm (GLDAS 0,25°, IMERG 0,1°), không phải số đo tại trạm."""
+         2001–2025. Giá trị là của ô lưới chứa điểm (GLDAS 0,25°, IMERG 0,1°), không phải số đo tại trạm."""
 import sys
 
 import requests

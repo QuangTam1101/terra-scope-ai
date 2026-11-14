@@ -13,6 +13,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW, REPORT = ROOT / "data" / "raw", ROOT / "reports" / "01_eda.md"
+START, END = "2001-01-01", "2025-12-01"     # khoảng phân tích chung (tháng đầu, tháng cuối); clean.py dùng chung
 SAMPLE = 12
 
 G = "giovanni/{}/*.nc4"
@@ -156,11 +157,11 @@ def eda_grid(name, pattern, variables, date_re, freq):
 
 
 def gsom_rows(cols=("STATION", "DATE", "PRCP", "PRCP_ATTRIBUTES")):
-    """Mọi CSV trạm GSOM ghép thành một bảng (chuỗi, chưa đổi kiểu), chỉ giữ tháng 2001-01 … 2024-12."""
+    """Mọi CSV trạm GSOM ghép thành một bảng (chuỗi, chưa đổi kiểu), chỉ giữ tháng START … END."""
     frames = []
     for f in sorted((RAW / "cdo_gsom" / "csv").glob("*.csv")):
         df = pd.read_csv(f, usecols=lambda c: c in cols, dtype=str)
-        frames.append(df[(df.DATE >= "2001-01") & (df.DATE <= "2024-12")])
+        frames.append(df[(df.DATE >= START[:7]) & (df.DATE <= END[:7])])
     return pd.concat(frames, ignore_index=True)
 
 
@@ -176,12 +177,13 @@ def eda_gsom():
     src = attr.S.fillna("")
     only_s = src.eq("S").groupby(df.loc[prcp.notna(), "STATION"]).all()
     q = np.percentile(prcp.dropna(), [0, 1, 50, 99, 99.99, 100])
+    period, n_months = f"{START[:4]}–{END[:4]}", len(pd.date_range(START, END, freq="MS"))
     share = lambda s: ", ".join(f"{k or 'rỗng'}: {100 * v:.1f} %" for k, v in s.value_counts(normalize=True).head(8).items())  # noqa: E731
     return ["## gsom_prcp (trạm GHCN)", "",
-            f"- `stations.csv`: {len(st)} trạm có PRCP trong 2001–2024 theo kiểm kê GHCN-Daily; "
+            f"- `stations.csv`: {len(st)} trạm có PRCP trong {period} theo kiểm kê GHCN-Daily; "
             f"{int(st.has_gsom.sum())} có file GSOM",
-            f"- Dòng 2001–2024: {len(df)}; PRCP trống {100 * prcp.isna().mean():.1f} %",
-            f"- Số tháng có PRCP mỗi trạm (trên 288): trung vị {months.median():.0f}; ≥ 240: {(months >= 240).sum()} "
+            f"- Dòng {period}: {len(df)}; PRCP trống {100 * prcp.isna().mean():.1f} %",
+            f"- Số tháng có PRCP mỗi trạm (trên {n_months}): trung vị {months.median():.0f}; ≥ 240: {(months >= 240).sum()} "
             f"trạm; ≥ 180: {(months >= 180).sum()}; 0: {(months == 0).sum()}",
             f"- PRCP (mm/tháng) min/p1/p50/p99/p99,99/max: {' / '.join(f'{v:.1f}' for v in q)}; âm: {(prcp < 0).sum()}",
             f"- `PRCP_ATTRIBUTES` (trên dòng có PRCP): số ngày thiếu > 0 ở "

@@ -3,9 +3,10 @@
 **Nguồn trên trang challenge:** "Giovanni" (NASA resources). Giovanni là công cụ xem/tính trên web; dữ liệu phía sau
 là các sản phẩm GES DISC. Ở đây tải đúng các biến Giovanni đó (cùng mã biến) dạng lưới qua dịch vụ **Harmony HOSS**,
 HOSS chỉ tách biến cần lấy khỏi file gốc, giá trị, đơn vị và lưới giữ nguyên.
-**Script:** `download/giovanni_hoss.py` (đăng nhập bằng `.env`). Tổng 3,5 GB.
+**Script:** `download/giovanni_hoss.py` (đăng nhập bằng `.env`). Tổng 3,6 GB.
 
-## Biến (mỗi biến một thư mục, tên = mã biến Giovanni; 288 file tháng 2001-01 → 2024-12)
+## Biến (mỗi biến một thư mục, tên = mã biến Giovanni; 300 file tháng 2001-01 → 2025-12; IMERG Final ra sau ~3,5 tháng nên hiện có 297
+file, tới 09/2025: chạy lại script khi NASA phát hành thêm)
 
 | Thư mục / mã biến | Nghĩa | Đơn vị gốc | Lưới (lat × lon) |
 |---|---|---|---|

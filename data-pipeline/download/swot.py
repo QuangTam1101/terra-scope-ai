@@ -3,10 +3,10 @@ Không tải toàn cầu: riêng 2023–2024 đã ≥ 30 000 granule mỗi loạ
 (vệ tinh phóng 12/2022), quá ngắn để tính xu hướng 24 năm; dùng làm bối cảnh mực nước gần đây của vùng đang xem.
 Chạy:    .venv/bin/python download/swot.py TÊN W S E N        (bbox theo độ, ví dụ: tonle_sap 103.5 12.3 104.9 13.5)
 Kết quả: data/raw/swot/<TÊN>/
-  SWOT_L2_HR_RiverSP_reach_D_<TÊN>_2023-2024.parquet  bảng (không có hình dạng): một dòng = một đoạn sông × một lượt
+  SWOT_L2_HR_RiverSP_reach_D_<TÊN>_2023-<năm END>.parquet  bảng (không có hình dạng): một dòng = một đoạn sông × một lượt
                                                       quét, giữ nguyên các cột của NASA + cột granule
   SWOT_L2_HR_RiverSP_reach_D_<TÊN>_reaches.parquet    GeoParquet: hình dạng mỗi đoạn sông, một dòng mỗi reach_id
-  SWOT_L2_HR_LakeSP_prior_D_<TÊN>_2023-2024.parquet   GeoParquet: một dòng = một hồ × một lượt quét, hình dạng là
+  SWOT_L2_HR_LakeSP_prior_D_<TÊN>_2023-<năm END>.parquet   GeoParquet: một dòng = một hồ × một lượt quét, hình dạng là
                                                       mặt nước quan sát được ở lượt đó
 Giữ đối tượng giao với bbox (giữ nguyên cả hình). File zip tải về downloads/ rồi bị xoá sau khi gộp."""
 import shutil
@@ -21,6 +21,7 @@ from common import END, RAW, EarthdataSession, download
 # collection → cột id của đối tượng có hình dạng cố định (None: hình dạng thay đổi theo từng lượt quét)
 COLLECTIONS = {"SWOT_L2_HR_RiverSP_reach_D": "reach_id", "SWOT_L2_HR_LakeSP_prior_D": None}
 START = "2023-01-01"
+YEARS = f"{START[:4]}-{END[:4]}"
 
 
 def latest(found):
@@ -51,7 +52,7 @@ def save(gdf, out, id_col):
     """Hình đoạn sông lấy từ CSDL tiên nghiệm SWORD, lặp lại y hệt ở mọi lượt quét và chiếm ~95 % dung lượng
     → lưu một lần vào file _reaches, bảng chính bỏ cột hình dạng."""
     if id_col:
-        gdf.drop_duplicates(id_col)[[id_col, "geometry"]].to_parquet(out.with_name(out.name.replace("2023-2024", "reaches")))
+        gdf.drop_duplicates(id_col)[[id_col, "geometry"]].to_parquet(out.with_name(out.name.replace(YEARS, "reaches")))
         gdf = pd.DataFrame(gdf.drop(columns="geometry"))
     gdf.to_parquet(out)
 
@@ -63,7 +64,7 @@ if __name__ == "__main__":
     w, s, e, n = bbox
     session = EarthdataSession()
     for short_name, id_col in COLLECTIONS.items():
-        out = RAW / "swot" / name / f"{short_name}_{name}_2023-2024.parquet"
+        out = RAW / "swot" / name / f"{short_name}_{name}_{YEARS}.parquet"
         if out.exists():
             continue
         tmp = RAW / "swot" / name / "downloads" / short_name

@@ -8,13 +8,13 @@
 |---|---|
 | Sản phẩm | Global Summary of the Month (GSOM), dựng từ trạm GHCN-Daily |
 | Lấy từ | kho nén toàn bộ GSOM `https://www.ncei.noaa.gov/data/global-summary-of-the-month/archive/gsom-latest.tar.gz` (~1,5 GB, không cần tài khoản); giải nén các trạm cần rồi xoá kho |
-| Chọn trạm | trạm GHCN có PRCP giao với 2001–2024 theo `ghcnd-inventory.txt`: 85 525 trạm, 81 148 có file GSOM |
+| Chọn trạm | trạm GHCN có PRCP giao với 2001–2025 theo `ghcnd-inventory.txt`: 87 256 trạm, 82 839 có file GSOM |
 | Script | `download/cdo_gsom.py` |
 
-## File (6,8 GB)
+## File (7,2 GB)
 
 - `stations.csv`: một dòng mỗi trạm: `id, lat, lon, elev_m, name, first_year, last_year, has_gsom`.
-  `first_year`/`last_year` là năm đầu/cuối có PRCP theo inventory GHCN (có thể ngoài 2001–2024).
+  `first_year`/`last_year` là năm đầu/cuối có PRCP theo inventory GHCN (có thể ngoài 2001–2025).
 - `csv/<id>.csv`: file GSOM nguyên định dạng NCEI, đủ mọi năm và mọi cột.
 
 ## Cột quan trọng trong `csv/<id>.csv`
@@ -36,10 +36,10 @@ Giải nghĩa `PRCP_ATTRIBUTES` (theo `GSOM_documentation.pdf` của NCEI):
 
 ## Cần biết trước khi dùng (số liệu từ `reports/01_eda.md`)
 
-- **8,07 triệu dòng trạm × tháng trong 2001–2024; PRCP trống 4,9 %.** Mỗi trạm trung vị 58/288 tháng có PRCP;
-  11 292 trạm có ≥ 240 tháng; 648 trạm không có PRCP nào trong giai đoạn.
-- Số ngày thiếu > 0 ở 15,4 % dòng có PRCP; cờ chất lượng rỗng ở 100 % (GSOM đã bỏ ngày không qua QC); nguồn `S` ở
-  3,0 % dòng, 2 024 trạm chỉ có nguồn `S`.
+- **8,43 triệu dòng trạm × tháng trong 2001–2025; PRCP trống 4,9 %.** Mỗi trạm trung vị 59/300 tháng có PRCP;
+  11 827 trạm có ≥ 240 tháng; 659 trạm không có PRCP nào trong giai đoạn.
+- Số ngày thiếu > 0 ở 15,6 % dòng có PRCP; cờ chất lượng rỗng ở 100 % (GSOM đã bỏ ngày không qua QC); nguồn `S` ở
+  3,0 % dòng, 1 893 trạm chỉ có nguồn `S`.
 - PRCP 0 … 3 088 mm/tháng, không có giá trị âm.
 - Một số file không có cột `PRCP` (trạm chỉ có nhiệt độ). Kiểm tra `'PRCP' in df.columns`.
 - Đây là số đo tại một điểm; so với ô lưới (IMERG 0,1°, lưới chung 0,5°) sẽ lệch, nhất là vùng núi.

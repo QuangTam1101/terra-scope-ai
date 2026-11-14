@@ -2,7 +2,7 @@
 áp cùng một chuỗi bước cho mọi nguồn: fill → scale (+ đổi đơn vị) → filter → lưới chung → schema chung.
 Chạy:    .venv/bin/python preprocess/clean.py [TÊN ...]      (mặc định: mọi sản phẩm trong PRODUCTS đã có dữ liệu thô)
 Kết quả: data/processed/grid/<TÊN>.nc     biến <TÊN>, trục (time, lat, lon), float32, NaN = không có dữ liệu,
-                                         time = ngày đầu tháng 2001-01 … 2024-12, lưới 0,5° toàn cầu (tâm ô ±0,25 …)
+                                         time = ngày đầu tháng START … END (2001-01 … 2025-12), lưới 0,5° toàn cầu (tâm ô ±0,25 …)
          data/processed/stations/precip_gsom.parquet   bảng dài: station, lat, lon, elev_m, time, precip_gsom (mm/month)
          reports/02_cleaning.md          mỗi bước loại bao nhiêu ô và phân bố giá trị sau xử lý (ghi đè từng sản phẩm)
 Kiểu adapter (xem preprocess/README.md):
@@ -22,10 +22,9 @@ import xarray as xr
 from pyproj import Transformer
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from eda import RAW, ROOT, SETS, gsom_rows  # noqa: E402
+from eda import END, RAW, ROOT, SETS, START, gsom_rows  # noqa: E402
 
 OUT, REPORT = ROOT / "data" / "processed", ROOT / "reports" / "02_cleaning.md"
-START, END = "2001-01-01", "2024-12-01"
 RES, MIN_COVER = 0.5, 0.5        # lưới chung 0,5°; ô đích cần ≥ 50 % diện tích có dữ liệu hợp lệ
 LAT = np.arange(-90 + RES / 2, 90, RES)
 LON = np.arange(-180 + RES / 2, 180, RES)
@@ -228,8 +227,11 @@ def clean_steps(raw, a, p, t, aux, n):
 
 
 def edges(c, lo, hi):
+    """Biên ô của lưới đều. Toạ độ trong file thường là float32 (lệch ~1e-5°): biên −78° thành −77,999997° làm một mẩu
+    ô bên cạnh lọt vào trung bình (verify.py phát hiện). Nên làm tròn hai biên ngoài tới 1e-4° rồi chia đều."""
     d = (c[-1] - c[0]) / (len(c) - 1)
-    return np.clip(np.concatenate([c - d / 2, [c[-1] + d / 2]]), lo, hi)
+    a, b = np.round([c[0] - d / 2, c[-1] + d / 2], 4)   # ponytail: giả định biên ngoài là bội 1e-4° (đúng với mọi nguồn)
+    return np.clip(np.linspace(a, b, len(c) + 1), lo, hi)
 
 
 def weights(src_lat, src_lon):
@@ -264,7 +266,7 @@ def step_regrid(x, w):
     den = wlat @ ok @ wlon.T
     with np.errstate(invalid="ignore", divide="ignore"):
         out = num / den
-    out[den < MIN_COVER * area] = np.nan
+    out[den < MIN_COVER * area * (1 - 1e-9)] = np.nan       # ô phủ đúng 50 %: sai số làm tròn không được quyết định
     return out
 
 
@@ -364,7 +366,8 @@ def write_report(new):
     for r in rows.values():
         tables.setdefault(tuple(r), []).append(r)
     lines = ["# Kết quả làm sạch (sinh tự động bởi `preprocess/clean.py`)", "",
-             "Lưới: tỉ lệ % tính trên tổng số ô × tháng của lưới gốc trong 2001–2024, phân vị tính trên lưới 0,5° sau "
+             f"Lưới: tỉ lệ % tính trên tổng số ô × tháng của lưới gốc trong {START[:4]}–{END[:4]}, phân vị tính trên "
+             "lưới 0,5° sau "
              "xử lý. Trạm: tỉ lệ % tính trên tổng số dòng trạm × tháng, mỗi bước chỉ đếm dòng bước trước chưa loại."]
     for cols, rs in tables.items():
         lines += ["", "| " + " | ".join(cols) + " |", "|" + "---|" * len(cols),
