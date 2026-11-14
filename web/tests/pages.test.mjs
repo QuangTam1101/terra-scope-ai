@@ -35,19 +35,19 @@ const server=await createServer({cacheDir:qaCache,server:{middlewareMode:true,wa
   load(id){if(id==='\0phase6-store')return `export const useStore=()=>globalThis.phase6Store; export const WORLD={ref:{type:'preset',id:'global'},label:'Whole world',bbox:[-180,-90,180,90]}; export const cellPlace=(lon,lat)=>({ref:{type:'bbox',bbox:[lon,lat,lon+1,lat+1]},label:'Cell',bbox:[lon,lat,lon+1,lat+1]}); export const areaPlace=(bbox)=>({ref:{type:'bbox',bbox},label:'Area',bbox});`;},
 }]});
 try {
-  for(const [name,text] of [['Home','Start'],['Explore','Raw Seasonal MK p'],['Hunt','Contradiction hunt'],['Detective','Ask Terra'],['Report','OLS anomaly slope, 95% interval']]) {
+  for(const [name,text] of [['Home','Start'],['Explore','Raw Seasonal MK p'],['Hunt','Contradiction hunt'],['Detective','Ask Terra'],['Report','95% CI for the OLS anomaly slope']]) {
     const module=await server.ssrLoadModule(`/src/pages/${name}.tsx`);
     test(`${name} renders offline with selected evidence and semantic controls`,()=>{
       if(name==='Report'){module.reportDraft.step=3;module.reportDraft.edition=null;}
       const html=renderToStaticMarkup(createElement(module[name]));
       assert.ok(html.includes(text),name);
       assert.ok(html.includes('<button'),name);
-      if(name==='Report'){assert.ok(html.includes('Scientist edition report'));assert.ok(html.includes('GPM_3IMERGM'));assert.ok(html.includes('Raw Seasonal MK p'));assert.ok(html.includes('not a Sen confidence interval'));assert.ok(html.includes('Download PDF'));assert.ok(html.includes('Data file (.json)'));assert.ok(html.includes('Abstract'));assert.ok(html.includes('References'));assert.ok(html.includes('the null hypothesis of no monotonic trend is not rejected'));}
+      if(name==='Report'){assert.ok(html.includes('Scientist edition report'));assert.ok(html.includes('GPM_3IMERGM'));assert.ok(html.includes('Raw Seasonal MK p'));assert.ok(html.includes('not the Sen slope'));assert.ok(html.includes('Download PDF'));assert.ok(html.includes('Data file (.json)'));assert.ok(html.includes('Abstract'));assert.ok(html.includes('References'));assert.ok(html.includes('the null hypothesis of no monotonic trend is not rejected'));}
       if(name==='Detective'){assert.ok(html.includes('role="log"'));assert.ok(html.includes('not statistically significant'));assert.ok(html.includes('Raw p:'));}
     });
   }
   // Explorer presentation of the SAME fixture: plain wording first, same backend numbers kept in the page.
-  for(const [name,text] of [['Explore','What did we find?'],['Hunt','Where do the results disagree?'],['Report','Simple edition report']]) {
+  for(const [name,text] of [['Explore','What did we find?'],['Hunt','Where do the results disagree?'],['Report','Explorer edition report']]) {
     const module=await server.ssrLoadModule(`/src/pages/${name}.tsx`);
     test(`${name} renders the Explorer presentation of the same evidence`,()=>{
       globalThis.phase6Store={...globalThis.phase6Store,audience:'explorer'};
@@ -57,7 +57,8 @@ try {
         assert.ok(html.includes(text),name);
         assert.ok(!html.includes('—'),`${name}: no long dash`);
         if(name==='Explore'){assert.ok(html.includes('+3.16'));assert.ok(html.includes('not strong enough to confirm'));assert.ok(!html.includes('clear upward trend'));}
-        if(name==='Report'){assert.ok(html.includes('Technical appendix'));assert.ok(html.includes('0.110'));assert.ok(html.includes('not a Sen confidence interval'));assert.ok(html.includes('Strength of evidence'));assert.ok(html.includes('Abstract'));}
+        if(name==='Report'){assert.ok(html.includes('The discovery'));assert.ok(html.includes('0.110'));assert.ok(html.includes('Statistical test outcome'));assert.ok(!html.includes('Strength of evidence'));assert.ok(html.includes('Behind the discovery'));
+          assert.ok(html.includes('Explore the story behind this result'));for(const q of ['What is a trend?','What is a p-value?','How was this calculated?','Why does this result matter?','What are the limitations?'])assert.ok(html.includes(q),q);assert.ok(html.includes('<details'));}
       } finally { globalThis.phase6Store={...globalThis.phase6Store,audience:'scientist'}; }
     });
   }

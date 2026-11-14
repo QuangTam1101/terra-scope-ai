@@ -15,7 +15,7 @@ from fastapi import APIRouter, FastAPI, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
-from . import bridge, catalog, chat, config, errors, forecast_service, hunt, service
+from . import bridge, catalog, chat, config, errors, forecast_service, hunt, service, timelapse
 from .errors import ApiError
 from pydantic import BaseModel, Field
 from .schemas import (ChatRequest, ChatResponse, CompareRequest, CompareResponse, ExplainRequest, ExplainResponse, GridResponse,
@@ -150,6 +150,16 @@ def values_grid(request: Request, variable_id: str, start: str = Query(..., exam
                 bbox: Optional[str] = Query(None, description="west,south,east,north"),
                 month: Optional[int] = Query(None, description="1–12: only average this calendar month")):
     return _grid_response(request, "values", variable_id, start, end, bbox, month)
+
+
+@api.get("/values/frames")
+def values_frames(variable_id: str, start: str = Query(..., examples=["2001-01"]), end: str = Query(..., examples=["2025-12"]),
+                  bbox: Optional[str] = Query(None, description="west,south,east,north"),
+                  kind: str = Query("anomaly", pattern="^(value|anomaly)$")):
+    """Time-lapse frames for the 2D map (display only; see app/timelapse.py)."""
+    v = service.get_variable(variable_id)
+    service._check_time(v, start, end)
+    return timelapse.frames(v, start, end, service._parse_bbox(bbox), kind)
 
 
 @api.get("/grids/status")

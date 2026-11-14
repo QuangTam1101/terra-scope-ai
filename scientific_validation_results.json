@@ -1,0 +1,5733 @@
+{
+ "generated": "2026-11-14T16:37:25+00:00",
+ "method_version": {
+  "backend_version": "0.2.0",
+  "regional": "Seasonal Mann-Kendall (pymannkendall 1.4.3 seasonal_test, period 12) on monthly values; seasonal Sen slope x10 per decade; verdict raw p < alpha (0.05); Hamed-Rao on anomalies diagnostic; OLS anomaly 95% CI",
+  "grid": "vectorised Seasonal MK without tie correction + seasonal Sen; BH-FDR over all valid cells",
+  "data": "0.5 degree processed grid (GRID_V2)"
+ },
+ "cases": [
+  {
+   "test_id": "TC-01",
+   "kind": "regional (oracle vs API)",
+   "label": "Mekong Delta, Vietnam",
+   "dataset": "GPM_3IMERGM v07",
+   "variable": "Precipitation",
+   "variable_id": "imerg_precip",
+   "region": {
+    "type": "preset",
+    "id": "mekong_delta"
+   },
+   "bbox_WSEN": [
+    104.4,
+    8.5,
+    106.9,
+    11.1
+   ],
+   "interval": [
+    "2001-01",
+    "2024-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 3.4289956416012144,
+    "S": 248,
+    "var_S": 19504.0,
+    "z": 1.7686223510146573,
+    "p_value": 0.07695691823494685,
+    "significant": false,
+    "p_value_hr": 0.2927209247749104,
+    "ols_slope_per_decade": 8.616656421145626,
+    "ols_ci95": [
+     -1.0933510644990319,
+     18.326663906790284
+    ],
+    "n_months": 288,
+    "missing_months": 0,
+    "coverage_fraction": 1.0,
+    "sufficient": "True",
+    "n_cells_in_box": 25
+   },
+   "actual_backend": {
+    "trend_id": "tr_390763c607",
+    "slope_per_decade": 3.4289956416012144,
+    "z": 1.7686223510146573,
+    "p_value": 0.07695691823494677,
+    "significant": false,
+    "p_value_autocorr_adjusted": 0.2927209247749103,
+    "slope_ci": [
+     -1.093351064499032,
+     18.326663906790284
+    ],
+    "n": 288,
+    "direction": "no_trend"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "288 months 2001-01..2024-12",
+     "actual": "288 months 2001-01..2024-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.938749214034033e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.991624678041262e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 288,
+     "actual": 288,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 1.0,
+     "actual": 1.0,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "mm/month",
+     "actual": "mm/month",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 3.4289956416012144,
+     "actual": 3.4289956416012144,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 1.7686223510146573,
+     "actual": 1.7686223510146573,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 0.07695691823494685,
+     "actual": 0.07695691823494677,
+     "delta": 8.326672684688674e-17
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": false,
+     "actual": false,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.2927209247749104,
+     "actual": 0.2927209247749103,
+     "delta": 1.1102230246251565e-16
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      -1.0933510644990319,
+      18.326663906790284
+     ],
+     "actual": [
+      -1.093351064499032,
+      18.326663906790284
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "no_trend",
+     "actual": "no_trend",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-02",
+   "kind": "regional (oracle vs API)",
+   "label": "Hanoi, Vietnam",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "variable_id": "merra2_air_temperature_2m",
+   "region": {
+    "type": "preset",
+    "id": "hanoi"
+   },
+   "bbox_WSEN": [
+    105.3,
+    20.5,
+    106.1,
+    21.4
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 0.2276697967724684,
+    "S": 506,
+    "var_S": 21999.999999999996,
+    "z": 3.4047093054393724,
+    "p_value": 0.0006623452008320524,
+    "significant": true,
+    "p_value_hr": 0.08982729155026348,
+    "ols_slope_per_decade": 0.14471849619423782,
+    "ols_ci95": [
+     -0.03543077654036156,
+     0.3248677689288372
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 1.0,
+    "sufficient": "True",
+    "n_cells_in_box": 2
+   },
+   "actual_backend": {
+    "trend_id": "tr_3d3ac21c81",
+    "slope_per_decade": 0.2276697967724684,
+    "z": 3.4047093054393724,
+    "p_value": 0.0006623452008320818,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.08982729155026337,
+    "slope_ci": [
+     -0.0354307765403615,
+     0.3248677689288373
+    ],
+    "n": 300,
+    "direction": "increasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.980883564903449e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.970756037891988e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 1.0,
+     "actual": 1.0,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "degC",
+     "actual": "degC",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 0.2276697967724684,
+     "actual": 0.2276697967724684,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 3.4047093054393724,
+     "actual": 3.4047093054393724,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 0.0006623452008320524,
+     "actual": 0.0006623452008320818,
+     "delta": 2.938187887435717e-17
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.08982729155026348,
+     "actual": 0.08982729155026337,
+     "delta": 1.1102230246251565e-16
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      -0.03543077654036156,
+      0.3248677689288372
+     ],
+     "actual": [
+      -0.0354307765403615,
+      0.3248677689288373
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "increasing",
+     "actual": "increasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-03",
+   "kind": "regional (oracle vs API)",
+   "label": "Sahara Desert",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "variable_id": "merra2_air_temperature_2m",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     -10,
+     18,
+     30,
+     30
+    ],
+    "name": "Sahara"
+   },
+   "bbox_WSEN": [
+    -10,
+    18,
+    30,
+    30
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 0.22709069311133437,
+    "S": 578,
+    "var_S": 21999.999999999996,
+    "z": 3.890133206412907,
+    "p_value": 0.00010018920980496527,
+    "significant": true,
+    "p_value_hr": 0.005069719231748713,
+    "ols_slope_per_decade": 0.17514499799068853,
+    "ols_ci95": [
+     0.04862906202259028,
+     0.30166093395878674
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 1.0,
+    "sufficient": "True",
+    "n_cells_in_box": 1920
+   },
+   "actual_backend": {
+    "trend_id": "tr_c31219070b",
+    "slope_per_decade": 0.22709069311133437,
+    "z": 3.890133206412907,
+    "p_value": 0.00010018920980492396,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.005069719231748815,
+    "slope_ci": [
+     0.04862906202259032,
+     0.30166093395878685
+    ],
+    "n": 300,
+    "direction": "increasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.975743265189791e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.988893635982095e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 1.0,
+     "actual": 1.0,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "degC",
+     "actual": "degC",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 0.22709069311133437,
+     "actual": 0.22709069311133437,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 3.890133206412907,
+     "actual": 3.890133206412907,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 0.00010018920980496527,
+     "actual": 0.00010018920980492396,
+     "delta": 4.130810277169772e-17
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.005069719231748713,
+     "actual": 0.005069719231748815,
+     "delta": 1.0148132334464322e-16
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      0.04862906202259028,
+      0.30166093395878674
+     ],
+     "actual": [
+      0.04862906202259032,
+      0.30166093395878685
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "increasing",
+     "actual": "increasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-04",
+   "kind": "regional (oracle vs API)",
+   "label": "Amazon Basin",
+   "dataset": "GPM_3IMERGM v07",
+   "variable": "Precipitation",
+   "variable_id": "imerg_precip",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     -75,
+     -15,
+     -50,
+     5
+    ],
+    "name": "Amazon Basin"
+   },
+   "bbox_WSEN": [
+    -75,
+    -15,
+    -50,
+    5
+   ],
+   "interval": [
+    "2001-01",
+    "2024-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": -7.1223218912092845,
+    "S": -548,
+    "var_S": 19504.0,
+    "z": -3.9167466639879254,
+    "p_value": 8.975197821222078e-05,
+    "significant": true,
+    "p_value_hr": 0.03256304605479601,
+    "ols_slope_per_decade": -7.836795156619801,
+    "ols_ci95": [
+     -11.246001336802587,
+     -4.427588976437016
+    ],
+    "n_months": 288,
+    "missing_months": 0,
+    "coverage_fraction": 1.0,
+    "sufficient": "True",
+    "n_cells_in_box": 2000
+   },
+   "actual_backend": {
+    "trend_id": "tr_e41dd03e0e",
+    "slope_per_decade": -7.1223218912092845,
+    "z": -3.9167466639879254,
+    "p_value": 8.97519782121492e-05,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.032563046054796096,
+    "slope_ci": [
+     -11.246001336802589,
+     -4.427588976437016
+    ],
+    "n": 288,
+    "direction": "decreasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "288 months 2001-01..2024-12",
+     "actual": "288 months 2001-01..2024-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.954152137415235e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.921836875837471e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 288,
+     "actual": 288,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 1.0,
+     "actual": 1.0,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "mm/month",
+     "actual": "mm/month",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": -7.1223218912092845,
+     "actual": -7.1223218912092845,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": -3.9167466639879254,
+     "actual": -3.9167466639879254,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 8.975197821222078e-05,
+     "actual": 8.97519782121492e-05,
+     "delta": 7.158444843835543e-17
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.03256304605479601,
+     "actual": 0.032563046054796096,
+     "delta": 8.326672684688674e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      -11.246001336802587,
+      -4.427588976437016
+     ],
+     "actual": [
+      -11.246001336802589,
+      -4.427588976437016
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "decreasing",
+     "actual": "decreasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-05",
+   "kind": "regional (oracle vs API)",
+   "label": "California, USA",
+   "dataset": "GLDAS_NOAH025_M v2.1",
+   "variable": "Soil moisture (0-10 cm)",
+   "variable_id": "gldas_soil_moisture_0_10cm",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     -124.5,
+     32.5,
+     -114,
+     42
+    ],
+    "name": "California"
+   },
+   "bbox_WSEN": [
+    -124.5,
+    32.5,
+    -114,
+    42
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 0.001940485958718072,
+    "S": 218,
+    "var_S": 21999.999999999996,
+    "z": 1.4630137015452354,
+    "p_value": 0.14346362982275737,
+    "significant": false,
+    "p_value_hr": 0.3814674130735833,
+    "ols_slope_per_decade": 0.0009482351754824067,
+    "ols_ci95": [
+     -0.002506443753236337,
+     0.00440291410420115
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 0.7518796992481204,
+    "sufficient": "True",
+    "n_cells_in_box": 399
+   },
+   "actual_backend": {
+    "trend_id": "tr_1960b7e216",
+    "slope_per_decade": 0.0019404859587180611,
+    "z": 1.4630137015452354,
+    "p_value": 0.1434636298227574,
+    "significant": false,
+    "p_value_autocorr_adjusted": 0.38146741307358334,
+    "slope_ci": [
+     -0.0025064437532363384,
+     0.00440291410420115
+    ],
+    "n": 300,
+    "direction": "no_trend"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.997785744836891e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.992786812318961e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 0.7519,
+     "actual": 0.752,
+     "delta": 0.00012030075187963174
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "m3/m3",
+     "actual": "m3/m3",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 0.001940485958718072,
+     "actual": 0.0019404859587180611,
+     "delta": 1.0842021724855044e-17
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 1.4630137015452354,
+     "actual": 1.4630137015452354,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 0.14346362982275737,
+     "actual": 0.1434636298227574,
+     "delta": 2.7755575615628914e-17
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": false,
+     "actual": false,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.3814674130735833,
+     "actual": 0.38146741307358334,
+     "delta": 5.551115123125783e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      -0.002506443753236337,
+      0.00440291410420115
+     ],
+     "actual": [
+      -0.0025064437532363384,
+      0.00440291410420115
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "no_trend",
+     "actual": "no_trend",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-06a",
+   "kind": "regional (oracle vs API)",
+   "label": "Australia",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "variable_id": "merra2_air_temperature_2m",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     113,
+     -39,
+     154,
+     -11
+    ],
+    "name": "Australia"
+   },
+   "bbox_WSEN": [
+    113,
+    -39,
+    154,
+    -11
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 0.28606117185859475,
+    "S": 824,
+    "var_S": 21999.999999999996,
+    "z": 5.548664868072482,
+    "p_value": 2.8785935665194958e-08,
+    "significant": true,
+    "p_value_hr": 0.0004122899117176528,
+    "ols_slope_per_decade": 0.3108608737901936,
+    "ols_ci95": [
+     0.21224143574982235,
+     0.4094803118305648
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 1.0,
+    "sufficient": "True",
+    "n_cells_in_box": 4592
+   },
+   "actual_backend": {
+    "trend_id": "tr_5d40626e46",
+    "slope_per_decade": 0.28606117185859475,
+    "z": 5.548664868072482,
+    "p_value": 2.878593563515608e-08,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.00041228991171760043,
+    "slope_ci": [
+     0.21224143574982235,
+     0.4094803118305649
+    ],
+    "n": 300,
+    "direction": "increasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.979536448734834e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.997708167309156e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 1.0,
+     "actual": 1.0,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "degC",
+     "actual": "degC",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 0.28606117185859475,
+     "actual": 0.28606117185859475,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 5.548664868072482,
+     "actual": 5.548664868072482,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 2.8785935665194958e-08,
+     "actual": 2.878593563515608e-08,
+     "delta": 3.003887865640599e-17
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.0004122899117176528,
+     "actual": 0.00041228991171760043,
+     "delta": 5.2366964931049864e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      0.21224143574982235,
+      0.4094803118305648
+     ],
+     "actual": [
+      0.21224143574982235,
+      0.4094803118305649
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "increasing",
+     "actual": "increasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-06b",
+   "kind": "regional (oracle vs API)",
+   "label": "Australia",
+   "dataset": "GLDAS_NOAH025_M v2.1",
+   "variable": "Air temperature over land",
+   "variable_id": "gldas_air_temperature",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     113,
+     -39,
+     154,
+     -11
+    ],
+    "name": "Australia"
+   },
+   "bbox_WSEN": [
+    113,
+    -39,
+    154,
+    -11
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 0.7513183659364551,
+    "S": 1372,
+    "var_S": 21999.999999999996,
+    "z": 9.243280114371048,
+    "p_value": 2.390541470888012e-20,
+    "significant": true,
+    "p_value_hr": 2.3375743373943043e-06,
+    "ols_slope_per_decade": 0.7564343521377032,
+    "ols_ci95": [
+     0.6126388101191589,
+     0.9002298941562474
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 0.6019163763066202,
+    "sufficient": "True",
+    "n_cells_in_box": 4592
+   },
+   "actual_backend": {
+    "trend_id": "tr_829be016bb",
+    "slope_per_decade": 0.7513183659364562,
+    "z": 9.243280114371048,
+    "p_value": 0.0,
+    "significant": true,
+    "p_value_autocorr_adjusted": 2.3375743374298708e-06,
+    "slope_ci": [
+     0.6126388101191589,
+     0.9002298941562477
+    ],
+    "n": 300,
+    "direction": "increasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.979608010380332e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.953801457929785e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 0.6019,
+     "actual": 0.602,
+     "delta": 8.362369337977515e-05
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "degC",
+     "actual": "degC",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 0.7513183659364551,
+     "actual": 0.7513183659364562,
+     "delta": 1.1102230246251565e-15
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 9.243280114371048,
+     "actual": 9.243280114371048,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 2.390541470888012e-20,
+     "actual": 0.0,
+     "delta": 2.390541470888012e-20
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 2.3375743373943043e-06,
+     "actual": 2.3375743374298708e-06,
+     "delta": 3.5566489938734444e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      0.6126388101191589,
+      0.9002298941562474
+     ],
+     "actual": [
+      0.6126388101191589,
+      0.9002298941562477
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "increasing",
+     "actual": "increasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-07",
+   "kind": "regional (oracle vs API)",
+   "label": "Arctic (north of 66.5 N)",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "variable_id": "merra2_air_temperature_2m",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     -180,
+     66.5,
+     180,
+     90
+    ],
+    "name": "Arctic"
+   },
+   "bbox_WSEN": [
+    -180,
+    66.5,
+    180,
+    90
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 0.3220721110328646,
+    "S": 884,
+    "var_S": 21999.999999999996,
+    "z": 5.953184785550428,
+    "p_value": 2.6297409023277424e-09,
+    "significant": true,
+    "p_value_hr": 5.183899405789079e-07,
+    "ols_slope_per_decade": 0.4260075162774149,
+    "ols_ci95": [
+     0.28996744980234546,
+     0.5620475827524842
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 1.0,
+    "sufficient": "True",
+    "n_cells_in_box": 33840
+   },
+   "actual_backend": {
+    "trend_id": "tr_6dfdf25eaa",
+    "slope_per_decade": 0.3220721110328646,
+    "z": 5.953184785550428,
+    "p_value": 2.6297408695086233e-09,
+    "significant": true,
+    "p_value_autocorr_adjusted": 5.18389940529218e-07,
+    "slope_ci": [
+     0.2899674498023454,
+     0.5620475827524842
+    ],
+    "n": 300,
+    "direction": "increasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.9827363524102e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.958291626167011e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 1.0,
+     "actual": 1.0,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "degC",
+     "actual": "degC",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 0.3220721110328646,
+     "actual": 0.3220721110328646,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 5.953184785550428,
+     "actual": 5.953184785550428,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 2.6297409023277424e-09,
+     "actual": 2.6297408695086233e-09,
+     "delta": 3.2819119135570726e-17
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 5.183899405789079e-07,
+     "actual": 5.18389940529218e-07,
+     "delta": 4.968981142213424e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      0.28996744980234546,
+      0.5620475827524842
+     ],
+     "actual": [
+      0.2899674498023454,
+      0.5620475827524842
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "increasing",
+     "actual": "increasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-08",
+   "kind": "regional (oracle vs API)",
+   "label": "Central Africa (Congo Basin)",
+   "dataset": "GLDAS_NOAH025_M v2.1",
+   "variable": "Evapotranspiration",
+   "variable_id": "gldas_evapotranspiration",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     10,
+     -5,
+     30,
+     5
+    ],
+    "name": "Central Africa"
+   },
+   "bbox_WSEN": [
+    10,
+    -5,
+    30,
+    5
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 5.5767664999834015,
+    "S": 1380,
+    "var_S": 21999.999999999996,
+    "z": 9.297216103368108,
+    "p_value": 1.44170989985748e-20,
+    "significant": true,
+    "p_value_hr": 0.0011660463824560595,
+    "ols_slope_per_decade": 5.8361192267065745,
+    "ols_ci95": [
+     4.864700043857055,
+     6.807538409556093
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 0.9862499999999998,
+    "sufficient": "True",
+    "n_cells_in_box": 800
+   },
+   "actual_backend": {
+    "trend_id": "tr_c8afb83f11",
+    "slope_per_decade": 5.5767664999834015,
+    "z": 9.297216103368108,
+    "p_value": 0.0,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.0011660463824560985,
+    "slope_ci": [
+     4.864700043857056,
+     6.807538409556095
+    ],
+    "n": 300,
+    "direction": "increasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.902682277929671e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.945217568774751e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 0.9862,
+     "actual": 0.986,
+     "delta": 0.00024999999999986144
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "mm/month",
+     "actual": "mm/month",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 5.5767664999834015,
+     "actual": 5.5767664999834015,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 9.297216103368108,
+     "actual": 9.297216103368108,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 1.44170989985748e-20,
+     "actual": 0.0,
+     "delta": 1.44170989985748e-20
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.0011660463824560595,
+     "actual": 0.0011660463824560985,
+     "delta": 3.903127820947816e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      4.864700043857055,
+      6.807538409556093
+     ],
+     "actual": [
+      4.864700043857056,
+      6.807538409556095
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "increasing",
+     "actual": "increasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-09",
+   "kind": "regional (oracle vs API)",
+   "label": "Coastal Bangladesh (land and sea cells)",
+   "dataset": "GLDAS_NOAH025_M v2.1",
+   "variable": "Soil moisture (0-10 cm)",
+   "variable_id": "gldas_soil_moisture_0_10cm",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     88,
+     21,
+     92.5,
+     23
+    ],
+    "name": "Coastal Bangladesh"
+   },
+   "bbox_WSEN": [
+    88,
+    21,
+    92.5,
+    23
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": -0.004812839495822157,
+    "S": -640,
+    "var_S": 21999.999999999996,
+    "z": -4.308137121140117,
+    "p_value": 1.6463531243830913e-05,
+    "significant": true,
+    "p_value_hr": 0.008461380701520091,
+    "ols_slope_per_decade": -0.00569227507522989,
+    "ols_ci95": [
+     -0.00872129809586889,
+     -0.002663252054590889
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 0.5277777777777778,
+    "sufficient": "True",
+    "n_cells_in_box": 36
+   },
+   "actual_backend": {
+    "trend_id": "tr_4412fd74d2",
+    "slope_per_decade": -0.004812839495822174,
+    "z": -4.308137121140117,
+    "p_value": 1.6463531243848806e-05,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.008461380701520138,
+    "slope_ci": [
+     -0.008721298095868888,
+     -0.002663252054590888
+    ],
+    "n": 300,
+    "direction": "decreasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.973882601171098e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.976514504373419e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 0.5278,
+     "actual": 0.528,
+     "delta": 0.00022222222222223476
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "m3/m3",
+     "actual": "m3/m3",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": -0.004812839495822157,
+     "actual": -0.004812839495822174,
+     "delta": 1.734723475976807e-17
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": -4.308137121140117,
+     "actual": -4.308137121140117,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 1.6463531243830913e-05,
+     "actual": 1.6463531243848806e-05,
+     "delta": 1.789272397779984e-17
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.008461380701520091,
+     "actual": 0.008461380701520138,
+     "delta": 4.683753385137379e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      -0.00872129809586889,
+      -0.002663252054590889
+     ],
+     "actual": [
+      -0.008721298095868888,
+      -0.002663252054590888
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "decreasing",
+     "actual": "decreasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-10",
+   "kind": "regional (oracle vs API)",
+   "label": "User box: Wisconsin, USA",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "variable_id": "merra2_air_temperature_2m",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     -92.9,
+     42.5,
+     -86.8,
+     47.1
+    ]
+   },
+   "bbox_WSEN": [
+    -92.9,
+    42.5,
+    -86.8,
+    47.1
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 0.2098444098753655,
+    "S": 212,
+    "var_S": 21999.999999999996,
+    "z": 1.4225617097974408,
+    "p_value": 0.15486325055335265,
+    "significant": false,
+    "p_value_hr": 0.41350299902026605,
+    "ols_slope_per_decade": 0.1391141571644919,
+    "ols_ci95": [
+     -0.1863364448220645,
+     0.46456475915104833
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 1.0,
+    "sufficient": "True",
+    "n_cells_in_box": 108
+   },
+   "actual_backend": {
+    "trend_id": "tr_82ae633699",
+    "slope_per_decade": 0.2098444098753655,
+    "z": 1.4225617097974408,
+    "p_value": 0.15486325055335248,
+    "significant": false,
+    "p_value_autocorr_adjusted": 0.4135029990202661,
+    "slope_ci": [
+     -0.18633644482206468,
+     0.46456475915104833
+    ],
+    "n": 300,
+    "direction": "no_trend"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.983439769179476e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.992849191864934e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 1.0,
+     "actual": 1.0,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "degC",
+     "actual": "degC",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 0.2098444098753655,
+     "actual": 0.2098444098753655,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 1.4225617097974408,
+     "actual": 1.4225617097974408,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 0.15486325055335265,
+     "actual": 0.15486325055335248,
+     "delta": 1.6653345369377348e-16
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": false,
+     "actual": false,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.41350299902026605,
+     "actual": 0.4135029990202661,
+     "delta": 5.551115123125783e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      -0.1863364448220645,
+      0.46456475915104833
+     ],
+     "actual": [
+      -0.18633644482206468,
+      0.46456475915104833
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "no_trend",
+     "actual": "no_trend",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-11",
+   "kind": "regional (oracle vs API)",
+   "label": "Whole world",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "variable_id": "merra2_air_temperature_2m",
+   "region": {
+    "type": "preset",
+    "id": "global"
+   },
+   "bbox_WSEN": [
+    -180.0,
+    -90.0,
+    180.0,
+    90.0
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 0.16680997826390787,
+    "S": 1424,
+    "var_S": 21999.999999999996,
+    "z": 9.593864042851935,
+    "p_value": 8.484654225871618e-22,
+    "significant": true,
+    "p_value_hr": 0.011049346951335057,
+    "ols_slope_per_decade": 0.18372247269803182,
+    "ols_ci95": [
+     0.15641789440386436,
+     0.21102705099219926
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 1.0,
+    "sufficient": "True",
+    "n_cells_in_box": 259200
+   },
+   "actual_backend": {
+    "trend_id": "tr_e78e96b216",
+    "slope_per_decade": 0.16680997826390787,
+    "z": 9.593864042851935,
+    "p_value": 0.0,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.011049346951335082,
+    "slope_ci": [
+     0.15641789440386442,
+     0.2110270509921993
+    ],
+    "n": 300,
+    "direction": "increasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.957553865481135e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.985736552498565e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 1.0,
+     "actual": 1.0,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "degC",
+     "actual": "degC",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 0.16680997826390787,
+     "actual": 0.16680997826390787,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 9.593864042851935,
+     "actual": 9.593864042851935,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 8.484654225871618e-22,
+     "actual": 0.0,
+     "delta": 8.484654225871618e-22
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.011049346951335057,
+     "actual": 0.011049346951335082,
+     "delta": 2.42861286636753e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      0.15641789440386436,
+      0.21102705099219926
+     ],
+     "actual": [
+      0.15641789440386442,
+      0.2110270509921993
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "increasing",
+     "actual": "increasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-12",
+   "kind": "regional (oracle vs API)",
+   "label": "Box crossing the antimeridian",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "variable_id": "merra2_air_temperature_2m",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     170,
+     -20,
+     -170,
+     -10
+    ]
+   },
+   "bbox_WSEN": [
+    170,
+    -20,
+    -170,
+    -10
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": {
+    "http": 422,
+    "code": null
+   },
+   "expected_oracle": null,
+   "actual_backend": null,
+   "checks": [
+    {
+     "check": "HTTP status of /series",
+     "pass": true,
+     "expected": 422,
+     "actual": 422,
+     "delta": null
+    },
+    {
+     "check": "HTTP status of /trends",
+     "pass": true,
+     "expected": 422,
+     "actual": 422,
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": "oracle: no cell centre inside the box"
+  },
+  {
+   "test_id": "TC-13",
+   "kind": "regional (oracle vs API)",
+   "label": "Mekong Delta, March start and November end",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "variable_id": "merra2_air_temperature_2m",
+   "region": {
+    "type": "preset",
+    "id": "mekong_delta"
+   },
+   "bbox_WSEN": [
+    104.4,
+    8.5,
+    106.9,
+    11.1
+   ],
+   "interval": [
+    "2003-03",
+    "2024-11"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 0.20697780690314005,
+    "S": 573,
+    "var_S": 14608.999999999998,
+    "z": 4.732447276515428,
+    "p_value": 2.218289345015082e-06,
+    "significant": true,
+    "p_value_hr": 0.001360133700059784,
+    "ols_slope_per_decade": 0.20329343471057204,
+    "ols_ci95": [
+     0.10023532533108506,
+     0.306351544090059
+    ],
+    "n_months": 261,
+    "missing_months": 0,
+    "coverage_fraction": 1.0,
+    "sufficient": "True",
+    "n_cells_in_box": 25
+   },
+   "actual_backend": {
+    "trend_id": "tr_3a043362c4",
+    "slope_per_decade": 0.20697780690314005,
+    "z": 4.732447276515428,
+    "p_value": 2.2182893451017094e-06,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.001360133700059718,
+    "slope_ci": [
+     0.10023532533108509,
+     0.306351544090059
+    ],
+    "n": 261,
+    "direction": "increasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "261 months 2003-03..2024-11",
+     "actual": "261 months 2003-03..2024-11",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.978840025815501e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.994422582171865e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 261,
+     "actual": 261,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 1.0,
+     "actual": 1.0,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "degC",
+     "actual": "degC",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 0.20697780690314005,
+     "actual": 0.20697780690314005,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 4.732447276515428,
+     "actual": 4.732447276515428,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 2.218289345015082e-06,
+     "actual": 2.2182893451017094e-06,
+     "delta": 8.662733006511818e-17
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.001360133700059784,
+     "actual": 0.001360133700059718,
+     "delta": 6.591949208711867e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      0.10023532533108506,
+      0.306351544090059
+     ],
+     "actual": [
+      0.10023532533108509,
+      0.306351544090059
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "increasing",
+     "actual": "increasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-14",
+   "kind": "regional (oracle vs API)",
+   "label": "Open Pacific Ocean, land-only variable",
+   "dataset": "GLDAS_NOAH025_M v2.1",
+   "variable": "Soil moisture (0-10 cm)",
+   "variable_id": "gldas_soil_moisture_0_10cm",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     -150,
+     -10,
+     -140,
+     0
+    ]
+   },
+   "bbox_WSEN": [
+    -150,
+    -10,
+    -140,
+    0
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": {
+    "http": 404,
+    "code": "NO_DATA"
+   },
+   "expected_oracle": null,
+   "actual_backend": null,
+   "checks": [
+    {
+     "check": "HTTP status of /series",
+     "pass": true,
+     "expected": 404,
+     "actual": 404,
+     "delta": null
+    },
+    {
+     "check": "HTTP status of /trends",
+     "pass": true,
+     "expected": 404,
+     "actual": 404,
+     "delta": null
+    },
+    {
+     "check": "API error code",
+     "pass": true,
+     "expected": "NO_DATA",
+     "actual": "NO_DATA",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": "oracle: no valid observation in the box"
+  },
+  {
+   "test_id": "TC-15",
+   "kind": "regional (oracle vs API)",
+   "label": "Mekong Delta, 7 years only",
+   "dataset": "GPM_3IMERGM v07",
+   "variable": "Precipitation",
+   "variable_id": "imerg_precip",
+   "region": {
+    "type": "preset",
+    "id": "mekong_delta"
+   },
+   "bbox_WSEN": [
+    104.4,
+    8.5,
+    106.9,
+    11.1
+   ],
+   "interval": [
+    "2018-01",
+    "2024-12"
+   ],
+   "expected_behaviour": "insufficient",
+   "expected_oracle": {
+    "slope_per_decade": 3.8075689767777843,
+    "S": 0,
+    "var_S": 531.9999999999999,
+    "z": 0.0,
+    "p_value": null,
+    "significant": null,
+    "p_value_hr": null,
+    "ols_slope_per_decade": null,
+    "ols_ci95": null,
+    "n_months": 84,
+    "missing_months": 0,
+    "coverage_fraction": 1.0,
+    "sufficient": false,
+    "n_cells_in_box": 25
+   },
+   "actual_backend": {
+    "trend_id": "tr_fef45421bb",
+    "slope_per_decade": 3.8075689767777843,
+    "z": 0.0,
+    "p_value": null,
+    "significant": null,
+    "p_value_autocorr_adjusted": null,
+    "slope_ci": null,
+    "n": 84,
+    "direction": "no_trend"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "84 months 2018-01..2024-12",
+     "actual": "84 months 2018-01..2024-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.938223319150836e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.874580668001727e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 84,
+     "actual": 84,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 1.0,
+     "actual": 1.0,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "mm/month",
+     "actual": "mm/month",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": false,
+     "actual": false,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 3.8075689767777843,
+     "actual": 3.8075689767777843,
+     "delta": 0.0
+    },
+    {
+     "check": "no p-value when insufficient",
+     "pass": true,
+     "expected": null,
+     "actual": [
+      null,
+      null
+     ],
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-16",
+   "kind": "regional (oracle vs API)",
+   "label": "Mekong Delta, period including months without IMERG data",
+   "dataset": "GPM_3IMERGM v07",
+   "variable": "Precipitation",
+   "variable_id": "imerg_precip",
+   "region": {
+    "type": "preset",
+    "id": "mekong_delta"
+   },
+   "bbox_WSEN": [
+    104.4,
+    8.5,
+    106.9,
+    11.1
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 4.229186375793963,
+    "S": 300,
+    "var_S": 21375.999999999996,
+    "z": 2.0450690111776284,
+    "p_value": 0.040848054898424704,
+    "significant": true,
+    "p_value_hr": 0.14755407303368331,
+    "ols_slope_per_decade": 8.202749766666008,
+    "ols_ci95": [
+     -1.0222967786403192,
+     17.427796311972333
+    ],
+    "n_months": 297,
+    "missing_months": 3,
+    "coverage_fraction": 0.99,
+    "sufficient": "True",
+    "n_cells_in_box": 25
+   },
+   "actual_backend": {
+    "trend_id": "tr_11839e01b5",
+    "slope_per_decade": 4.229186375793963,
+    "z": 2.0450690111776284,
+    "p_value": 0.04084805489842469,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.1475540730336833,
+    "slope_ci": [
+     -1.022296778640321,
+     17.427796311972333
+    ],
+    "n": 297,
+    "direction": "increasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.981221195521357e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 3,
+     "actual": 3,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.991624678041262e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 297,
+     "actual": 297,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 3,
+     "actual": 3,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 0.99,
+     "actual": 0.99,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "mm/month",
+     "actual": "mm/month",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 4.229186375793963,
+     "actual": 4.229186375793963,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 2.0450690111776284,
+     "actual": 2.0450690111776284,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 0.040848054898424704,
+     "actual": 0.04084805489842469,
+     "delta": 1.3877787807814457e-17
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.14755407303368331,
+     "actual": 0.1475540730336833,
+     "delta": 2.7755575615628914e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      -1.0222967786403192,
+      17.427796311972333
+     ],
+     "actual": [
+      -1.022296778640321,
+      17.427796311972333
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "increasing",
+     "actual": "increasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-17",
+   "kind": "regional (oracle vs API)",
+   "label": "Central Highlands, Vietnam",
+   "dataset": "GLDAS_NOAH025_M v2.1",
+   "variable": "Evapotranspiration",
+   "variable_id": "gldas_evapotranspiration",
+   "region": {
+    "type": "preset",
+    "id": "central_highlands"
+   },
+   "bbox_WSEN": [
+    107.2,
+    11.2,
+    109.0,
+    15.5
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 6.786688222029655,
+    "S": 1092,
+    "var_S": 21999.999999999996,
+    "z": 7.355520499473971,
+    "p_value": 1.9018456561966663e-13,
+    "significant": true,
+    "p_value_hr": 1.6138183671537665e-06,
+    "ols_slope_per_decade": 7.373964774518782,
+    "ols_ci95": [
+     5.639680081849534,
+     9.10824946718803
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 0.9722222222222223,
+    "sufficient": "True",
+    "n_cells_in_box": 36
+   },
+   "actual_backend": {
+    "trend_id": "tr_bbcbf0e1a0",
+    "slope_per_decade": 6.786688222029696,
+    "z": 7.355520499473971,
+    "p_value": 1.9029222642075183e-13,
+    "significant": true,
+    "p_value_autocorr_adjusted": 1.6138183671632333e-06,
+    "slope_ci": [
+     5.639680081849536,
+     9.108249467188035
+    ],
+    "n": 300,
+    "direction": "increasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.997075748747193e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.990947104488441e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 0.9722,
+     "actual": 0.972,
+     "delta": 0.00022222222222234578
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "mm/month",
+     "actual": "mm/month",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 6.786688222029655,
+     "actual": 6.786688222029696,
+     "delta": 4.085620730620576e-14
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 7.355520499473971,
+     "actual": 7.355520499473971,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 1.9018456561966663e-13,
+     "actual": 1.9029222642075183e-13,
+     "delta": 1.0766080108519859e-16
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 1.6138183671537665e-06,
+     "actual": 1.6138183671632333e-06,
+     "delta": 9.466863734987688e-18
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      5.639680081849534,
+      9.10824946718803
+     ],
+     "actual": [
+      5.639680081849536,
+      9.108249467188035
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "increasing",
+     "actual": "increasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-18",
+   "kind": "regional (oracle vs API)",
+   "label": "Northern Vietnam",
+   "dataset": "GLDAS_NOAH025_M v2.1",
+   "variable": "Soil moisture (0-10 cm)",
+   "variable_id": "gldas_soil_moisture_0_10cm",
+   "region": {
+    "type": "preset",
+    "id": "northern_vietnam"
+   },
+   "bbox_WSEN": [
+    104.5,
+    20.1,
+    107.25,
+    22.25
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 0.0012513108138599272,
+    "S": 172,
+    "var_S": 21999.999999999996,
+    "z": 1.1528817648121439,
+    "p_value": 0.2489589177003424,
+    "significant": false,
+    "p_value_hr": 0.4231959598426552,
+    "ols_slope_per_decade": 0.000872381681303382,
+    "ols_ci95": [
+     -0.0017335355048822064,
+     0.00347829886748897
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 0.9000000000000002,
+    "sufficient": "True",
+    "n_cells_in_box": 30
+   },
+   "actual_backend": {
+    "trend_id": "tr_9dd77293ef",
+    "slope_per_decade": 0.0012513108138598578,
+    "z": 1.1528817648121439,
+    "p_value": 0.2489589177003424,
+    "significant": false,
+    "p_value_autocorr_adjusted": 0.4231959598426551,
+    "slope_ci": [
+     -0.0017335355048822107,
+     0.0034782988674889686
+    ],
+    "n": 300,
+    "direction": "no_trend"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.978949403738886e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.978568574620645e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 0.9,
+     "actual": 0.9,
+     "delta": 2.220446049250313e-16
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "m3/m3",
+     "actual": "m3/m3",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 0.0012513108138599272,
+     "actual": 0.0012513108138598578,
+     "delta": 6.938893903907228e-17
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 1.1528817648121439,
+     "actual": 1.1528817648121439,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 0.2489589177003424,
+     "actual": 0.2489589177003424,
+     "delta": 0.0
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": false,
+     "actual": false,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.4231959598426552,
+     "actual": 0.4231959598426551,
+     "delta": 5.551115123125783e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      -0.0017335355048822064,
+      0.00347829886748897
+     ],
+     "actual": [
+      -0.0017335355048822107,
+      0.0034782988674889686
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "no_trend",
+     "actual": "no_trend",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-19",
+   "kind": "regional (oracle vs API)",
+   "label": "Mekong region (whole basin)",
+   "dataset": "GPM_3IMERGM v07",
+   "variable": "Precipitation",
+   "variable_id": "imerg_precip",
+   "region": {
+    "type": "preset",
+    "id": "mekong_region"
+   },
+   "bbox_WSEN": [
+    94.0,
+    8.0,
+    110.0,
+    35.0
+   ],
+   "interval": [
+    "2001-01",
+    "2024-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 3.1825943842566073,
+    "S": 254,
+    "var_S": 19504.0,
+    "z": 1.8115848372741228,
+    "p_value": 0.07005036955342896,
+    "significant": false,
+    "p_value_hr": 0.0005495146005172865,
+    "ols_slope_per_decade": 4.211794105918675,
+    "ols_ci95": [
+     0.14006369612201086,
+     8.283524515715339
+    ],
+    "n_months": 288,
+    "missing_months": 0,
+    "coverage_fraction": 1.0,
+    "sufficient": "True",
+    "n_cells_in_box": 1728
+   },
+   "actual_backend": {
+    "trend_id": "tr_5ad7a5b2f0",
+    "slope_per_decade": 3.1825943842566073,
+    "z": 1.8115848372741228,
+    "p_value": 0.07005036955342892,
+    "significant": false,
+    "p_value_autocorr_adjusted": 0.0005495146005172202,
+    "slope_ci": [
+     0.1400636961220112,
+     8.28352451571534
+    ],
+    "n": 288,
+    "direction": "no_trend"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "288 months 2001-01..2024-12",
+     "actual": "288 months 2001-01..2024-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.977977337006223e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.97879376837318e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 288,
+     "actual": 288,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 1.0,
+     "actual": 1.0,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "mm/month",
+     "actual": "mm/month",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 3.1825943842566073,
+     "actual": 3.1825943842566073,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 1.8115848372741228,
+     "actual": 1.8115848372741228,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 0.07005036955342896,
+     "actual": 0.07005036955342892,
+     "delta": 4.163336342344337e-17
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": false,
+     "actual": false,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.0005495146005172865,
+     "actual": 0.0005495146005172202,
+     "delta": 6.624475273886432e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      0.14006369612201086,
+      8.283524515715339
+     ],
+     "actual": [
+      0.1400636961220112,
+      8.28352451571534
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "no_trend",
+     "actual": "no_trend",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-20a",
+   "kind": "regional (oracle vs API)",
+   "label": "Sahel",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "variable_id": "merra2_air_temperature_2m",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     -17,
+     10,
+     30,
+     18
+    ],
+    "name": "Sahel"
+   },
+   "bbox_WSEN": [
+    -17,
+    10,
+    30,
+    18
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": -0.21216147394520152,
+    "S": -526,
+    "var_S": 21999.999999999996,
+    "z": -3.539549277932021,
+    "p_value": 0.00040081093267171984,
+    "significant": true,
+    "p_value_hr": 0.02864129366383912,
+    "ols_slope_per_decade": -0.2096226778643118,
+    "ols_ci95": [
+     -0.33293827503824064,
+     -0.08630708069038295
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 1.0,
+    "sufficient": "True",
+    "n_cells_in_box": 1504
+   },
+   "actual_backend": {
+    "trend_id": "tr_7384f4768f",
+    "slope_per_decade": -0.21216147394520152,
+    "z": -3.539549277932021,
+    "p_value": 0.0004008109326716358,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.028641293663839162,
+    "slope_ci": [
+     -0.3329382750382408,
+     -0.08630708069038304
+    ],
+    "n": 300,
+    "direction": "decreasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.98368125656512e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.974655922751481e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 1.0,
+     "actual": 1.0,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "degC",
+     "actual": "degC",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": -0.21216147394520152,
+     "actual": -0.21216147394520152,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": -3.539549277932021,
+     "actual": -3.539549277932021,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 0.00040081093267171984,
+     "actual": 0.0004008109326716358,
+     "delta": 8.402566836762659e-17
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.02864129366383912,
+     "actual": 0.028641293663839162,
+     "delta": 4.163336342344337e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      -0.33293827503824064,
+      -0.08630708069038295
+     ],
+     "actual": [
+      -0.3329382750382408,
+      -0.08630708069038304
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "decreasing",
+     "actual": "decreasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-20b",
+   "kind": "regional (oracle vs API)",
+   "label": "Sahel",
+   "dataset": "GLDAS_NOAH025_M v2.1",
+   "variable": "Air temperature over land",
+   "variable_id": "gldas_air_temperature",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     -17,
+     10,
+     30,
+     18
+    ],
+    "name": "Sahel"
+   },
+   "bbox_WSEN": [
+    -17,
+    10,
+    30,
+    18
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": 0.7967635190138672,
+    "S": 1290,
+    "var_S": 21999.999999999996,
+    "z": 8.69043622715119,
+    "p_value": 3.610504415296425e-18,
+    "significant": true,
+    "p_value_hr": 0.00019819589486017597,
+    "ols_slope_per_decade": 0.7477116893224407,
+    "ols_ci95": [
+     0.6051113336922038,
+     0.8903120449526778
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 0.9847074468085107,
+    "sufficient": "True",
+    "n_cells_in_box": 1504
+   },
+   "actual_backend": {
+    "trend_id": "tr_c3bd517ab2",
+    "slope_per_decade": 0.7967635190138683,
+    "z": 8.69043622715119,
+    "p_value": 0.0,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.00019819589486025357,
+    "slope_ci": [
+     0.605111333692204,
+     0.8903120449526778
+    ],
+    "n": 300,
+    "direction": "increasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.957719867970667e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.993852513734964e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 0.9847,
+     "actual": 0.985,
+     "delta": 0.0002925531914892421
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "degC",
+     "actual": "degC",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": 0.7967635190138672,
+     "actual": 0.7967635190138683,
+     "delta": 1.1102230246251565e-15
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": 8.69043622715119,
+     "actual": 8.69043622715119,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 3.610504415296425e-18,
+     "actual": 0.0,
+     "delta": 3.610504415296425e-18
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.00019819589486017597,
+     "actual": 0.00019819589486025357,
+     "delta": 7.760177049564998e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      0.6051113336922038,
+      0.8903120449526778
+     ],
+     "actual": [
+      0.605111333692204,
+      0.8903120449526778
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "increasing",
+     "actual": "increasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-21",
+   "kind": "regional (oracle vs API)",
+   "label": "Box smaller than one grid cell",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "variable_id": "merra2_air_temperature_2m",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     105.1,
+     10.1,
+     105.2,
+     10.2
+    ]
+   },
+   "bbox_WSEN": [
+    105.1,
+    10.1,
+    105.2,
+    10.2
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": {
+    "http": 400,
+    "code": "REGION_TOO_SMALL"
+   },
+   "expected_oracle": null,
+   "actual_backend": null,
+   "checks": [
+    {
+     "check": "HTTP status of /series",
+     "pass": true,
+     "expected": 400,
+     "actual": 400,
+     "delta": null
+    },
+    {
+     "check": "HTTP status of /trends",
+     "pass": true,
+     "expected": 400,
+     "actual": 400,
+     "delta": null
+    },
+    {
+     "check": "API error code",
+     "pass": true,
+     "expected": "REGION_TOO_SMALL",
+     "actual": "REGION_TOO_SMALL",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": "oracle: no cell centre inside the box"
+  },
+  {
+   "test_id": "TC-22",
+   "kind": "regional (oracle vs API)",
+   "label": "Southern Ocean and Antarctica (south of 60 S)",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "variable_id": "merra2_air_temperature_2m",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     -180,
+     -90,
+     180,
+     -60
+    ]
+   },
+   "bbox_WSEN": [
+    -180,
+    -90,
+    180,
+    -60
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": -0.26181653181430853,
+    "S": -616,
+    "var_S": 21999.999999999996,
+    "z": -4.146329154148939,
+    "p_value": 3.3784805506069154e-05,
+    "significant": true,
+    "p_value_hr": 0.23037160366198428,
+    "ols_slope_per_decade": -0.27536045416185284,
+    "ols_ci95": [
+     -0.4021678814179435,
+     -0.14855302690576225
+    ],
+    "n_months": 300,
+    "missing_months": 0,
+    "coverage_fraction": 1.0,
+    "sufficient": "True",
+    "n_cells_in_box": 43200
+   },
+   "actual_backend": {
+    "trend_id": "tr_c952e44be1",
+    "slope_per_decade": -0.26181653181430853,
+    "z": -4.146329154148939,
+    "p_value": 3.378480550608742e-05,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.23037160366198406,
+    "slope_ci": [
+     -0.40216788141794335,
+     -0.14855302690576208
+    ],
+    "n": 300,
+    "direction": "decreasing"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "300 months 2001-01..2025-12",
+     "actual": "300 months 2001-01..2025-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.943048054206756e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.993252034068973e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 300,
+     "actual": 300,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 1.0,
+     "actual": 1.0,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "degC",
+     "actual": "degC",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": -0.26181653181430853,
+     "actual": -0.26181653181430853,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": -4.146329154148939,
+     "actual": -4.146329154148939,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 3.3784805506069154e-05,
+     "actual": 3.378480550608742e-05,
+     "delta": 1.826880660638075e-17
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": true,
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.23037160366198428,
+     "actual": 0.23037160366198406,
+     "delta": 2.220446049250313e-16
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      -0.4021678814179435,
+      -0.14855302690576225
+     ],
+     "actual": [
+      -0.40216788141794335,
+      -0.14855302690576208
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "decreasing",
+     "actual": "decreasing",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "TC-23",
+   "kind": "regional (oracle vs API)",
+   "label": "Sahara Desert, precipitation (many tied zero months)",
+   "dataset": "GPM_3IMERGM v07",
+   "variable": "Precipitation",
+   "variable_id": "imerg_precip",
+   "region": {
+    "type": "bbox",
+    "bbox": [
+     -10,
+     18,
+     30,
+     30
+    ],
+    "name": "Sahara"
+   },
+   "bbox_WSEN": [
+    -10,
+    18,
+    30,
+    30
+   ],
+   "interval": [
+    "2001-01",
+    "2024-12"
+   ],
+   "expected_behaviour": "ok",
+   "expected_oracle": {
+    "slope_per_decade": -0.13300146997002169,
+    "S": -186,
+    "var_S": 19504.0,
+    "z": -1.3246766596668487,
+    "p_value": 0.18527841774815032,
+    "significant": false,
+    "p_value_hr": 0.284702545217046,
+    "ols_slope_per_decade": -0.019666226049737036,
+    "ols_ci95": [
+     -0.3864711076717523,
+     0.34713865557227824
+    ],
+    "n_months": 288,
+    "missing_months": 0,
+    "coverage_fraction": 1.0,
+    "sufficient": "True",
+    "n_cells_in_box": 1920
+   },
+   "actual_backend": {
+    "trend_id": "tr_b9fe3d8fa3",
+    "slope_per_decade": -0.13300146997002169,
+    "z": -1.3246766596668487,
+    "p_value": 0.18527841774815035,
+    "significant": false,
+    "p_value_autocorr_adjusted": 0.28470254521704597,
+    "slope_ci": [
+     -0.3864711076717527,
+     0.34713865557227813
+    ],
+    "n": 288,
+    "direction": "no_trend"
+   },
+   "checks": [
+    {
+     "check": "HTTP 200 for /series and /trends",
+     "pass": true,
+     "expected": 200,
+     "actual": [
+      200,
+      200
+     ],
+     "delta": null
+    },
+    {
+     "check": "time stamps",
+     "pass": true,
+     "expected": "288 months 2001-01..2024-12",
+     "actual": "288 months 2001-01..2024-12",
+     "delta": null
+    },
+    {
+     "check": "chart data: monthly anomalies",
+     "pass": true,
+     "expected": "oracle anomalies",
+     "actual": "api anomalies",
+     "delta": 4.985207624486065e-07
+    },
+    {
+     "check": "missing months identical",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "all monthly values",
+     "pass": true,
+     "expected": "oracle series",
+     "actual": "api series",
+     "delta": 4.992669504488845e-07
+    },
+    {
+     "check": "n_months",
+     "pass": true,
+     "expected": 288,
+     "actual": 288,
+     "delta": null
+    },
+    {
+     "check": "missing_months",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "delta": null
+    },
+    {
+     "check": "coverage_fraction (API rounds to 3 dp)",
+     "pass": true,
+     "expected": 1.0,
+     "actual": 1.0,
+     "delta": 0.0
+    },
+    {
+     "check": "units",
+     "pass": true,
+     "expected": "mm/month",
+     "actual": "mm/month",
+     "delta": null
+    },
+    {
+     "check": "sufficiency",
+     "pass": true,
+     "expected": "True",
+     "actual": true,
+     "delta": null
+    },
+    {
+     "check": "Sen slope per decade",
+     "pass": true,
+     "expected": -0.13300146997002169,
+     "actual": -0.13300146997002169,
+     "delta": 0.0
+    },
+    {
+     "check": "Z statistic",
+     "pass": true,
+     "expected": -1.3246766596668487,
+     "actual": -1.3246766596668487,
+     "delta": 0.0
+    },
+    {
+     "check": "raw Seasonal MK p",
+     "pass": true,
+     "expected": 0.18527841774815032,
+     "actual": 0.18527841774815035,
+     "delta": 2.7755575615628914e-17
+    },
+    {
+     "check": "significance verdict (p < alpha)",
+     "pass": true,
+     "expected": false,
+     "actual": false,
+     "delta": null
+    },
+    {
+     "check": "Hamed-Rao adjusted p",
+     "pass": true,
+     "expected": 0.284702545217046,
+     "actual": 0.28470254521704597,
+     "delta": 5.551115123125783e-17
+    },
+    {
+     "check": "OLS anomaly 95% CI",
+     "pass": true,
+     "expected": [
+      -0.3864711076717523,
+      0.34713865557227824
+     ],
+     "actual": [
+      -0.3864711076717527,
+      0.34713865557227813
+     ],
+     "delta": null
+    },
+    {
+     "check": "direction label",
+     "pass": true,
+     "expected": "no_trend",
+     "actual": "no_trend",
+     "delta": null
+    }
+   ],
+   "status": "PASS",
+   "root_cause_category": null,
+   "notes": null
+  },
+  {
+   "test_id": "GR-01",
+   "kind": "grid, full family (oracle vs /trends/grid)",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "bbox_WSEN": [
+    -180,
+    -90,
+    180,
+    90
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "cells": 259200,
+   "significant_cells_api": 163713,
+   "checks": [
+    {
+     "check": "cells returned = cells with data (finite oracle slope)",
+     "pass": true,
+     "expected": 259200,
+     "actual": 259200
+    },
+    {
+     "check": "FDR family size (cells with a valid p)",
+     "pass": true,
+     "expected": 259200,
+     "actual": 259200
+    },
+    {
+     "check": "max |slope| delta (API 6 dp)",
+     "pass": true,
+     "delta": 4.999981504522077e-07
+    },
+    {
+     "check": "max |p| delta (API 6 dp)",
+     "pass": true,
+     "delta": 4.995046571555249e-07
+    },
+    {
+     "check": "max |q| delta, full-family BH (API 6 dp)",
+     "pass": true,
+     "delta": 4.987286926771972e-07
+    },
+    {
+     "check": "significance flags (q < alpha), excluding cells within rounding of alpha",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "cells_near_alpha": 0
+    }
+   ],
+   "methodology_tie_correction": {
+    "cells_whose_fdr_verdict_changes_with_tie_correction": 0,
+    "max_p_reduction_from_tie_correction": 2.0092498160123595e-05
+   },
+   "status": "PASS"
+  },
+  {
+   "test_id": "GR-02",
+   "kind": "grid, full family (oracle vs /trends/grid)",
+   "dataset": "GPM_3IMERGM v07",
+   "variable": "Precipitation",
+   "bbox_WSEN": [
+    -180,
+    -90,
+    180,
+    90
+   ],
+   "interval": [
+    "2001-01",
+    "2024-12"
+   ],
+   "cells": 258483,
+   "significant_cells_api": 73266,
+   "checks": [
+    {
+     "check": "cells returned = cells with data (finite oracle slope)",
+     "pass": true,
+     "expected": 258483,
+     "actual": 258483
+    },
+    {
+     "check": "FDR family size (cells with a valid p)",
+     "pass": true,
+     "expected": 257760,
+     "actual": 257760
+    },
+    {
+     "check": "max |slope| delta (API 6 dp)",
+     "pass": true,
+     "delta": 4.999923706172638e-07
+    },
+    {
+     "check": "max |p| delta (API 6 dp)",
+     "pass": true,
+     "delta": 4.998901374183608e-07
+    },
+    {
+     "check": "max |q| delta, full-family BH (API 6 dp)",
+     "pass": true,
+     "delta": 4.993489827569142e-07
+    },
+    {
+     "check": "significance flags (q < alpha), excluding cells within rounding of alpha",
+     "pass": true,
+     "expected": 0,
+     "actual": 0,
+     "cells_near_alpha": 0
+    }
+   ],
+   "methodology_tie_correction": {
+    "cells_whose_fdr_verdict_changes_with_tie_correction": 4151,
+    "max_p_reduction_from_tie_correction": 0.7627885238002985
+   },
+   "status": "PASS"
+  },
+  {
+   "test_id": "CMP-01",
+   "kind": "region comparison (deterministic parts)",
+   "label": "Sahel vs Wisconsin, MERRA-2 air temperature, 2001-01 to 2025-12",
+   "dataset": "M2IMNXASM v5.12.4",
+   "bbox_A": [
+    -17,
+    10,
+    30,
+    18
+   ],
+   "bbox_B": [
+    -92.9,
+    42.5,
+    -86.8,
+    47.1
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "actual_backend": {
+    "slope_diff_per_decade": -0.38315293559234653,
+    "ci": [
+     -0.8650241892652253,
+     0.11699795615276276
+    ],
+    "p_value": 0.02189594985057486,
+    "significant": false,
+    "stable_halves": false,
+    "test": "mk_sen_on_anomaly_difference_block_bootstrap_ci"
+   },
+   "checks": [
+    {
+     "check": "A slope = oracle",
+     "pass": true,
+     "expected": -0.21216147394520152,
+     "actual": -0.21216147394520152
+    },
+    {
+     "check": "B slope = oracle",
+     "pass": true,
+     "expected": 0.2098444098753655,
+     "actual": 0.2098444098753655
+    },
+    {
+     "check": "A and B raw p = oracle",
+     "pass": true
+    },
+    {
+     "check": "decision rule: significant == (p < alpha and CI excludes 0)",
+     "pass": true,
+     "actual": [
+      0.02189594985057486,
+      [
+       -0.8650241892652253,
+       0.11699795615276276
+      ],
+      false
+     ]
+    },
+    {
+     "check": "verdict label consistent with signs and rule",
+     "pass": true,
+     "expected": "opposite_not_significant",
+     "actual": "opposite_not_significant"
+    },
+    {
+     "check": "bootstrap result reproducible across two calls",
+     "pass": true,
+     "actual": [
+      0.02189594985057486,
+      0.02189594985057486
+     ]
+    },
+    {
+     "check": "difference slope = oracle Sen slope of anomaly(A) - anomaly(B)",
+     "pass": true,
+     "expected": -0.38315293559235214,
+     "actual": -0.38315293559234653
+    },
+    {
+     "check": "difference p = oracle Hamed-Rao p on the difference series",
+     "pass": true,
+     "expected": 0.02189594985057495,
+     "actual": 0.02189594985057486
+    }
+   ],
+   "status": "PASS",
+   "limitations": [
+    "The moving-block bootstrap interval was not recomputed by the oracle (seeded resampling); only determinism and the decision rule were checked.",
+    "slope_diff is the Sen slope of the monthly anomaly difference series (A minus B), not the difference of the two seasonal Sen slopes (-0.422)."
+   ]
+  },
+  {
+   "test_id": "SY01",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY01_constant_series",
+   "status": "PASS",
+   "seconds": 0.016
+  },
+  {
+   "test_id": "SY02",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY02_strictly_increasing_known_values",
+   "status": "PASS",
+   "seconds": 0.014
+  },
+  {
+   "test_id": "SY03",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY03_strictly_decreasing_is_symmetric",
+   "status": "PASS",
+   "seconds": 0.012
+  },
+  {
+   "test_id": "SY04",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY04_seasonal_no_trend",
+   "status": "PASS",
+   "seconds": 0.013
+  },
+  {
+   "test_id": "SY05",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY05_seasonal_with_known_trend",
+   "status": "PASS",
+   "seconds": 0.011
+  },
+  {
+   "test_id": "SY06",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY06_missing_months",
+   "status": "PASS",
+   "seconds": 0.011
+  },
+  {
+   "test_id": "SY07",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY07_many_ties_use_the_tie_correction",
+   "status": "PASS",
+   "seconds": 0.011
+  },
+  {
+   "test_id": "SY08",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY08_uneven_seasonal_coverage",
+   "status": "PASS",
+   "seconds": 0.009
+  },
+  {
+   "test_id": "SY09",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY09_short_series_is_insufficient",
+   "status": "PASS",
+   "seconds": 0.004
+  },
+  {
+   "test_id": "SY10",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY10_high_variance_noise",
+   "status": "PASS",
+   "seconds": 0.012
+  },
+  {
+   "test_id": "SY11",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY11_hamed_rao_and_ols_match_the_oracle",
+   "status": "PASS",
+   "seconds": 0.027
+  },
+  {
+   "test_id": "SY12",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY12_strong_autocorrelation_type_I_error_is_reported",
+   "status": "INCONCLUSIVE",
+   "seconds": 1.737,
+   "measured": {
+    "raw": 0.515,
+    "hamed_rao": 0.24,
+    "n_sim": 200
+   },
+   "notes": "Recorded measurement, not a pass/fail on the code: false-positive rate of the decision rule under strong autocorrelation."
+  },
+  {
+   "test_id": "SY13",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY13_grid_matches_oracle_and_controls_fdr",
+   "status": "PASS",
+   "seconds": 1.644
+  },
+  {
+   "test_id": "SY14",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY14_bh_matches_oracle_with_nans_and_ties",
+   "status": "PASS",
+   "seconds": 0.001
+  },
+  {
+   "test_id": "SY15",
+   "kind": "synthetic (production functions vs oracle)",
+   "name": "test_SY15_grid_without_tie_correction_is_conservative",
+   "status": "PASS",
+   "seconds": 0.011
+  },
+  {
+   "test_id": "UI-01",
+   "kind": "browser + PDF (Explorer and Scientist)",
+   "maps_to": "TC-01",
+   "dataset": "GPM_3IMERGM v07",
+   "variable": "Precipitation",
+   "ui_place_input": {
+    "search": "Mekong Delta"
+   },
+   "first_search_hit": "Mekong Delta, Vietnam\nPreset area",
+   "bbox_WSEN": [
+    104.4,
+    8.5,
+    106.9,
+    11.1
+   ],
+   "interval": [
+    "2001-01",
+    "2024-12"
+   ],
+   "expected_oracle": {
+    "slope_per_decade": 3.4289956416012144,
+    "p_value": 0.07695691823494685,
+    "significant": false,
+    "p_value_hr": 0.2927209247749104,
+    "ols_ci95": [
+     -1.0933510644990319,
+     18.326663906790284
+    ],
+    "n_months": 288
+   },
+   "actual_backend": {
+    "slope_per_decade": 3.4289956416012144,
+    "p_value": 0.07695691823494677,
+    "significant": false,
+    "p_value_autocorr_adjusted": 0.2927209247749103,
+    "slope_ci": [
+     -1.093351064499032,
+     18.326663906790284
+    ],
+    "n": 288
+   },
+   "actual_frontend": {
+    "explorer_excerpt": "Result\nNot proven yet\nMekong Delta, Vietnam · GPM IMERG (satellite)\nWhat did we find?\n\nThe estimated trend in precipitation is upward, but the evidence is not strong enough to confirm a clear change under the test used. That does not mean nothing is changing; a longer record may help.\n\nWhat does the data show?\n+3.43 mm/month per decade, 2001 to 2024\nThis is the typical change per decade (Sen slope",
+    "scientist_excerpt": "Result\nNot proven yet\nTrend ID tr_390763c607\nAnalysis metadata\nVARIABLE\tPrecipitation (mm/month)\nPRODUCT\tGPM_3IMERGM v07 · NASA GES DISC\nREGION\tMekong Delta, Vietnam · catalog preset \"mekong_delta\"\nBOX (W, S, E, N)\t104.4°, 8.5°, 106.9°, 11.1°\nPERIOD\t2001-01 to 2024-12, monthly\nGRID\t0.5° processed (native 0.1°), area mean of cells in the box\nSAMPLE\t288 months with data, 0 missing; 100% of the area ",
+    "requests_after_mode_switch": 0
+   },
+   "actual_pdfs": {
+    "explorer": "C:/NUS CS/Y1/Nasa Challenge/terra-scope-ai/web/e2e/out/scientific/report-explorer.pdf",
+    "scientist": "C:/NUS CS/Y1/Nasa Challenge/terra-scope-ai/web/e2e/out/scientific/report-scientist.pdf"
+   },
+   "screenshots": [
+    "web/e2e/out/scientific/UI-01-explorer.png",
+    "web/e2e/out/scientific/UI-01-scientist.png"
+   ],
+   "checks": [
+    {
+     "check": "request matches the chosen context (variable, years)",
+     "pass": true,
+     "expected": [
+      2001,
+      2024
+     ],
+     "actual": [
+      "2001-01",
+      "2024-12"
+     ]
+    },
+    {
+     "check": "backend slope = oracle",
+     "pass": true,
+     "expected": 3.4289956416012144,
+     "actual": 3.4289956416012144
+    },
+    {
+     "check": "backend raw p = oracle",
+     "pass": true,
+     "expected": 0.07695691823494685,
+     "actual": 0.07695691823494677
+    },
+    {
+     "check": "backend verdict = oracle",
+     "pass": true,
+     "expected": false,
+     "actual": false
+    },
+    {
+     "check": "Explorer screen shows the oracle slope",
+     "pass": true,
+     "expected": "+3.43 mm/month",
+     "actual": null
+    },
+    {
+     "check": "Explorer screen shows the oracle p",
+     "pass": true,
+     "expected": "p 0.077",
+     "actual": null
+    },
+    {
+     "check": "Explorer verdict label",
+     "pass": true,
+     "expected": "Not proven yet",
+     "actual": null
+    },
+    {
+     "check": "Explorer wording does not claim a clear change",
+     "pass": true,
+     "expected": "hedged wording",
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows slope and raw p",
+     "pass": true,
+     "expected": [
+      "+3.43 mm/month",
+      "0.077"
+     ],
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows Hamed-Rao p",
+     "pass": true,
+     "expected": "0.293",
+     "actual": null
+    },
+    {
+     "check": "Scientist decision sentence",
+     "pass": true,
+     "expected": false,
+     "actual": null
+    },
+    {
+     "check": "mode switch made no new request",
+     "pass": true,
+     "expected": 0,
+     "actual": 0
+    },
+    {
+     "check": "explorer PDF contains the slope",
+     "pass": true,
+     "expected": "+3.43",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the slope",
+     "pass": true,
+     "expected": "+3.43",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the raw p",
+     "pass": true,
+     "expected": "0.077",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the Hamed-Rao p",
+     "pass": true,
+     "expected": "0.293",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the OLS 95% CI",
+     "pass": true,
+     "expected": "-1.09 to 18.33",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF table row: n months and verdict",
+     "pass": true,
+     "expected": [
+      288,
+      "Not significant"
+     ],
+     "actual": [
+      "288",
+      "Not significant"
+     ]
+    }
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "UI-02",
+   "kind": "browser + PDF (Explorer and Scientist)",
+   "maps_to": "TC-02",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "ui_place_input": {
+    "search": "Hanoi, Vietnam"
+   },
+   "first_search_hit": "Hanoi, Vietnam\nPreset area",
+   "bbox_WSEN": [
+    105.3,
+    20.5,
+    106.1,
+    21.4
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_oracle": {
+    "slope_per_decade": 0.2276697967724684,
+    "p_value": 0.0006623452008320524,
+    "significant": true,
+    "p_value_hr": 0.08982729155026348,
+    "ols_ci95": [
+     -0.03543077654036156,
+     0.3248677689288372
+    ],
+    "n_months": 300
+   },
+   "actual_backend": {
+    "slope_per_decade": 0.2276697967724684,
+    "p_value": 0.0006623452008320818,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.08982729155026337,
+    "slope_ci": [
+     -0.0354307765403615,
+     0.3248677689288373
+    ],
+    "n": 300
+   },
+   "actual_frontend": {
+    "explorer_excerpt": "Result\n✓ Clear trend (significant)\nHanoi, Vietnam · MERRA-2 (land and sea)\nWhat did we find?\n\nThe data show a clear upward trend in air temperature: the test says it is unlikely to be chance alone.\n\nWhat does the data show?\n+0.23 °C per decade, 2001 to 2025\nThis is the typical change per decade (Sen slope\n?\n). The monthly chart below shows every month.\nHow strong is the evidence?\nClear evidence zo",
+    "scientist_excerpt": "Result\n✓ Clear trend (significant)\nTrend ID tr_3d3ac21c81\nAnalysis metadata\nVARIABLE\tAir temperature (°C)\nPRODUCT\tM2IMNXASM v5.12.4 · NASA GMAO / GES DISC\nREGION\tHanoi, Vietnam · catalog preset \"hanoi\"\nBOX (W, S, E, N)\t105.3°, 20.5°, 106.1°, 21.4°\nPERIOD\t2001-01 to 2025-12, monthly\nGRID\t0.5° processed (native 0.5°), area mean of cells in the box\nSAMPLE\t300 months with data, 0 missing; 100% of the ",
+    "requests_after_mode_switch": 0
+   },
+   "actual_pdfs": {
+    "explorer": "C:/NUS CS/Y1/Nasa Challenge/terra-scope-ai/web/e2e/out/scientific/report-explorer.pdf",
+    "scientist": "C:/NUS CS/Y1/Nasa Challenge/terra-scope-ai/web/e2e/out/scientific/report-scientist.pdf"
+   },
+   "screenshots": [
+    "web/e2e/out/scientific/UI-02-explorer.png",
+    "web/e2e/out/scientific/UI-02-scientist.png"
+   ],
+   "checks": [
+    {
+     "check": "request matches the chosen context (variable, years)",
+     "pass": true,
+     "expected": [
+      2001,
+      2025
+     ],
+     "actual": [
+      "2001-01",
+      "2025-12"
+     ]
+    },
+    {
+     "check": "backend slope = oracle",
+     "pass": true,
+     "expected": 0.2276697967724684,
+     "actual": 0.2276697967724684
+    },
+    {
+     "check": "backend raw p = oracle",
+     "pass": true,
+     "expected": 0.0006623452008320524,
+     "actual": 0.0006623452008320818
+    },
+    {
+     "check": "backend verdict = oracle",
+     "pass": true,
+     "expected": true,
+     "actual": true
+    },
+    {
+     "check": "Explorer screen shows the oracle slope",
+     "pass": true,
+     "expected": "+0.23 °C",
+     "actual": null
+    },
+    {
+     "check": "Explorer screen shows the oracle p",
+     "pass": true,
+     "expected": "p <0.001",
+     "actual": null
+    },
+    {
+     "check": "Explorer verdict label",
+     "pass": true,
+     "expected": "Clear trend (significant)",
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows slope and raw p",
+     "pass": true,
+     "expected": [
+      "+0.23 °C",
+      "<0.001"
+     ],
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows Hamed-Rao p",
+     "pass": true,
+     "expected": "0.090",
+     "actual": null
+    },
+    {
+     "check": "Scientist decision sentence",
+     "pass": true,
+     "expected": true,
+     "actual": null
+    },
+    {
+     "check": "mode switch made no new request",
+     "pass": true,
+     "expected": 0,
+     "actual": 0
+    },
+    {
+     "check": "explorer PDF contains the slope",
+     "pass": true,
+     "expected": "+0.228",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the slope",
+     "pass": true,
+     "expected": "+0.228",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the raw p",
+     "pass": true,
+     "expected": "< 0.001",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the Hamed-Rao p",
+     "pass": true,
+     "expected": "0.090",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the OLS 95% CI",
+     "pass": true,
+     "expected": "-0.0354 to 0.325",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF table row: n months and verdict",
+     "pass": true,
+     "expected": [
+      300,
+      "Significant trend"
+     ],
+     "actual": [
+      "300",
+      "Significant trend"
+     ]
+    }
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "UI-03",
+   "kind": "browser + PDF (Explorer and Scientist)",
+   "maps_to": "TC-06 (country box from the search list)",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "ui_place_input": {
+    "search": "Australia"
+   },
+   "first_search_hit": "Australia\nCountry",
+   "bbox_WSEN": [
+    113,
+    -44,
+    154,
+    -10
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_oracle": {
+    "slope_per_decade": 0.25448418761210306,
+    "p_value": 1.0407120398004487e-08,
+    "significant": true,
+    "p_value_hr": 4.735657264767962e-05,
+    "ols_ci95": [
+     0.19832657789504282,
+     0.37213370687149094
+    ],
+    "n_months": 300
+   },
+   "actual_backend": {
+    "slope_per_decade": 0.25448418761210306,
+    "p_value": 1.0407120498712175e-08,
+    "significant": true,
+    "p_value_autocorr_adjusted": 4.735657264776094e-05,
+    "slope_ci": [
+     0.19832657789504293,
+     0.37213370687149105
+    ],
+    "n": 300
+   },
+   "actual_frontend": {
+    "explorer_excerpt": "Result\n✓ Clear trend (significant)\nAustralia · MERRA-2 (land and sea)\nWhat did we find?\n\nThe data show a clear upward trend in air temperature: the test says it is unlikely to be chance alone.\n\nWhat does the data show?\n+0.25 °C per decade, 2001 to 2025\nThis is the typical change per decade (Sen slope\n?\n). The monthly chart below shows every month.\nHow strong is the evidence?\nClear evidence zone (p",
+    "scientist_excerpt": "Result\n✓ Clear trend (significant)\nTrend ID tr_bc388604b2\nAnalysis metadata\nVARIABLE\tAir temperature (°C)\nPRODUCT\tM2IMNXASM v5.12.4 · NASA GMAO / GES DISC\nREGION\tAustralia · bounding-box approximation\nBOX (W, S, E, N)\t113°, -44°, 154°, -10°\nPERIOD\t2001-01 to 2025-12, monthly\nGRID\t0.5° processed (native 0.5°), area mean of cells in the box\nSAMPLE\t300 months with data, 0 missing; 100% of the area co",
+    "requests_after_mode_switch": 0
+   },
+   "actual_pdfs": {
+    "explorer": "C:/NUS CS/Y1/Nasa Challenge/terra-scope-ai/web/e2e/out/scientific/report-explorer.pdf",
+    "scientist": "C:/NUS CS/Y1/Nasa Challenge/terra-scope-ai/web/e2e/out/scientific/report-scientist.pdf"
+   },
+   "screenshots": [
+    "web/e2e/out/scientific/UI-03-explorer.png",
+    "web/e2e/out/scientific/UI-03-scientist.png"
+   ],
+   "checks": [
+    {
+     "check": "request matches the chosen context (variable, years)",
+     "pass": true,
+     "expected": [
+      2001,
+      2025
+     ],
+     "actual": [
+      "2001-01",
+      "2025-12"
+     ]
+    },
+    {
+     "check": "backend slope = oracle",
+     "pass": true,
+     "expected": 0.25448418761210306,
+     "actual": 0.25448418761210306
+    },
+    {
+     "check": "backend raw p = oracle",
+     "pass": true,
+     "expected": 1.0407120398004487e-08,
+     "actual": 1.0407120498712175e-08
+    },
+    {
+     "check": "backend verdict = oracle",
+     "pass": true,
+     "expected": true,
+     "actual": true
+    },
+    {
+     "check": "Explorer screen shows the oracle slope",
+     "pass": true,
+     "expected": "+0.25 °C",
+     "actual": null
+    },
+    {
+     "check": "Explorer screen shows the oracle p",
+     "pass": true,
+     "expected": "p <0.001",
+     "actual": null
+    },
+    {
+     "check": "Explorer verdict label",
+     "pass": true,
+     "expected": "Clear trend (significant)",
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows slope and raw p",
+     "pass": true,
+     "expected": [
+      "+0.25 °C",
+      "<0.001"
+     ],
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows Hamed-Rao p",
+     "pass": true,
+     "expected": "<0.001",
+     "actual": null
+    },
+    {
+     "check": "Scientist decision sentence",
+     "pass": true,
+     "expected": true,
+     "actual": null
+    },
+    {
+     "check": "mode switch made no new request",
+     "pass": true,
+     "expected": 0,
+     "actual": 0
+    },
+    {
+     "check": "explorer PDF contains the slope",
+     "pass": true,
+     "expected": "+0.254",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the slope",
+     "pass": true,
+     "expected": "+0.254",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the raw p",
+     "pass": true,
+     "expected": "< 0.001",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the Hamed-Rao p",
+     "pass": true,
+     "expected": "< 0.001",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the OLS 95% CI",
+     "pass": true,
+     "expected": "0.198 to 0.372",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF table row: n months and verdict",
+     "pass": true,
+     "expected": [
+      300,
+      "Significant trend"
+     ],
+     "actual": [
+      "300",
+      "Significant trend"
+     ]
+    }
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "UI-04",
+   "kind": "browser + PDF (Explorer and Scientist)",
+   "maps_to": "point cell in the Sahara",
+   "dataset": "M2IMNXASM v5.12.4",
+   "variable": "Air temperature (2 m)",
+   "ui_place_input": {
+    "coords": [
+     23.3,
+     10.2
+    ]
+   },
+   "first_search_hit": null,
+   "bbox_WSEN": [
+    10,
+    23,
+    10.5,
+    23.5
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_oracle": {
+    "slope_per_decade": 0.20110660129123265,
+    "p_value": 0.04524456653792079,
+    "significant": true,
+    "p_value_hr": 0.1749017593990128,
+    "ols_ci95": [
+     -0.044792734593528186,
+     0.33721012161565345
+    ],
+    "n_months": 300
+   },
+   "actual_backend": {
+    "slope_per_decade": 0.20110660129123265,
+    "p_value": 0.04524456653792086,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.17490175939901276,
+    "slope_ci": [
+     -0.044792734593528116,
+     0.3372101216156536
+    ],
+    "n": 300
+   },
+   "actual_frontend": {
+    "explorer_excerpt": "Result\n✓ Clear trend (significant)\n23.25°N, 10.25°E · MERRA-2 (land and sea)\nWhat did we find?\n\nThe data show a clear upward trend in air temperature: the test says it is unlikely to be chance alone.\n\nWhat does the data show?\n+0.20 °C per decade, 2001 to 2025\nThis is the typical change per decade (Sen slope\n?\n). The monthly chart below shows every month.\nHow strong is the evidence?\nClear evidence ",
+    "scientist_excerpt": "Result\n✓ Clear trend (significant)\nTrend ID tr_fb7177c846\nAnalysis metadata\nVARIABLE\tAir temperature (°C)\nPRODUCT\tM2IMNXASM v5.12.4 · NASA GMAO / GES DISC\nREGION\t23.25°N, 10.25°E · bounding-box approximation\nBOX (W, S, E, N)\t10°, 23°, 10.5°, 23.5°\nPERIOD\t2001-01 to 2025-12, monthly\nGRID\t0.5° processed (native 0.5°), area mean of cells in the box\nSAMPLE\t300 months with data, 0 missing; 100% of the ",
+    "requests_after_mode_switch": 0
+   },
+   "actual_pdfs": {
+    "explorer": "C:/NUS CS/Y1/Nasa Challenge/terra-scope-ai/web/e2e/out/scientific/report-explorer.pdf",
+    "scientist": "C:/NUS CS/Y1/Nasa Challenge/terra-scope-ai/web/e2e/out/scientific/report-scientist.pdf"
+   },
+   "screenshots": [
+    "web/e2e/out/scientific/UI-04-explorer.png",
+    "web/e2e/out/scientific/UI-04-scientist.png"
+   ],
+   "checks": [
+    {
+     "check": "request matches the chosen context (variable, years)",
+     "pass": true,
+     "expected": [
+      2001,
+      2025
+     ],
+     "actual": [
+      "2001-01",
+      "2025-12"
+     ]
+    },
+    {
+     "check": "backend slope = oracle",
+     "pass": true,
+     "expected": 0.20110660129123265,
+     "actual": 0.20110660129123265
+    },
+    {
+     "check": "backend raw p = oracle",
+     "pass": true,
+     "expected": 0.04524456653792079,
+     "actual": 0.04524456653792086
+    },
+    {
+     "check": "backend verdict = oracle",
+     "pass": true,
+     "expected": true,
+     "actual": true
+    },
+    {
+     "check": "Explorer screen shows the oracle slope",
+     "pass": true,
+     "expected": "+0.20 °C",
+     "actual": null
+    },
+    {
+     "check": "Explorer screen shows the oracle p",
+     "pass": true,
+     "expected": "p 0.045",
+     "actual": null
+    },
+    {
+     "check": "Explorer verdict label",
+     "pass": true,
+     "expected": "Clear trend (significant)",
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows slope and raw p",
+     "pass": true,
+     "expected": [
+      "+0.20 °C",
+      "0.045"
+     ],
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows Hamed-Rao p",
+     "pass": true,
+     "expected": "0.175",
+     "actual": null
+    },
+    {
+     "check": "Scientist decision sentence",
+     "pass": true,
+     "expected": true,
+     "actual": null
+    },
+    {
+     "check": "mode switch made no new request",
+     "pass": true,
+     "expected": 0,
+     "actual": 0
+    },
+    {
+     "check": "explorer PDF contains the slope",
+     "pass": true,
+     "expected": "+0.201",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the slope",
+     "pass": true,
+     "expected": "+0.201",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the raw p",
+     "pass": true,
+     "expected": "0.045",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the Hamed-Rao p",
+     "pass": true,
+     "expected": "0.175",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the OLS 95% CI",
+     "pass": true,
+     "expected": "-0.0448 to 0.337",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF table row: n months and verdict",
+     "pass": true,
+     "expected": [
+      300,
+      "Significant trend"
+     ],
+     "actual": [
+      "300",
+      "Significant trend"
+     ]
+    }
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "UI-05",
+   "kind": "browser + PDF (Explorer and Scientist)",
+   "maps_to": "TC-17",
+   "dataset": "GLDAS_NOAH025_M v2.1",
+   "variable": "Evapotranspiration",
+   "ui_place_input": {
+    "search": "Central Highlands"
+   },
+   "first_search_hit": "Central Highlands, Vietnam\nPreset area",
+   "bbox_WSEN": [
+    107.2,
+    11.2,
+    109.0,
+    15.5
+   ],
+   "interval": [
+    "2001-01",
+    "2025-12"
+   ],
+   "expected_oracle": {
+    "slope_per_decade": 6.786688222029655,
+    "p_value": 1.9018456561966663e-13,
+    "significant": true,
+    "p_value_hr": 1.6138183671537665e-06,
+    "ols_ci95": [
+     5.639680081849534,
+     9.10824946718803
+    ],
+    "n_months": 300
+   },
+   "actual_backend": {
+    "slope_per_decade": 6.786688222029696,
+    "p_value": 1.9029222642075183e-13,
+    "significant": true,
+    "p_value_autocorr_adjusted": 1.6138183671632333e-06,
+    "slope_ci": [
+     5.639680081849536,
+     9.108249467188035
+    ],
+    "n": 300
+   },
+   "actual_frontend": {
+    "explorer_excerpt": "Result\n✓ Clear trend (significant)\nCentral Highlands, Vietnam · GLDAS Noah (land model)\nWhat did we find?\n\nThe data show a clear upward trend in evapotranspiration: the test says it is unlikely to be chance alone.\n\nWhat does the data show?\n+6.79 mm/month per decade, 2001 to 2025\nThis is the typical change per decade (Sen slope\n?\n). The monthly chart below shows every month.\nHow strong is the evide",
+    "scientist_excerpt": "Result\n✓ Clear trend (significant)\nTrend ID tr_bbcbf0e1a0\nAnalysis metadata\nVARIABLE\tEvapotranspiration (mm/month)\nPRODUCT\tGLDAS_NOAH025_M v2.1 · NASA GES DISC\nREGION\tCentral Highlands, Vietnam · catalog preset \"central_highlands\"\nBOX (W, S, E, N)\t107.2°, 11.2°, 109°, 15.5°\nPERIOD\t2001-01 to 2025-12, monthly\nGRID\t0.5° processed (native 0.25°), area mean of cells in the box\nSAMPLE\t300 months with d",
+    "requests_after_mode_switch": 0
+   },
+   "actual_pdfs": {
+    "explorer": "C:/NUS CS/Y1/Nasa Challenge/terra-scope-ai/web/e2e/out/scientific/report-explorer.pdf",
+    "scientist": "C:/NUS CS/Y1/Nasa Challenge/terra-scope-ai/web/e2e/out/scientific/report-scientist.pdf"
+   },
+   "screenshots": [
+    "web/e2e/out/scientific/UI-05-explorer.png",
+    "web/e2e/out/scientific/UI-05-scientist.png"
+   ],
+   "checks": [
+    {
+     "check": "request matches the chosen context (variable, years)",
+     "pass": true,
+     "expected": [
+      2001,
+      2025
+     ],
+     "actual": [
+      "2001-01",
+      "2025-12"
+     ]
+    },
+    {
+     "check": "backend slope = oracle",
+     "pass": true,
+     "expected": 6.786688222029655,
+     "actual": 6.786688222029696
+    },
+    {
+     "check": "backend raw p = oracle",
+     "pass": true,
+     "expected": 1.9018456561966663e-13,
+     "actual": 1.9029222642075183e-13
+    },
+    {
+     "check": "backend verdict = oracle",
+     "pass": true,
+     "expected": true,
+     "actual": true
+    },
+    {
+     "check": "Explorer screen shows the oracle slope",
+     "pass": true,
+     "expected": "+6.79 mm/month",
+     "actual": null
+    },
+    {
+     "check": "Explorer screen shows the oracle p",
+     "pass": true,
+     "expected": "p <0.001",
+     "actual": null
+    },
+    {
+     "check": "Explorer verdict label",
+     "pass": true,
+     "expected": "Clear trend (significant)",
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows slope and raw p",
+     "pass": true,
+     "expected": [
+      "+6.79 mm/month",
+      "<0.001"
+     ],
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows Hamed-Rao p",
+     "pass": true,
+     "expected": "<0.001",
+     "actual": null
+    },
+    {
+     "check": "Scientist decision sentence",
+     "pass": true,
+     "expected": true,
+     "actual": null
+    },
+    {
+     "check": "mode switch made no new request",
+     "pass": true,
+     "expected": 0,
+     "actual": 0
+    },
+    {
+     "check": "explorer PDF contains the slope",
+     "pass": true,
+     "expected": "+6.79",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the slope",
+     "pass": true,
+     "expected": "+6.79",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the raw p",
+     "pass": true,
+     "expected": "< 0.001",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the Hamed-Rao p",
+     "pass": true,
+     "expected": "< 0.001",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the OLS 95% CI",
+     "pass": true,
+     "expected": "5.64 to 9.11",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF table row: n months and verdict",
+     "pass": true,
+     "expected": [
+      300,
+      "Significant trend"
+     ],
+     "actual": [
+      "300",
+      "Significant trend"
+     ]
+    }
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "PDF-01",
+   "kind": "PDF content and layout",
+   "pages": {
+    "explorer": 9,
+    "scientist": 10
+   },
+   "page_images": {
+    "explorer": [
+     "validation\\results\\pdf_pages\\report-explorer-p1.png",
+     "validation\\results\\pdf_pages\\report-explorer-p2.png",
+     "validation\\results\\pdf_pages\\report-explorer-p3.png",
+     "validation\\results\\pdf_pages\\report-explorer-p4.png",
+     "validation\\results\\pdf_pages\\report-explorer-p5.png",
+     "validation\\results\\pdf_pages\\report-explorer-p6.png",
+     "validation\\results\\pdf_pages\\report-explorer-p7.png",
+     "validation\\results\\pdf_pages\\report-explorer-p8.png",
+     "validation\\results\\pdf_pages\\report-explorer-p9.png"
+    ],
+    "scientist": [
+     "validation\\results\\pdf_pages\\report-scientist-p1.png",
+     "validation\\results\\pdf_pages\\report-scientist-p2.png",
+     "validation\\results\\pdf_pages\\report-scientist-p3.png",
+     "validation\\results\\pdf_pages\\report-scientist-p4.png",
+     "validation\\results\\pdf_pages\\report-scientist-p5.png",
+     "validation\\results\\pdf_pages\\report-scientist-p6.png",
+     "validation\\results\\pdf_pages\\report-scientist-p7.png",
+     "validation\\results\\pdf_pages\\report-scientist-p8.png",
+     "validation\\results\\pdf_pages\\report-scientist-p9.png",
+     "validation\\results\\pdf_pages\\report-scientist-p10.png"
+    ]
+   },
+   "checks": [
+    {
+     "check": "explorer: every page has selectable text",
+     "pass": true,
+     "actual": [
+      1626,
+      1051,
+      1609,
+      1563,
+      1546,
+      1557,
+      1680,
+      1839,
+      1555
+     ]
+    },
+    {
+     "check": "explorer: no word outside the page",
+     "pass": true
+    },
+    {
+     "check": "explorer: no long dash",
+     "pass": true
+    },
+    {
+     "check": "explorer: NASA products named",
+     "pass": true
+    },
+    {
+     "check": "scientist: every page has selectable text",
+     "pass": true,
+     "actual": [
+      2183,
+      765,
+      1667,
+      1672,
+      1671,
+      1678,
+      1759,
+      1911,
+      2039,
+      1632
+     ]
+    },
+    {
+     "check": "scientist: no word outside the page",
+     "pass": true
+    },
+    {
+     "check": "scientist: no long dash",
+     "pass": true
+    },
+    {
+     "check": "scientist: NASA products named",
+     "pass": true
+    },
+    {
+     "check": "scientist: OLS interval attributed correctly",
+     "pass": true
+    },
+    {
+     "check": "scientist: clickable reference links",
+     "pass": true,
+     "actual": [
+      "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
+      "https://disc.gsfc.nasa.gov/datasets/GPM_3IMERGM_07/summary",
+      "https://disc.gsfc.nasa.gov/datasets/M2IMNXASM_5.12.4/summary",
+      "https://doi.org/10.1016/S0022-1694(97)00125-X",
+      "https://doi.org/10.1029/WR018i001p00107",
+      "https://doi.org/10.1080/01621459.1968.10480934",
+      "https://doi.org/10.1111/j.2517-6161.1995.tb02031.x",
+      "https://doi.org/10.2307/1907187"
+     ]
+    },
+    {
+     "check": "explorer: no p-value misreading",
+     "pass": true
+    }
+   ],
+   "status": "PASS"
+  },
+  {
+   "test_id": "NR-01",
+   "kind": "designed, not executed",
+   "name": "Gemini Detective answers",
+   "status": "NOT RUN",
+   "notes": "Spec forbids using Gemini to verify statistics; live Gemini tests skipped (no key on this run)."
+  },
+  {
+   "test_id": "NR-02",
+   "kind": "designed, not executed",
+   "name": "Independent recomputation of the moving-block bootstrap interval",
+   "status": "NOT RUN",
+   "notes": "Seeded resampling; only determinism and the decision rule were checked (CMP-01)."
+  },
+  {
+   "test_id": "NR-03",
+   "kind": "designed, not executed",
+   "name": "Arbitrary box drawn by dragging on the map in the browser",
+   "status": "NOT RUN",
+   "notes": "Harness used place search and coordinates; arbitrary boxes covered through the API."
+  },
+  {
+   "test_id": "NR-04",
+   "kind": "designed, not executed",
+   "name": "Forecast model validation",
+   "status": "NOT RUN",
+   "notes": "Separate task, not part of this suite."
+  }
+ ],
+ "summary": {
+  "designed": 53,
+  "executed": 49,
+  "by_status": {
+   "PASS": 48,
+   "INCONCLUSIVE": 1,
+   "NOT RUN": 4
+  }
+ }
+}

@@ -58,8 +58,10 @@ try {
   test('form D: both editions export the same numbers', () => {
     const a = fd.editionMarkdown(m, 'simple', { title: 'Test report', notes: { [ns.key]: 'Field observation' } });
     const b = fd.editionMarkdown(m, 'scientist', { title: 'Test report' });
-    for (const n of ['+3.43', '0.077', '+0.187', '288 months', '0.022']) { assert.ok(a.includes(n), n); assert.ok(b.includes(n), n); }
-    assert.ok(a.startsWith('# Test report') && a.includes('## Abstract') && a.includes('Author notes (not part of the evidence)'));
+    for (const n of ['+3.43', '0.077', '+0.187', '288 months']) { assert.ok(a.includes(n), n); assert.ok(b.includes(n), n); }
+    assert.ok(b.includes('0.022'), 'scientist carries the comparison p-value');
+    assert.ok(a.startsWith('# Test report') && a.includes('## Summary of findings') && a.includes('not part of the evidence') && a.includes('Field observation'));
+    assert.ok(b.includes('## Abstract'));
     assert.ok(!a.includes('—') && !b.includes('—'));
   });
 } finally {

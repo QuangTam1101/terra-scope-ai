@@ -13,10 +13,10 @@ const LAND = feature(topo, topo.objects.countries) as unknown as GeoJSON.Feature
 const UP = "#c4621a", DOWN = "#2f6fb3";
 
 /** Monthly anomalies (thin) and the seasonal Sen slope drawn through their mean (thick; dashed = not significant). */
-export function ReportChart({ lines, units, height = 230 }: {
-  lines: { series: SeriesResponse; trend: TrendResponse; color: string; dash?: boolean; label?: string }[]; units: string; height?: number;
+export function ReportChart({ lines, units, height = 230, yLabel }: {
+  lines: { series: SeriesResponse; trend: TrendResponse; color: string; dash?: boolean; label?: string }[]; units: string; height?: number; yLabel?: string;
 }) {
-  const W = 720, H = height, PL = 56, PR = 14, PT = 12, PB = 30;
+  const W = 720, H = height + 16, PL = 66, PR = 14, PT = 12, PB = 46;
   const n = Math.max(...lines.map((l) => l.series.points.length), 2);
   const vals = lines.flatMap((l) => l.series.points.map((p) => p.anomaly)).filter((v): v is number => v !== null);
   if (!vals.length) return <p className="warn">No values to plot for this selection.</p>;
@@ -45,8 +45,15 @@ export function ReportChart({ lines, units, height = 230 }: {
         </g>
       ))}
       {pts.map((p, i) => (p.t.endsWith("-01") && (Number(p.t.slice(0, 4)) - y0) % ys === 0
-        ? <text key={p.t} x={X(i)} y={H - 10} textAnchor="middle" fontSize="11" fill="#3d3850">{p.t.slice(0, 4)}</text> : null))}
-      <text x={10} y={PT} fontSize="10.5" fill="#3d3850" transform={`rotate(-90 10 ${PT})`} textAnchor="end">{units}</text>
+        ? <text key={p.t} x={X(i)} y={H - 26} textAnchor="middle" fontSize="11" fill="#3d3850">{p.t.slice(0, 4)}</text> : null))}
+      <text x={(PL + W - PR) / 2} y={H - 6} textAnchor="middle" fontSize="11.5" fontWeight="700" fill="#2b2540">Year (monthly values)</text>
+      {(() => {
+        // Rotated axis title: centred on the full chart height and squeezed when longer than that height, so it is never clipped.
+        const lab = yLabel ?? `Anomaly (${units})`, avail = H - 8, fit = lab.length * 6.6 > avail;
+        return <text x={14} y={H / 2} fontSize="11.5" fontWeight="700" fill="#2b2540" textAnchor="middle"
+          textLength={fit ? avail : undefined} lengthAdjust={fit ? "spacingAndGlyphs" : undefined}
+          transform={`rotate(-90 14 ${H / 2})`}>{lab}</text>;
+      })()}
       {lines.map((l, k) => <path key={`s${k}`} d={path(l.series)} fill="none" stroke={l.color} strokeOpacity={0.7} strokeWidth={1.1} strokeDasharray={l.dash ? "4 3" : undefined} />)}
       {lines.map((l, k) => {
         const t = l.trend;
@@ -226,7 +233,7 @@ export function MethodsPage({ m }: { m: ReportModel }) {
         ["Rate", "Seasonal Sen slope, reported per decade."],
         ["Interval", "95% interval of the OLS slope of anomalies (ols_anomaly). It is a different estimator from Sen and has no HAC adjustment."],
         ["Autocorrelation", "Hamed-Rao modified Mann-Kendall on anomalies is shown as a diagnostic; it does not change the verdict."],
-        ["Comparisons", "Two regions: block-bootstrap test of the difference of slopes on anomalies. Two datasets: descriptive only."],
+        ["Comparisons", "Two regions: the difference series of monthly anomalies (A minus B) is tested with the Hamed-Rao Mann-Kendall test (p-value), its trend is the Sen slope, and a moving-block bootstrap (12-month blocks) gives the 95% interval. Two datasets: descriptive only."],
         ["Software", `Terra-scope backend ${m.backendVersion}; NASA data obtained through GES DISC (Harmony) and processed to a common grid.`],
         ["Reproduce", "The JSON export lists every request (variable, region, period, method, α) and the result it returned."],
       ]} />

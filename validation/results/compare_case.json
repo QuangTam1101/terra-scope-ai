@@ -1,0 +1,87 @@
+{
+ "id": "CMP-01",
+ "label": "Sahel vs Wisconsin, MERRA-2 air temperature, 2001-01 to 2025-12",
+ "bbox_a": [
+  -17,
+  10,
+  30,
+  18
+ ],
+ "bbox_b": [
+  -92.9,
+  42.5,
+  -86.8,
+  47.1
+ ],
+ "difference": {
+  "slope_diff_per_decade": -0.38315293559234653,
+  "ci": [
+   -0.8650241892652253,
+   0.11699795615276276
+  ],
+  "p_value": 0.02189594985057486,
+  "significant": false,
+  "stable_halves": false,
+  "test": "mk_sen_on_anomaly_difference_block_bootstrap_ci"
+ },
+ "verdict": "opposite_not_significant",
+ "checks": [
+  {
+   "check": "A slope = oracle",
+   "pass": true,
+   "expected": -0.21216147394520152,
+   "actual": -0.21216147394520152
+  },
+  {
+   "check": "B slope = oracle",
+   "pass": true,
+   "expected": 0.2098444098753655,
+   "actual": 0.2098444098753655
+  },
+  {
+   "check": "A and B raw p = oracle",
+   "pass": true
+  },
+  {
+   "check": "decision rule: significant == (p < alpha and CI excludes 0)",
+   "pass": true,
+   "actual": [
+    0.02189594985057486,
+    [
+     -0.8650241892652253,
+     0.11699795615276276
+    ],
+    false
+   ]
+  },
+  {
+   "check": "verdict label consistent with signs and rule",
+   "pass": true,
+   "expected": "opposite_not_significant",
+   "actual": "opposite_not_significant"
+  },
+  {
+   "check": "bootstrap result reproducible across two calls",
+   "pass": true,
+   "actual": [
+    0.02189594985057486,
+    0.02189594985057486
+   ]
+  },
+  {
+   "check": "difference slope = oracle Sen slope of anomaly(A) - anomaly(B)",
+   "pass": true,
+   "expected": -0.38315293559235214,
+   "actual": -0.38315293559234653
+  },
+  {
+   "check": "difference p = oracle Hamed-Rao p on the difference series",
+   "pass": true,
+   "expected": 0.02189594985057495,
+   "actual": 0.02189594985057486
+  }
+ ],
+ "not_independently_verified": "The moving-block bootstrap interval was not recomputed by the oracle (seeded resampling); only determinism and the decision rule were checked.",
+ "note_difference_estimator": "slope_diff is the Sen slope of the monthly anomaly difference series (A minus B), not the difference of the two seasonal Sen slopes (-0.422).",
+ "status": "PASS"
+}

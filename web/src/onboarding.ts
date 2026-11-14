@@ -55,7 +55,7 @@ export const SCIENTIST_STEPS: TourStep[] = [
   { id: "result", page: "explore", target: '[data-tour="result"]', title: "5. Decision basis",
     body: "The verdict uses the raw Seasonal Mann-Kendall p-value at alpha 0.05. The Hamed-Rao adjusted p is a diagnostic only, and the OLS interval is not a confidence interval for Sen's slope." },
   { id: "hunt", page: "hunt", target: '[data-tour="hunt"]', title: "6. Contradiction Hunter",
-    body: "Two regions: block-bootstrap test of the difference of slopes on anomalies. A difference counts only when p is below 0.05 and the 95% interval excludes zero. Dataset pairs are descriptive only." },
+    body: "Two regions: the difference series of monthly anomalies (A minus B) is tested with the Hamed-Rao Mann-Kendall test (p-value), its trend is the Sen slope, and a moving-block bootstrap (12-month blocks) gives the 95% interval. A difference counts only when p is below 0.05 and the interval excludes zero. Dataset pairs are descriptive only." },
   { id: "detective", page: "detective", target: '[data-tour="detective-input"]', title: "7. Method Advisor",
     body: "Ask method questions (serial dependence, FDR scope, interval estimator). Answers are grounded in backend tool results; the language model never computes numbers." },
   { id: "report", page: "report", target: '[data-tour="report"]', title: "8. Reproducible report",

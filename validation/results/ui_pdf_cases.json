@@ -1,0 +1,925 @@
+{
+ "scenarios": [
+  {
+   "id": "UI-01",
+   "maps_to": "TC-01",
+   "ui_place_input": {
+    "search": "Mekong Delta"
+   },
+   "first_search_hit": "Mekong Delta, Vietnam\nPreset area",
+   "checks": [
+    {
+     "check": "request matches the chosen context (variable, years)",
+     "pass": true,
+     "expected": [
+      2001,
+      2024
+     ],
+     "actual": [
+      "2001-01",
+      "2024-12"
+     ]
+    },
+    {
+     "check": "backend slope = oracle",
+     "pass": true,
+     "expected": 3.4289956416012144,
+     "actual": 3.4289956416012144
+    },
+    {
+     "check": "backend raw p = oracle",
+     "pass": true,
+     "expected": 0.07695691823494685,
+     "actual": 0.07695691823494677
+    },
+    {
+     "check": "backend verdict = oracle",
+     "pass": true,
+     "expected": false,
+     "actual": false
+    },
+    {
+     "check": "Explorer screen shows the oracle slope",
+     "pass": true,
+     "expected": "+3.43 mm/month",
+     "actual": null
+    },
+    {
+     "check": "Explorer screen shows the oracle p",
+     "pass": true,
+     "expected": "p 0.077",
+     "actual": null
+    },
+    {
+     "check": "Explorer verdict label",
+     "pass": true,
+     "expected": "Not proven yet",
+     "actual": null
+    },
+    {
+     "check": "Explorer wording does not claim a clear change",
+     "pass": true,
+     "expected": "hedged wording",
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows slope and raw p",
+     "pass": true,
+     "expected": [
+      "+3.43 mm/month",
+      "0.077"
+     ],
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows Hamed-Rao p",
+     "pass": true,
+     "expected": "0.293",
+     "actual": null
+    },
+    {
+     "check": "Scientist decision sentence",
+     "pass": true,
+     "expected": false,
+     "actual": null
+    },
+    {
+     "check": "mode switch made no new request",
+     "pass": true,
+     "expected": 0,
+     "actual": 0
+    },
+    {
+     "check": "explorer PDF contains the slope",
+     "pass": true,
+     "expected": "+3.43",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the slope",
+     "pass": true,
+     "expected": "+3.43",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the raw p",
+     "pass": true,
+     "expected": "0.077",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the Hamed-Rao p",
+     "pass": true,
+     "expected": "0.293",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the OLS 95% CI",
+     "pass": true,
+     "expected": "-1.09 to 18.33",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF table row: n months and verdict",
+     "pass": true,
+     "expected": [
+      288,
+      "Not significant"
+     ],
+     "actual": [
+      "288",
+      "Not significant"
+     ]
+    }
+   ],
+   "variable_id": "imerg_precip",
+   "bbox": [
+    104.4,
+    8.5,
+    106.9,
+    11.1
+   ],
+   "start": "2001-01",
+   "end": "2024-12",
+   "expected": {
+    "slope_per_decade": 3.4289956416012144,
+    "p_value": 0.07695691823494685,
+    "significant": false,
+    "p_value_hr": 0.2927209247749104,
+    "ols_ci95": [
+     -1.0933510644990319,
+     18.326663906790284
+    ],
+    "n_months": 288
+   },
+   "actual_backend": {
+    "slope_per_decade": 3.4289956416012144,
+    "p_value": 0.07695691823494677,
+    "significant": false,
+    "p_value_autocorr_adjusted": 0.2927209247749103,
+    "slope_ci": [
+     -1.093351064499032,
+     18.326663906790284
+    ],
+    "n": 288
+   },
+   "pdf_place_label": "Mekong Delta, Vietnam",
+   "status": "PASS"
+  },
+  {
+   "id": "UI-02",
+   "maps_to": "TC-02",
+   "ui_place_input": {
+    "search": "Hanoi, Vietnam"
+   },
+   "first_search_hit": "Hanoi, Vietnam\nPreset area",
+   "checks": [
+    {
+     "check": "request matches the chosen context (variable, years)",
+     "pass": true,
+     "expected": [
+      2001,
+      2025
+     ],
+     "actual": [
+      "2001-01",
+      "2025-12"
+     ]
+    },
+    {
+     "check": "backend slope = oracle",
+     "pass": true,
+     "expected": 0.2276697967724684,
+     "actual": 0.2276697967724684
+    },
+    {
+     "check": "backend raw p = oracle",
+     "pass": true,
+     "expected": 0.0006623452008320524,
+     "actual": 0.0006623452008320818
+    },
+    {
+     "check": "backend verdict = oracle",
+     "pass": true,
+     "expected": true,
+     "actual": true
+    },
+    {
+     "check": "Explorer screen shows the oracle slope",
+     "pass": true,
+     "expected": "+0.23 °C",
+     "actual": null
+    },
+    {
+     "check": "Explorer screen shows the oracle p",
+     "pass": true,
+     "expected": "p <0.001",
+     "actual": null
+    },
+    {
+     "check": "Explorer verdict label",
+     "pass": true,
+     "expected": "Clear trend (significant)",
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows slope and raw p",
+     "pass": true,
+     "expected": [
+      "+0.23 °C",
+      "<0.001"
+     ],
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows Hamed-Rao p",
+     "pass": true,
+     "expected": "0.090",
+     "actual": null
+    },
+    {
+     "check": "Scientist decision sentence",
+     "pass": true,
+     "expected": true,
+     "actual": null
+    },
+    {
+     "check": "mode switch made no new request",
+     "pass": true,
+     "expected": 0,
+     "actual": 0
+    },
+    {
+     "check": "explorer PDF contains the slope",
+     "pass": true,
+     "expected": "+0.228",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the slope",
+     "pass": true,
+     "expected": "+0.228",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the raw p",
+     "pass": true,
+     "expected": "< 0.001",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the Hamed-Rao p",
+     "pass": true,
+     "expected": "0.090",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the OLS 95% CI",
+     "pass": true,
+     "expected": "-0.0354 to 0.325",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF table row: n months and verdict",
+     "pass": true,
+     "expected": [
+      300,
+      "Significant trend"
+     ],
+     "actual": [
+      "300",
+      "Significant trend"
+     ]
+    }
+   ],
+   "variable_id": "merra2_air_temperature_2m",
+   "bbox": [
+    105.3,
+    20.5,
+    106.1,
+    21.4
+   ],
+   "start": "2001-01",
+   "end": "2025-12",
+   "expected": {
+    "slope_per_decade": 0.2276697967724684,
+    "p_value": 0.0006623452008320524,
+    "significant": true,
+    "p_value_hr": 0.08982729155026348,
+    "ols_ci95": [
+     -0.03543077654036156,
+     0.3248677689288372
+    ],
+    "n_months": 300
+   },
+   "actual_backend": {
+    "slope_per_decade": 0.2276697967724684,
+    "p_value": 0.0006623452008320818,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.08982729155026337,
+    "slope_ci": [
+     -0.0354307765403615,
+     0.3248677689288373
+    ],
+    "n": 300
+   },
+   "pdf_place_label": "Hanoi, Vietnam",
+   "status": "PASS"
+  },
+  {
+   "id": "UI-03",
+   "maps_to": "TC-06 (country box from the search list)",
+   "ui_place_input": {
+    "search": "Australia"
+   },
+   "first_search_hit": "Australia\nCountry",
+   "checks": [
+    {
+     "check": "request matches the chosen context (variable, years)",
+     "pass": true,
+     "expected": [
+      2001,
+      2025
+     ],
+     "actual": [
+      "2001-01",
+      "2025-12"
+     ]
+    },
+    {
+     "check": "backend slope = oracle",
+     "pass": true,
+     "expected": 0.25448418761210306,
+     "actual": 0.25448418761210306
+    },
+    {
+     "check": "backend raw p = oracle",
+     "pass": true,
+     "expected": 1.0407120398004487e-08,
+     "actual": 1.0407120498712175e-08
+    },
+    {
+     "check": "backend verdict = oracle",
+     "pass": true,
+     "expected": true,
+     "actual": true
+    },
+    {
+     "check": "Explorer screen shows the oracle slope",
+     "pass": true,
+     "expected": "+0.25 °C",
+     "actual": null
+    },
+    {
+     "check": "Explorer screen shows the oracle p",
+     "pass": true,
+     "expected": "p <0.001",
+     "actual": null
+    },
+    {
+     "check": "Explorer verdict label",
+     "pass": true,
+     "expected": "Clear trend (significant)",
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows slope and raw p",
+     "pass": true,
+     "expected": [
+      "+0.25 °C",
+      "<0.001"
+     ],
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows Hamed-Rao p",
+     "pass": true,
+     "expected": "<0.001",
+     "actual": null
+    },
+    {
+     "check": "Scientist decision sentence",
+     "pass": true,
+     "expected": true,
+     "actual": null
+    },
+    {
+     "check": "mode switch made no new request",
+     "pass": true,
+     "expected": 0,
+     "actual": 0
+    },
+    {
+     "check": "explorer PDF contains the slope",
+     "pass": true,
+     "expected": "+0.254",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the slope",
+     "pass": true,
+     "expected": "+0.254",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the raw p",
+     "pass": true,
+     "expected": "< 0.001",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the Hamed-Rao p",
+     "pass": true,
+     "expected": "< 0.001",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the OLS 95% CI",
+     "pass": true,
+     "expected": "0.198 to 0.372",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF table row: n months and verdict",
+     "pass": true,
+     "expected": [
+      300,
+      "Significant trend"
+     ],
+     "actual": [
+      "300",
+      "Significant trend"
+     ]
+    }
+   ],
+   "variable_id": "merra2_air_temperature_2m",
+   "bbox": [
+    113,
+    -44,
+    154,
+    -10
+   ],
+   "start": "2001-01",
+   "end": "2025-12",
+   "expected": {
+    "slope_per_decade": 0.25448418761210306,
+    "p_value": 1.0407120398004487e-08,
+    "significant": true,
+    "p_value_hr": 4.735657264767962e-05,
+    "ols_ci95": [
+     0.19832657789504282,
+     0.37213370687149094
+    ],
+    "n_months": 300
+   },
+   "actual_backend": {
+    "slope_per_decade": 0.25448418761210306,
+    "p_value": 1.0407120498712175e-08,
+    "significant": true,
+    "p_value_autocorr_adjusted": 4.735657264776094e-05,
+    "slope_ci": [
+     0.19832657789504293,
+     0.37213370687149105
+    ],
+    "n": 300
+   },
+   "pdf_place_label": "Australia",
+   "status": "PASS"
+  },
+  {
+   "id": "UI-04",
+   "maps_to": "point cell in the Sahara",
+   "ui_place_input": {
+    "coords": [
+     23.3,
+     10.2
+    ]
+   },
+   "first_search_hit": null,
+   "checks": [
+    {
+     "check": "request matches the chosen context (variable, years)",
+     "pass": true,
+     "expected": [
+      2001,
+      2025
+     ],
+     "actual": [
+      "2001-01",
+      "2025-12"
+     ]
+    },
+    {
+     "check": "backend slope = oracle",
+     "pass": true,
+     "expected": 0.20110660129123265,
+     "actual": 0.20110660129123265
+    },
+    {
+     "check": "backend raw p = oracle",
+     "pass": true,
+     "expected": 0.04524456653792079,
+     "actual": 0.04524456653792086
+    },
+    {
+     "check": "backend verdict = oracle",
+     "pass": true,
+     "expected": true,
+     "actual": true
+    },
+    {
+     "check": "Explorer screen shows the oracle slope",
+     "pass": true,
+     "expected": "+0.20 °C",
+     "actual": null
+    },
+    {
+     "check": "Explorer screen shows the oracle p",
+     "pass": true,
+     "expected": "p 0.045",
+     "actual": null
+    },
+    {
+     "check": "Explorer verdict label",
+     "pass": true,
+     "expected": "Clear trend (significant)",
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows slope and raw p",
+     "pass": true,
+     "expected": [
+      "+0.20 °C",
+      "0.045"
+     ],
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows Hamed-Rao p",
+     "pass": true,
+     "expected": "0.175",
+     "actual": null
+    },
+    {
+     "check": "Scientist decision sentence",
+     "pass": true,
+     "expected": true,
+     "actual": null
+    },
+    {
+     "check": "mode switch made no new request",
+     "pass": true,
+     "expected": 0,
+     "actual": 0
+    },
+    {
+     "check": "explorer PDF contains the slope",
+     "pass": true,
+     "expected": "+0.201",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the slope",
+     "pass": true,
+     "expected": "+0.201",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the raw p",
+     "pass": true,
+     "expected": "0.045",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the Hamed-Rao p",
+     "pass": true,
+     "expected": "0.175",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the OLS 95% CI",
+     "pass": true,
+     "expected": "-0.0448 to 0.337",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF table row: n months and verdict",
+     "pass": true,
+     "expected": [
+      300,
+      "Significant trend"
+     ],
+     "actual": [
+      "300",
+      "Significant trend"
+     ]
+    }
+   ],
+   "variable_id": "merra2_air_temperature_2m",
+   "bbox": [
+    10,
+    23,
+    10.5,
+    23.5
+   ],
+   "start": "2001-01",
+   "end": "2025-12",
+   "expected": {
+    "slope_per_decade": 0.20110660129123265,
+    "p_value": 0.04524456653792079,
+    "significant": true,
+    "p_value_hr": 0.1749017593990128,
+    "ols_ci95": [
+     -0.044792734593528186,
+     0.33721012161565345
+    ],
+    "n_months": 300
+   },
+   "actual_backend": {
+    "slope_per_decade": 0.20110660129123265,
+    "p_value": 0.04524456653792086,
+    "significant": true,
+    "p_value_autocorr_adjusted": 0.17490175939901276,
+    "slope_ci": [
+     -0.044792734593528116,
+     0.3372101216156536
+    ],
+    "n": 300
+   },
+   "pdf_place_label": "",
+   "status": "PASS"
+  },
+  {
+   "id": "UI-05",
+   "maps_to": "TC-17",
+   "ui_place_input": {
+    "search": "Central Highlands"
+   },
+   "first_search_hit": "Central Highlands, Vietnam\nPreset area",
+   "checks": [
+    {
+     "check": "request matches the chosen context (variable, years)",
+     "pass": true,
+     "expected": [
+      2001,
+      2025
+     ],
+     "actual": [
+      "2001-01",
+      "2025-12"
+     ]
+    },
+    {
+     "check": "backend slope = oracle",
+     "pass": true,
+     "expected": 6.786688222029655,
+     "actual": 6.786688222029696
+    },
+    {
+     "check": "backend raw p = oracle",
+     "pass": true,
+     "expected": 1.9018456561966663e-13,
+     "actual": 1.9029222642075183e-13
+    },
+    {
+     "check": "backend verdict = oracle",
+     "pass": true,
+     "expected": true,
+     "actual": true
+    },
+    {
+     "check": "Explorer screen shows the oracle slope",
+     "pass": true,
+     "expected": "+6.79 mm/month",
+     "actual": null
+    },
+    {
+     "check": "Explorer screen shows the oracle p",
+     "pass": true,
+     "expected": "p <0.001",
+     "actual": null
+    },
+    {
+     "check": "Explorer verdict label",
+     "pass": true,
+     "expected": "Clear trend (significant)",
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows slope and raw p",
+     "pass": true,
+     "expected": [
+      "+6.79 mm/month",
+      "<0.001"
+     ],
+     "actual": null
+    },
+    {
+     "check": "Scientist screen shows Hamed-Rao p",
+     "pass": true,
+     "expected": "<0.001",
+     "actual": null
+    },
+    {
+     "check": "Scientist decision sentence",
+     "pass": true,
+     "expected": true,
+     "actual": null
+    },
+    {
+     "check": "mode switch made no new request",
+     "pass": true,
+     "expected": 0,
+     "actual": 0
+    },
+    {
+     "check": "explorer PDF contains the slope",
+     "pass": true,
+     "expected": "+6.79",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the slope",
+     "pass": true,
+     "expected": "+6.79",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the raw p",
+     "pass": true,
+     "expected": "< 0.001",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the Hamed-Rao p",
+     "pass": true,
+     "expected": "< 0.001",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF contains the OLS 95% CI",
+     "pass": true,
+     "expected": "5.64 to 9.11",
+     "actual": null
+    },
+    {
+     "check": "scientist PDF table row: n months and verdict",
+     "pass": true,
+     "expected": [
+      300,
+      "Significant trend"
+     ],
+     "actual": [
+      "300",
+      "Significant trend"
+     ]
+    }
+   ],
+   "variable_id": "gldas_evapotranspiration",
+   "bbox": [
+    107.2,
+    11.2,
+    109.0,
+    15.5
+   ],
+   "start": "2001-01",
+   "end": "2025-12",
+   "expected": {
+    "slope_per_decade": 6.786688222029655,
+    "p_value": 1.9018456561966663e-13,
+    "significant": true,
+    "p_value_hr": 1.6138183671537665e-06,
+    "ols_ci95": [
+     5.639680081849534,
+     9.10824946718803
+    ],
+    "n_months": 300
+   },
+   "actual_backend": {
+    "slope_per_decade": 6.786688222029696,
+    "p_value": 1.9029222642075183e-13,
+    "significant": true,
+    "p_value_autocorr_adjusted": 1.6138183671632333e-06,
+    "slope_ci": [
+     5.639680081849536,
+     9.108249467188035
+    ],
+    "n": 300
+   },
+   "pdf_place_label": "Central Highlands, Vietnam",
+   "status": "PASS"
+  }
+ ],
+ "report": {
+  "id": "PDF",
+  "checks": [
+   {
+    "check": "explorer: every page has selectable text",
+    "pass": true,
+    "actual": [
+     1626,
+     1051,
+     1609,
+     1563,
+     1546,
+     1557,
+     1680,
+     1839,
+     1555
+    ]
+   },
+   {
+    "check": "explorer: no word outside the page",
+    "pass": true
+   },
+   {
+    "check": "explorer: no long dash",
+    "pass": true
+   },
+   {
+    "check": "explorer: NASA products named",
+    "pass": true
+   },
+   {
+    "check": "scientist: every page has selectable text",
+    "pass": true,
+    "actual": [
+     2183,
+     765,
+     1667,
+     1672,
+     1671,
+     1678,
+     1759,
+     1911,
+     2039,
+     1632
+    ]
+   },
+   {
+    "check": "scientist: no word outside the page",
+    "pass": true
+   },
+   {
+    "check": "scientist: no long dash",
+    "pass": true
+   },
+   {
+    "check": "scientist: NASA products named",
+    "pass": true
+   },
+   {
+    "check": "scientist: OLS interval attributed correctly",
+    "pass": true
+   },
+   {
+    "check": "scientist: clickable reference links",
+    "pass": true,
+    "actual": [
+     "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
+     "https://disc.gsfc.nasa.gov/datasets/GPM_3IMERGM_07/summary",
+     "https://disc.gsfc.nasa.gov/datasets/M2IMNXASM_5.12.4/summary",
+     "https://doi.org/10.1016/S0022-1694(97)00125-X",
+     "https://doi.org/10.1029/WR018i001p00107",
+     "https://doi.org/10.1080/01621459.1968.10480934",
+     "https://doi.org/10.1111/j.2517-6161.1995.tb02031.x",
+     "https://doi.org/10.2307/1907187"
+    ]
+   },
+   {
+    "check": "explorer: no p-value misreading",
+    "pass": true
+   }
+  ],
+  "pages": {
+   "explorer": 9,
+   "scientist": 10
+  },
+  "page_pngs": {
+   "explorer": [
+    "validation\\results\\pdf_pages\\report-explorer-p1.png",
+    "validation\\results\\pdf_pages\\report-explorer-p2.png",
+    "validation\\results\\pdf_pages\\report-explorer-p3.png",
+    "validation\\results\\pdf_pages\\report-explorer-p4.png",
+    "validation\\results\\pdf_pages\\report-explorer-p5.png",
+    "validation\\results\\pdf_pages\\report-explorer-p6.png",
+    "validation\\results\\pdf_pages\\report-explorer-p7.png",
+    "validation\\results\\pdf_pages\\report-explorer-p8.png",
+    "validation\\results\\pdf_pages\\report-explorer-p9.png"
+   ],
+   "scientist": [
+    "validation\\results\\pdf_pages\\report-scientist-p1.png",
+    "validation\\results\\pdf_pages\\report-scientist-p2.png",
+    "validation\\results\\pdf_pages\\report-scientist-p3.png",
+    "validation\\results\\pdf_pages\\report-scientist-p4.png",
+    "validation\\results\\pdf_pages\\report-scientist-p5.png",
+    "validation\\results\\pdf_pages\\report-scientist-p6.png",
+    "validation\\results\\pdf_pages\\report-scientist-p7.png",
+    "validation\\results\\pdf_pages\\report-scientist-p8.png",
+    "validation\\results\\pdf_pages\\report-scientist-p9.png",
+    "validation\\results\\pdf_pages\\report-scientist-p10.png"
+   ]
+  },
+  "status": "PASS"
+ }
+}

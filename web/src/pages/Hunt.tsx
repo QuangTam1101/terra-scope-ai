@@ -36,7 +36,7 @@ export function Hunt() {
         <h1 style={{ fontSize: 30 }}>{sci ? "Contradiction hunt" : "Where do the results disagree?"}</h1>
         {sci ? (
           <p className="muted" style={{ margin: 0, font: "600 15px/1.5 var(--body)" }}>
-            Two regions: block-bootstrap test of the difference of seasonal Sen slopes on anomalies; a contradiction is confirmed only when the
+            Two regions: the difference series of monthly anomalies (A minus B) is tested with the Hamed-Rao Mann-Kendall test (p-value), its trend is the Sen slope, and a moving-block bootstrap (12-month blocks) gives the 95% interval; a contradiction is confirmed only when the
             trends have opposite signs <b>and</b> the difference has p below 0.05 with a 95% interval that excludes zero. Dataset pairs have no
             approved difference test and are reported as descriptive only.
           </p>
@@ -132,7 +132,7 @@ function ComparePlaces({ preset }: { preset: { a: Opt; b: Opt; run: number } | n
       </section>
 
       {busy && <div className="card pad" role="status"><b>Comparing the trends in {opt(a).name} and {opt(b).name}…</b>
-        <span className="small muted"> Two regional series, two trend tests and a bootstrap test of their difference.</span><div className="skel" style={{ height: 200, marginTop: 10 }} /></div>}
+        <span className="small muted"> Two regional series, two trend tests and a test of their anomaly difference.</span><div className="skel" style={{ height: 200, marginTop: 10 }} /></div>}
       {res && !busy && (
         <>
           <section className="row" style={{ alignItems: "stretch", gap: 18 }}>

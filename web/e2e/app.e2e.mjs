@@ -154,26 +154,27 @@ describe("Terra-scope full feature E2E", { skip: !up && "servers not running", c
 
   it("report (Form D): reader, findings, preview; both editions, exports, save and reopen a case, PDF", async () => {
     await page.click(byText("button.nav", "Report"));
-    // Step 1: who will read it (defaults to the current Experience: Explorer = Simple).
+    // Step 1: who will read it (defaults to the current Experience: Explorer).
     await page.waitFor(`document.querySelectorAll(".redcard").length === 2`, { label: "edition cards" });
-    assert.equal(await page.evaluate(`return document.querySelector('.redcard[aria-checked="true"] .redname').innerText`), "Simple");
+    assert.equal(await page.evaluate(`return document.querySelector('.redcard[aria-checked="true"] .redname').innerText`), "Explorer");
     await page.click(byText("button", "Next: pick findings"));
     // Step 2: findings in print order, with stamps.
     await page.waitFor(`document.querySelectorAll(".rpick li").length >= 2`, { label: "finding list" });
     await page.click(byText("button", "Next: preview"));
-    // Step 3: Simple edition, academic wording, same numbers, technical appendix.
-    await page.waitFor(`document.querySelector(".report-doc")?.getAttribute("aria-label") === "Simple edition report"`, { label: "simple edition" });
+    // Step 3: Explorer edition, plain language, test outcome in words, no evidence meter.
+    await page.waitFor(`document.querySelector(".report-doc")?.getAttribute("aria-label") === "Explorer edition report"`, { label: "explorer edition" });
     const plain = await page.evaluate(`return document.querySelector(".report-doc").innerText`);
-    for (const s of ["Abstract", "Strength of evidence", "null hypothesis of no monotonic trend", "Technical appendix", "not a Sen confidence interval", "Data and references"]) assert.ok(plain.includes(s), `simple: ${s}`);
+    for (const s of ["The discovery", "Statistical test outcome", "Behind the discovery", "Sources"]) assert.ok(plain.includes(s), `explorer: ${s}`);
+    for (const s of ["Strength of evidence", "null hypothesis"]) assert.ok(!plain.includes(s), `explorer must not say: ${s}`);
     await page.evaluate(`const i = document.querySelector('input[aria-label="Report title"]'); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(i, "E2E case"); i.dispatchEvent(new Event("input", {bubbles: true})); return true;`);
     await page.waitFor(`/E2E case/.test(document.querySelector(".report-doc h1").innerText)`, { label: "title on the cover" });
-    await page.click(byText(".report-page .seg button", "Scientist"));
+    await page.click(`[...document.querySelectorAll('[aria-labelledby="redlabel"] button')].find((b) => b.innerText.trim() === "Scientist")`);
     await page.waitFor(`document.querySelector(".report-doc")?.getAttribute("aria-label") === "Scientist edition report"`, { label: "scientist edition" });
     const pages = await page.evaluate(`return document.querySelectorAll(".rpage").length`);
     const overflow = await page.evaluate(`return [...document.querySelectorAll(".rpage")].some(p => p.scrollWidth > p.clientWidth + 1)`);
     assert.ok(pages >= 4 && !overflow, `${pages} pages, overflow ${overflow}`);
     const doc = await page.evaluate(`return document.querySelector(".report-doc").innerText`);
-    for (const s of ["Scientist edition", "Abstract", "Table 1. Summary of findings", "Raw Seasonal MK p", "not a Sen confidence interval", "Methods and provenance", "Comparison", "References"])
+    for (const s of ["Research question", "Abstract", "Table 1. Summary of findings", "Raw Seasonal MK p", "95% CI for the OLS anomaly slope", "Used for the verdict", "Diagnostic or context only", "Reproducibility", "References"])
       assert.ok(doc.includes(s) || new RegExp(s, "i").test(doc), s);
     assert.ok(!doc.includes("—"), "no long dash in the report");
     const pdf = await page.pdf();

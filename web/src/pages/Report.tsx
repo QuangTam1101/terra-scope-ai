@@ -3,7 +3,8 @@ import { caseFromHash, deleteCase, encodeCaseParam, listCases, parseCase, saveCa
 import { useStore } from "../store";
 import { buildReport, toReproJson, signedNum, pText, type ReportComparison, type ReportRun } from "../report/model";
 import { EditionDoc, pageCount } from "../report/EditionDoc";
-import { compareHeadline, compareStamp, defaultHeadline, editionMarkdown, headlineWarning, quickCheck, trendStamp, type Edition } from "../report/formd";
+import { ExplorerCompanion } from "../report/ExplorerCompanion";
+import { compareHeadline, compareStamp, defaultHeadline, defaultReportTitle, editionMarkdown, headlineWarning, quickCheck, trendStamp, type Edition } from "../report/formd";
 
 function download(name: string, text: string, type: string) {
   const a = document.createElement("a");
@@ -15,8 +16,8 @@ function download(name: string, text: string, type: string) {
 
 // The reportDraft survives page navigation within the visit (edits, order, selection, chosen edition).
 export const reportDraft: { step: 1 | 2 | 3; edition: Edition | null; order: string[]; excluded: string[]; title: string; author: string;
-  headlines: Record<string, string>; notes: Record<string, string> } = {
-  step: 1, edition: null, order: [], excluded: [], title: "", author: "", headlines: {}, notes: {},
+  headlines: Record<string, string>; notes: Record<string, string>; appendix: boolean } = {
+  step: 1, edition: null, order: [], excluded: [], title: "", author: "", headlines: {}, notes: {}, appendix: false,
 };
 
 const STEPS = ["Who will read it", "Pick findings", "Preview and download"] as const;
@@ -32,12 +33,13 @@ export function Report() {
   const [author, setAuthor] = useState(reportDraft.author);
   const [headlines, setHeadlines] = useState(reportDraft.headlines);
   const [notes, setNotes] = useState(reportDraft.notes);
+  const [appendix, setAppendix] = useState(reportDraft.appendix);
   const [cases, setCases] = useState<SavedCase[]>(() => listCases());
   const [caseMsg, setCaseMsg] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const opened = useRef(false);
-  useEffect(() => { Object.assign(reportDraft, { step, order, excluded, title, author, headlines, notes }); }, [step, order, excluded, title, author, headlines, notes]);
+  useEffect(() => { Object.assign(reportDraft, { step, order, excluded, title, author, headlines, notes, appendix }); }, [step, order, excluded, title, author, headlines, notes, appendix]);
   const setStep = (s: 1 | 2 | 3) => { setStepState(s); window.scrollTo({ top: 0 }); };
   const setEdition = (e: Edition) => { setEditionState(e); reportDraft.edition = e; };
 
@@ -109,6 +111,16 @@ export function Report() {
     catch { setCaseMsg("This file is not a valid Terra-scope case."); }
     if (fileRef.current) fileRef.current.value = "";
   };
+  // Browser print gives a real text layer (selectable, searchable). While the preview is shown, the document title is the
+  // report title, so any print (button or Ctrl+P) gets it as the PDF title and suggested file name.
+  const sciEd = edition === "scientist";
+  const docTitle = `${(title.trim() || defaultReportTitle(model)).replace(/[\/:*?"<>|]+/g, " ").slice(0, 120)} (${sciEd ? "Scientist" : "Explorer"} report)`;
+  useEffect(() => {
+    if (step !== 3 || nothing) return;
+    const before = document.title;
+    document.title = docTitle;
+    return () => { document.title = before; };
+  }, [step, nothing, docTitle]);
   const printPdf = () => { setStamp(new Date()); setTimeout(() => window.print(), 50); };
   const sci = edition === "scientist";
 
@@ -166,12 +178,12 @@ export function Report() {
         <section className="card pad col noprint" aria-labelledby="r1">
           <h2 id="r1" style={{ fontSize: 24 }}>Who will read this report?</h2>
           <div className="redition" role="radiogroup" aria-label="Edition">
-            {([["simple", "Simple", "For students, the public, posters and judges.", ["Concise academic summary of each finding", "Annual-mean figure and strength-of-evidence scale", "Full statistics in a technical appendix"]],
+            {([["simple", "Explorer", "For students, the public, posters and judges.", ["The discovery: each finding in plain words, with a map", "The evidence: yearly chart and test outcome in words", "Behind the discovery: a visual guide to the method and its limits"]],
                ["scientist", "Scientist", "For researchers and reviewers checking the method.", ["Full statistics on every result page", "Monthly anomaly figures and study-region maps", "Methods, provenance and references"]]] as const).map(([id, name, who, pts]) => (
               <button key={id} type="button" role="radio" aria-checked={edition === id} className={`redcard ${edition === id ? "on" : ""}`} onClick={() => setEdition(id)}>
                 <span className="redname">{name}</span><span className="redwho">{who}</span>
                 <ul>{pts.map((x) => <li key={x}>{x}</li>)}</ul>
-                <span className="small muted">About {pageCount(model, id)} pages</span>
+                <span className="small muted">About {pageCount(model, id, appendix)} pages</span>
               </button>
             ))}
           </div>
@@ -184,7 +196,7 @@ export function Report() {
         <section className="card pad col noprint" aria-labelledby="r2">
           <div className="row" style={{ justifyContent: "space-between" }}>
             <h2 id="r2" style={{ fontSize: 24 }}>Which findings go in?</h2>
-            <span className="small" style={{ fontWeight: 800 }}>{chosen.length} selected · {pageCount(model, edition)} pages · {sci ? "Scientist" : "Simple"} edition</span>
+            <span className="small" style={{ fontWeight: 800 }}>{chosen.length} selected · about {pageCount(model, edition, appendix)} pages · {sci ? "Scientist" : "Explorer"} edition</span>
           </div>
           <p className="small muted" style={{ margin: 0 }}>Results from Explore and Hunt are listed in the order they will be printed. Tick what to include and use the arrows to reorder.</p>
           <ol className="rpick">
@@ -226,17 +238,17 @@ export function Report() {
               <div className="row" style={{ alignItems: "center", gap: 10 }}>
                 <span className="label" id="redlabel">Level of detail</span>
                 <div className="seg" role="group" aria-labelledby="redlabel">
-                  <button type="button" className={!sci ? "on" : ""} aria-pressed={!sci} onClick={() => setEdition("simple")}>Simple</button>
+                  <button type="button" className={!sci ? "on" : ""} aria-pressed={!sci} onClick={() => setEdition("simple")}>Explorer</button>
                   <button type="button" className={sci ? "on" : ""} aria-pressed={sci} onClick={() => setEdition("scientist")}>Scientist</button>
                 </div>
-                <span className="small" style={{ fontWeight: 800 }}>{pageCount(model, edition)} pages · A4</span>
+                <span className="small" style={{ fontWeight: 800 }}>about {pageCount(model, edition, appendix)} pages · A4</span>
               </div>
             </div>
             {nothing ? <p className="warn" style={{ margin: 0 }}>No finding is selected. Go back to step 2.</p> : (
               <div className="rgrid">
                 <div className="col" style={{ gap: 10 }}>
                   <label className="col" style={{ gap: 4 }}><span className="label">Report title</span>
-                    <input className="select" aria-label="Report title" value={title} maxLength={160} placeholder="Trend analysis of NASA Earth observation records" onChange={(e) => setTitle(e.target.value)} /></label>
+                    <input className="select" aria-label="Report title" value={title} maxLength={200} placeholder={defaultReportTitle(model)} onChange={(e) => setTitle(e.target.value)} /></label>
                   <label className="col" style={{ gap: 4 }}><span className="label">Prepared by</span>
                     <input className="select" aria-label="Prepared by" value={author} maxLength={120} placeholder="Optional" onChange={(e) => setAuthor(e.target.value)} /></label>
                   <details className="disclose" open>
@@ -250,7 +262,7 @@ export function Report() {
                               <input className="select" value={headlines[a.key] ?? ""} placeholder={defaultHeadline(a)} maxLength={200}
                                 aria-label={`Title for ${a.parameter}, ${a.place}`} onChange={(e) => setHeadlines((h) => ({ ...h, [a.key]: e.target.value }))} /></label>
                             {w && <span className="warn small" role="alert">{w}</span>}
-                            <textarea className="select" rows={2} value={notes[a.key] ?? ""} maxLength={400} placeholder="Author note (optional, printed as not part of the evidence)"
+                            <textarea className="select" rows={3} value={notes[a.key] ?? ""} maxLength={1000} placeholder="Author note (optional, printed as not part of the evidence)"
                               aria-label={`Author note for ${a.parameter}, ${a.place}`} onChange={(e) => setNotes((n) => ({ ...n, [a.key]: e.target.value }))} style={{ borderRadius: 16, padding: 10 }} />
                           </div>
                         );
@@ -273,20 +285,22 @@ export function Report() {
                   </div>
                   <nav aria-label="Pages" className="rpages">
                     <span className="label">Pages</span>
-                    <span className="small">1 Cover and abstract</span>
+                    <span className="small">1 {sci ? "Research summary" : "The discovery"}</span>
                     {[...model.analyses.map((a) => ({ k: a.key, t: `${a.parameter}, ${a.place}` })), ...model.comparisons.map((c) => ({ k: c.key, t: c.title }))].map((x, i) => (
                       <button key={x.k} type="button" className="linkbtn" style={{ textAlign: "left" }} onClick={() => document.getElementById(`rp-${x.k}`)?.scrollIntoView({ behavior: "auto", block: "start" })}>{i + 2} {x.t}</button>
                     ))}
-                    <span className="small">{sci ? "Methods and provenance, references" : "Methods and technical appendix"}</span>
+                    <span className="small">{sci ? "Methods, provenance and reproducibility; references" : `Behind the discovery: how it was done, key ideas, what it cannot tell us, sources${appendix ? "; technical appendix with glossary and full references" : ""}`}</span>
+                    {!sci && <label className="row small" style={{ gap: 8 }}><input type="checkbox" checked={appendix} onChange={(e) => setAppendix(e.target.checked)} /> Include a technical appendix (every number, glossary, full references)</label>}
                   </nav>
-                  <span className="small muted">In the print dialog choose "Save as PDF", paper A4 or Letter, and turn off "Headers and footers". Page numbers are part of the report.</span>
+                  <span className="small muted">In the print dialog choose the destination "Save as PDF" (it keeps the text selectable and searchable), paper A4 or Letter, and turn off "Headers and footers". Page numbers are part of the report.</span>
                 </div>
               </div>
             )}
             {caseBox}
             <div className="row"><button type="button" className="btn soft" onClick={() => setStep(2)}>Back</button></div>
           </section>
-          {!nothing && <EditionDoc m={model} edition={edition} title={title} author={author} headlines={headlines} notes={notes} />}
+          {!nothing && !sci && model.analyses.length > 0 && <ExplorerCompanion m={model} />}
+          {!nothing && <EditionDoc m={model} edition={edition} title={title} author={author} headlines={headlines} notes={notes} appendix={appendix} />}
         </>
       )}
     </div>

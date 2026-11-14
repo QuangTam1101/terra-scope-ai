@@ -1,0 +1,104 @@
+[
+ {
+  "id": "GR-01",
+  "variable_id": "merra2_air_temperature_2m",
+  "start": "2001-01",
+  "end": "2025-12",
+  "cells": 259200,
+  "significant_cells_api": 163713,
+  "oracle_seconds": 80.5,
+  "api_seconds": 1.0,
+  "checks": [
+   {
+    "check": "cells returned = cells with data (finite oracle slope)",
+    "pass": true,
+    "expected": 259200,
+    "actual": 259200
+   },
+   {
+    "check": "FDR family size (cells with a valid p)",
+    "pass": true,
+    "expected": 259200,
+    "actual": 259200
+   },
+   {
+    "check": "max |slope| delta (API 6 dp)",
+    "pass": true,
+    "delta": 4.999981504522077e-07
+   },
+   {
+    "check": "max |p| delta (API 6 dp)",
+    "pass": true,
+    "delta": 4.995046571555249e-07
+   },
+   {
+    "check": "max |q| delta, full-family BH (API 6 dp)",
+    "pass": true,
+    "delta": 4.987286926771972e-07
+   },
+   {
+    "check": "significance flags (q < alpha), excluding cells within rounding of alpha",
+    "pass": true,
+    "expected": 0,
+    "actual": 0,
+    "cells_near_alpha": 0
+   }
+  ],
+  "methodology_tie_correction": {
+   "cells_whose_fdr_verdict_changes_with_tie_correction": 0,
+   "max_p_reduction_from_tie_correction": 2.0092498160123595e-05
+  },
+  "status": "PASS"
+ },
+ {
+  "id": "GR-02",
+  "variable_id": "imerg_precip",
+  "start": "2001-01",
+  "end": "2024-12",
+  "cells": 258483,
+  "significant_cells_api": 73266,
+  "oracle_seconds": 80.1,
+  "api_seconds": 0.5,
+  "checks": [
+   {
+    "check": "cells returned = cells with data (finite oracle slope)",
+    "pass": true,
+    "expected": 258483,
+    "actual": 258483
+   },
+   {
+    "check": "FDR family size (cells with a valid p)",
+    "pass": true,
+    "expected": 257760,
+    "actual": 257760
+   },
+   {
+    "check": "max |slope| delta (API 6 dp)",
+    "pass": true,
+    "delta": 4.999923706172638e-07
+   },
+   {
+    "check": "max |p| delta (API 6 dp)",
+    "pass": true,
+    "delta": 4.998901374183608e-07
+   },
+   {
+    "check": "max |q| delta, full-family BH (API 6 dp)",
+    "pass": true,
+    "delta": 4.993489827569142e-07
+   },
+   {
+    "check": "significance flags (q < alpha), excluding cells within rounding of alpha",
+    "pass": true,
+    "expected": 0,
+    "actual": 0,
+    "cells_near_alpha": 0
+   }
+  ],
+  "methodology_tie_correction": {
+   "cells_whose_fdr_verdict_changes_with_tie_correction": 4151,
+   "max_p_reduction_from_tie_correction": 0.7627885238002985
+  },
+  "status": "PASS"
+ }
+]

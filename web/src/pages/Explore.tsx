@@ -10,6 +10,7 @@ import { trendGridF, valueGridF } from "../units";
 import { APPEEARS_URL, giovanniUrl } from "../config/giovanni";
 import { globalCells, gridMessage, regionalSteps, type GridOp } from "../progress";
 import { ExploreFurther } from "../ExploreFurther";
+import { Timelapse } from "../Timelapse";
 
 // Maps already loaded, kept for the whole visit (leaving and reopening Explore does not download them again).
 const GRID_CACHE = new Map<string, TrendGrid | ValueGrid>();
@@ -20,6 +21,7 @@ export function Explore() {
   const { variables, regions, sel, setSel, variable, runAnalysis, running, run, showError, go, tempUnit, setTempUnit, progress, cancelAnalysis, audience } = useStore();
   const sci = audience === "scientist";
   const [layer, setLayer] = useState<Layer>("trend");
+  const [timelapse, setTimelapse] = useState(false);   // 2D time-lapse replaces the static map while on
   const [month, setMonth] = useState<number | undefined>(undefined);
   const [trendGrid, setTrendGrid] = useState<TrendGrid | null>(null);
   const [valueGrid, setValueGrid] = useState<ValueGrid | null>(null);
@@ -74,7 +76,7 @@ export function Explore() {
   // Load the map layer for the chosen dataset and period (cached per combination). Before fetching, ask the
   // server whether this map is already computed so the message says what is really happening (Phase 8.5A).
   useEffect(() => {
-    if (!variable?.available) return;
+    if (!variable?.available || timelapse) return;
     const start = `${sel.startYear}-01`, end = `${sel.endYear}-12`;
     const key = `${layer}|${variable.id}|${start}|${end}|${layer === "values" ? month ?? "" : ""}`;
     const hit = GRID_CACHE.get(key);
@@ -96,7 +98,7 @@ export function Explore() {
     // Leaving this combination stops waiting for it (the browser drops the request; a server-side computation
     // that already started still finishes and is cached for next time).
     return () => { live = false; ctrl.abort(); };
-  }, [layer, variable, sel.startYear, sel.endYear, month, showError]);
+  }, [layer, variable, sel.startYear, sel.endYear, month, showError, timelapse]);
   const gridInfo = useMemo(() => variable ? gridMessage(gridOp, {
     dataset: `${variable.parameter_name}, ${variable.dataset_name}`, start: String(sel.startYear), end: String(sel.endYear),
     cells: globalCells(variable.spatial_resolution_deg), month: month ? MONTHS[month - 1] : undefined,
@@ -178,11 +180,12 @@ export function Explore() {
       <section ref={mapRef} className={`card pad col mapcard${expanded ? " map-expanded" : ""}`} aria-label="Map" data-tour="map">
         <div className="row" style={{ justifyContent: "space-between" }}>
           <div className="seg" role="group" aria-label="Map layer">
-            <button type="button" className={layer === "values" ? "on" : ""} aria-pressed={layer === "values"} onClick={() => setLayer("values")}>Values</button>
-            <button type="button" className={layer === "trend" ? "on" : ""} aria-pressed={layer === "trend"} onClick={() => setLayer("trend")}>Trend</button>
+            <button type="button" className={!timelapse && layer === "values" ? "on" : ""} aria-pressed={!timelapse && layer === "values"} onClick={() => { setTimelapse(false); setLayer("values"); }}>Values</button>
+            <button type="button" className={!timelapse && layer === "trend" ? "on" : ""} aria-pressed={!timelapse && layer === "trend"} onClick={() => { setTimelapse(false); setLayer("trend"); }}>Trend</button>
+            <button type="button" className={timelapse ? "on" : ""} aria-pressed={timelapse} onClick={() => setTimelapse(true)}>Time-lapse</button>
           </div>
           <span style={{ font: "800 14px var(--body)" }}>{variable?.parameter_name} · {variable?.dataset_name} · {sel.startYear} to {sel.endYear}</span>
-          {layer === "values" && (
+          {!timelapse && layer === "values" && (
             <select className="select" aria-label="Month filter" value={month ?? ""} onChange={(e) => setMonth(e.target.value ? Number(e.target.value) : undefined)}>
               <option value="">All months</option>
               {MONTHS.map((m, i) => <option key={m} value={i + 1}>Only {m}</option>)}
@@ -197,6 +200,10 @@ export function Explore() {
             </button>
           </div>
         </div>
+        {timelapse && variable?.available ? (
+          <Timelapse variable={variable} start={`${sel.startYear}-01`} end={`${sel.endYear}-12`} toF={toF}
+            bbox={sel.place.bbox[2] - sel.place.bbox[0] >= 360 ? null : sel.place.bbox} />
+        ) : <>
         <WorldMap layer={layer} trend={shownTrend} values={shownValues} loading={gridLoading} loadingInfo={gridInfo} units={units}
           selected={sel.place.bbox[2] - sel.place.bbox[0] >= 360 ? null : sel.place.bbox} selectedLabel={sel.place.label}
           onClear={() => runAnalysis({ place: WORLD })}
@@ -210,6 +217,7 @@ export function Explore() {
             Benjamini-Hochberg FDR across all cells of this map.
           </span>
         )}
+        </>}
       </section>
 
       {/* ---------- result ---------- */}

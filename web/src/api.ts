@@ -58,6 +58,11 @@ export interface HuntResponse {
   tiles_scanned: number; candidates: HuntCandidate[]; compatibility: string | null; runtime_ms: number;
   limits: { max_tiles: number; max_candidates: number; max_retests: number }; warnings: string[];
 }
+export interface FramesResponse {
+  variable_id: string; units: string; kind: "value" | "anomaly"; start: string; end: string; times: string[];
+  grid: { west: number; south: number; cell_deg: number; nlon: number; nlat: number };
+  scale: number; offset: number; missing: number; display_range: [number, number]; coarsen_factor: number; data_b64: string; note: string;
+}
 export interface ExplainResponse {
   answer: string; cited_numbers: { label: string; value: number; units: string; source_field: string }[];
   actions: { type: string; params: Record<string, unknown> }[]; disclaimer: string; model: string; warnings: string[];
@@ -160,6 +165,9 @@ export const api = {
     call<TrendGrid>("/trends/grid" + qs({ variable_id, start, end }), signal ? { signal } : undefined, 90000),
   valueGrid: (variable_id: string, start: string, end: string, month?: number, signal?: AbortSignal) =>
     call<ValueGrid>("/values/grid" + qs({ variable_id, start, end, month }), signal ? { signal } : undefined, 90000),
+  /** Time-lapse frames (display only): one grid per month, value or anomaly. */
+  valueFrames: (variable_id: string, start: string, end: string, kind: "value" | "anomaly", bbox?: BBox | null, signal?: AbortSignal) =>
+    call<FramesResponse>("/values/frames" + qs({ variable_id, start, end, kind, bbox: bbox ? bbox.join(",") : undefined }), signal ? { signal } : undefined, 120000),
   /** Is a map already computed? Cheap, no computation on the server. */
   gridStatus: (kind: "trend" | "values", variable_id: string, start: string, end: string, month?: number) =>
     call<{ kind: string; cached: boolean; available: boolean; cell_size_deg: number | null }>("/grids/status" + qs({ kind, variable_id, start, end, month }), undefined, 8000),

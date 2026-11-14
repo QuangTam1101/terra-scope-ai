@@ -102,7 +102,7 @@ function judge(c: ReportComparison): ComparisonEntry {
   if (sa !== null && sb !== null) {
     if (sa * sb > 0) agrees.push("Both estimated trends point in the same direction.");
     else if (sa * sb < 0) disagrees.push("The estimated trends point in opposite directions.");
-    disagrees.push(`The estimated rates differ by ${signedNum(sa - sb)} ${c.units} per decade (A minus B).`);
+    disagrees.push(`The two seasonal Sen slopes differ by ${signedNum(sa - sb)} ${c.units} per decade (A minus B, simple subtraction; the difference test estimates the trend of the anomaly difference series instead).`);
   }
   const la = verdictText(a), lb = verdictText(b);
   if (la === lb) agrees.push(`Both are classified "${la}".`);
@@ -191,7 +191,7 @@ export function toMarkdown(m: ReportModel, style: ReportStyle = "scientific"): s
       `Strength of evidence: ${c.strength}`, "", "What cannot be concluded:", ...c.cannotConclude.map((x) => `- ${x}`), "");
   }
   L.push("## Methods and provenance", "",
-    "Monthly values are averaged over the region on the processed grid. The raw Seasonal Mann-Kendall test (comparing matching calendar months across years) decides significance at α = 0.05 when at least 10 years and 70% of months have data. The seasonal Sen slope estimates the rate per decade. Hamed-Rao Mann-Kendall on anomalies is reported separately as an autocorrelation diagnostic. Region comparisons use a block-bootstrap test of the difference of slopes on anomalies.", "",
+    "Monthly values are averaged over the region on the processed grid. The raw Seasonal Mann-Kendall test (comparing matching calendar months across years) decides significance at α = 0.05 when at least 10 years and 70% of months have data. The seasonal Sen slope estimates the rate per decade. Hamed-Rao Mann-Kendall on anomalies is reported separately as an autocorrelation diagnostic. Region comparisons test the monthly anomaly difference series (A minus B) with the Hamed-Rao Mann-Kendall test, estimate its trend with the Sen slope and its 95% interval with a moving-block bootstrap (12-month blocks).", "",
     ...m.datasets.map((d) => `- ${d.product} v${d.version}, ${d.provider}: ${d.url}`), "",
     "## Limitations", "", ...m.limitations.map((l) => `- ${l}`), "");
   return L.join("\n");
