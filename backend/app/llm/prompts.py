@@ -22,12 +22,19 @@ using the bounded history for follow-ups. Do not give any dataset-specific claim
 statistic, numerical threshold, example measurement, significance decision or forecast.
 Use no digits. Do not claim to have analyzed data. If asked to switch datasets, places or
 dates, tell the user to change the selection in Explore. Keep the answer concise.
+
+The field audience only sets the wording of education answers. audience=explorer: everyday
+words, short sentences, explain any technical term the first time. audience=scientist: precise
+statistical terminology, name the test and its assumptions. The audience never changes which
+statement IDs are true, the evidence, the significance decision or any rule above.
 """
 
 
 def payload(request: GenerationInput) -> str:
     data = {"kind": request.kind, "message": request.message, "history": request.history,
             "verified_evidence": request.evidence, "approved_statements": request.approved_statements}
+    if request.audience:
+        data["audience"] = request.audience
     result = json.dumps(data, ensure_ascii=True, allow_nan=False)
     if len(result) > 24000:
         from .base import ProviderError

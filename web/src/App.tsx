@@ -4,7 +4,9 @@ import { Home } from "./pages/Home";
 import { Landing } from "./pages/Landing";
 import { Tour } from "./Tour";
 import { AppChrome } from "./chrome";
-import { markOnboardingDone, shouldAutoStart } from "./onboarding";
+import { isOnboardingDone, markOnboardingDone, shouldAutoStart, tourSteps } from "./onboarding";
+import { ModeSelect } from "./pages/ModeSelect";
+import { AUDIENCE_LABEL, lastAudience, type Audience } from "./audience";
 import { Component, lazy, Suspense, useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 
 // Home does not need the map atlas or analysis/chat pages at first load.
@@ -40,25 +42,39 @@ const HelpIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" aria-hidd
 const BackIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 
 function Shell() {
-  const { page, go, toast, clearToast, ready } = useStore();
+  const { page, go, toast, clearToast, ready, audience, setAudience } = useStore();
   const [tourOpen, setTourOpen] = useState(false);
+  // The tour keeps the audience it was opened for, even if the user switches mode while it is open.
+  const [tourAudience, setTourAudience] = useState<Audience>(audience);
+  const [tourOffer, setTourOffer] = useState<Audience | null>(null);
   const startedThisSession = useRef(false);
+  const offered = useRef(new Set<Audience>());
 
-  // Get Started: enter the app; first-time users get the guided tour once (completion is remembered locally).
-  const start = useCallback(() => {
+  const openTour = useCallback((a: Audience) => { setTourAudience(a); setTourOffer(null); setTourOpen(false); setTimeout(() => setTourOpen(true), 0); }, []);
+  // Get Started opens the experience choice; the choice enters the app and starts that audience's tour once.
+  const start = useCallback(() => go("start"), [go]);
+  const choose = useCallback((a: Audience) => {
+    setAudience(a);                                  // an explicit choice always wins over a stored preference
     go("explore");
-    if (shouldAutoStart(true, startedThisSession.current)) { startedThisSession.current = true; setTourOpen(true); }
-  }, [go]);
-  const replayTutorial = useCallback(() => { startedThisSession.current = true; setTourOpen(false); setTimeout(() => setTourOpen(true), 0); }, []);
+    if (shouldAutoStart(true, startedThisSession.current, undefined, a)) { startedThisSession.current = true; offered.current.add(a); openTour(a); }
+  }, [go, setAudience, openTour]);
+  // In-app switch: never interrupts work. A mode whose tour was never seen gets a small offer instead.
+  const switchAudience = useCallback((a: Audience) => {
+    if (a === audience) return;
+    setAudience(a);
+    if (!isOnboardingDone(undefined, a) && !offered.current.has(a)) { offered.current.add(a); setTourOffer(a); } else setTourOffer(null);
+  }, [audience, setAudience]);
+  const replayTutorial = useCallback(() => { startedThisSession.current = true; openTour(audience); }, [audience, openTour]);
   const toLanding = useCallback(() => { setTourOpen(false); go("landing"); }, [go]);
-  const closeTour = useCallback(() => { markOnboardingDone(); setTourOpen(false); }, []);
+  const closeTour = useCallback(() => { markOnboardingDone(undefined, tourAudience); setTourOpen(false); }, [tourAudience]);
   const chrome = useMemo(() => ({ replayTutorial, toLanding }), [replayTutorial, toLanding]);
 
   if (page === "landing") return <Landing onStart={start} />;
+  if (page === "start") return <ModeSelect last={lastAudience()} onChoose={choose} onBack={() => go("landing")} />;
 
   return (
     <AppChrome.Provider value={chrome}>
-    <div className="shell">
+    <div className={`shell aud-${audience}`} data-audience={audience}>
       <nav className="sidebar card" aria-label="Main">
         <span className="brand"><Terra size={34} /> Terra-scope</span>
         {NAV.map((n) => (
@@ -73,6 +89,22 @@ function Shell() {
         <span className="prelim" style={{ marginTop: 6 }}>Preliminary · not yet validated</span>
       </nav>
       <main className="main">
+        <div className="modebar" data-tour="mode-switch">
+          <span className="modebar-label" id="exp-label">Experience</span>
+          <div className="seg" role="group" aria-labelledby="exp-label">
+            {(["explorer", "scientist"] as Audience[]).map((a) => (
+              <button key={a} type="button" className={audience === a ? "on" : ""} aria-pressed={audience === a} onClick={() => switchAudience(a)}>{AUDIENCE_LABEL[a]}</button>
+            ))}
+          </div>
+          <span className="small muted modebar-hint">{audience === "explorer" ? "Plain-language explanations" : "Full statistics and methods"}. Same data and verdicts.</span>
+        </div>
+        {tourOffer && !tourOpen && (
+          <div className="tour-offer" role="status">
+            <span>Take a quick tour of {AUDIENCE_LABEL[tourOffer]} Mode?</span>
+            <button type="button" className="btn" onClick={() => openTour(tourOffer)}>Start tour</button>
+            <button type="button" className="btn ghost" onClick={() => setTourOffer(null)}>Skip</button>
+          </div>
+        )}
         {!ready && !toast && <div className="card pad">Connecting to the Terra-scope server…</div>}
         <PageBoundary key={page}><Suspense fallback={<div className="card pad" role="status" aria-live="polite">Loading page…</div>}>
         {page === "home" && <Home />}
@@ -94,7 +126,7 @@ function Shell() {
         <div className="toast" role="alert"><span style={{ flex: 1 }}>{toast}</span>
           <button type="button" aria-label="Dismiss" onClick={clearToast}>×</button></div>
       )}
-      <Tour open={tourOpen} page={page} go={go} onClose={closeTour} onReplay={replayTutorial} />
+      <Tour open={tourOpen} steps={tourSteps(tourAudience)} page={page} go={go} onClose={closeTour} onReplay={() => openTour(tourAudience)} />
     </div>
     </AppChrome.Provider>
   );

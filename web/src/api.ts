@@ -69,7 +69,7 @@ export interface ChatContext {
   parameter?: string;
 }
 export interface ChatHistoryTurn { role: "user" | "assistant"; content: string }
-export interface ChatRequest { message: string; context: ChatContext; history: ChatHistoryTurn[]; use_tools?: boolean }
+export interface ChatRequest { message: string; context: ChatContext; history: ChatHistoryTurn[]; use_tools?: boolean; audience_mode?: "explorer" | "scientist" }
 export interface ChatWarning {
   code: "TEMPLATE_MODE" | "ANALYSIS_WARNING" | "CONTEXT_REQUIRED" | "UNSUPPORTED_QUESTION" | "LLM_FALLBACK";
   message: string;

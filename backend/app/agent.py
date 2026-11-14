@@ -202,7 +202,8 @@ async def orchestrate(req, settings, limits, identifier, results):
             raise ProviderError('grounding')
         allowed = {'contextual_explanation': statistical_followup(req.message, TrendResponse.model_validate(stored))}
     request = GenerationInput("data", req.message, runtime.bounded_history(req),
-                              {"tool_results": [agent_payload(r) for r in results]}, allowed, identifier)
+                              {"tool_results": [agent_payload(r) for r in results]}, allowed, identifier,
+                              audience=getattr(req, "audience_mode", None))
     # Separate request: no tools mixed with response_json_schema.
     composer = create_composer(settings)
     draft = await composer.generate(request)
@@ -267,7 +268,8 @@ def explain_results(req, results, detail, identifier=None):
     error, status, reason = None, None, None
     try:
         request = GenerationInput("data", req.message, runtime.bounded_history(req),
-            {"tool_results": [agent_payload(r) for r in results]}, {"contextual_explanation": detail}, identifier)
+            {"tool_results": [agent_payload(r) for r in results]}, {"contextual_explanation": detail}, identifier,
+            audience=getattr(req, "audience_mode", None))
         async def compose():
             composer = create_composer(settings)
             draft = await composer.generate(request)

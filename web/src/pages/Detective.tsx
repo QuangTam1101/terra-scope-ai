@@ -7,6 +7,11 @@ import { ScientificPanel } from '../ScientificPanel';
 import { textToF } from "../units";
 import { Terra } from "../ui";
 
+export const EXPLORER_QUESTIONS = ["What does this result mean?", "Is the trend clear?", "Can you explain the p-value?",
+  "Why do these datasets disagree?", "What should I investigate next?"];
+export const SCIENTIST_QUESTIONS = ["What statistical test was applied?", "How was serial dependence handled?",
+  "What is the basis for the significance verdict?", "Was BH-FDR applied to raw p-values?", "Does the reported confidence interval correspond to Sen's slope?"];
+
 function Evidence({ evidence, fahrenheit }: { evidence: ChatEvidence; fahrenheit: boolean }) {
   const t = evidence.trend;
   const temperature = t.units === "degC" || t.units === "°C";
@@ -45,7 +50,7 @@ function Evidence({ evidence, fahrenheit }: { evidence: ChatEvidence; fahrenheit
 
 export function Detective() {
   const { run, sel, variable, regions, variables, runAnalysis, go, tempUnit, ready, chatContext, setSel, setHuntSelection,
-    chatTurns: turns, chatBusy: busy, sendChat, clearChat } = useStore();
+    chatTurns: turns, chatBusy: busy, sendChat, clearChat, audience } = useStore();
   const F = tempUnit === "F";
   const [text, setText] = useState("");
   const [navigationError, setNavigationError] = useState<string | null>(null);
@@ -136,7 +141,7 @@ export function Detective() {
       </div>
       {navigationError && <div className="warn" role="alert">{navigationError}</div>}
       <div className="row">
-        {(turns.filter((t) => t.response).at(-1)?.response?.suggested_questions ?? ["What is the trend for the current selection?", "List available variables", "List available regions", "What is a confidence interval?"]).map((s) => (
+        {(turns.filter((t) => t.response).at(-1)?.response?.suggested_questions ?? (audience === "scientist" ? SCIENTIST_QUESTIONS : EXPLORER_QUESTIONS)).map((s) => (
           <button key={s} type="button" className="chip" onClick={() => ask(s)} disabled={busy || !ready}>{s}</button>
         ))}
       </div>

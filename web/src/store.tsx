@@ -6,8 +6,9 @@ import { pageFromHash } from './pageRouting';
 import type { RegionalProgress } from "./progress";
 import type { ReportComparison } from "./report/model";
 import { CASE_SCHEMA, type CaseItem, type SavedCase } from "./cases";
+import { initialAudience, saveAudience, type Audience } from "./audience";
 
-export type Page = "landing" | "home" | "explore" | "forecast" | "hunt" | "detective" | "report";
+export type Page = "landing" | "start" | "home" | "explore" | "forecast" | "hunt" | "detective" | "report";
 
 export interface Place { ref: RegionRef; label: string; bbox: BBox }
 export interface Selection { parameter: string; variableId: string; startYear: number; endYear: number; place: Place }
@@ -29,6 +30,8 @@ interface Store {
   makeCase: (title: string) => SavedCase | null;
   openCase: (c: SavedCase) => Promise<{ ok: number; failed: number; changed: string[] }>;
   tempUnit: TempUnit; setTempUnit: (u: TempUnit) => void;
+  /** Presentation preference only (Explorer / Scientist). Kept apart from the scientific state above. */
+  audience: Audience; setAudience: (a: Audience) => void;
   toast: string | null; showError: (e: unknown) => void; clearToast: () => void;
   variable: Variable | undefined;
   chatTurns: ChatExchange[]; chatBusy: boolean;
@@ -82,6 +85,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<string | null>(null);
   const [tempUnit, setTempUnitState] = useState<TempUnit>(() => { try { return localStorage.getItem("tempUnit") === "F" ? "F" : "C"; } catch { return "C"; } });
   const setTempUnit = useCallback((u: TempUnit) => { setTempUnitState(u); try { localStorage.setItem("tempUnit", u); } catch { /* private mode */ } }, []);
+  // Switching audience only changes this value: no request is made, nothing in the analysis state is touched.
+  const [audience, setAudienceState] = useState<Audience>(() => initialAudience());
+  const setAudience = useCallback((a: Audience) => { setAudienceState(a); saveAudience(a); }, []);
   const reqId = useRef(0);
   const runCtrl = useRef<AbortController | null>(null);
   const [progress, setProgress] = useState<RegionalProgress | null>(null);
@@ -91,6 +97,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [chatContext, setChatContext] = useState<ChatContext | null>(null);
   const [huntSelection, setHuntSelection] = useState<{ a: string; b: string } | null>(null);
   const chatInFlight = useRef(false);
+  const audienceRef = useRef(audience);
+  audienceRef.current = audience;
 
   const sendChat = useCallback(async (message: string, context: ChatContext) => {
     const question = message.trim();
@@ -104,7 +112,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setChatTurns((t) => [...t, { id, question, context }]);
     setChatBusy(true);
     try {
-      const response = await api.chat({ message: question, context, history: prior, use_tools: true });
+      const response = await api.chat({ message: question, context, history: prior, use_tools: true, audience_mode: audienceRef.current });
       setChatTurns((turns) => turns.map((t) => t.id === id ? { ...t, response } : t));
       if (response.resolved_context) setChatContext(response.resolved_context);
     } catch (e) {
@@ -238,10 +246,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<Store>(() => ({
     page, go, variables: shown.variables, regions, ready, sel, setSel, run: shown.run, running, runAnalysis, progress, cancelAnalysis, history: shown.history, comparisons, addComparison, removeReportItem, backendVersion, makeCase, openCase,
-    toast, showError, clearToast: () => setToast(null), tempUnit, setTempUnit,
+    toast, showError, clearToast: () => setToast(null), tempUnit, setTempUnit, audience, setAudience,
     variable: shown.variables.find((v) => v.id === sel.variableId),
     chatTurns, chatBusy, sendChat, clearChat, chatContext, huntSelection, setHuntSelection,
-  }), [page, go, shown, regions, ready, sel, setSel, running, runAnalysis, progress, cancelAnalysis, comparisons, addComparison, removeReportItem, backendVersion, makeCase, openCase, toast, showError, tempUnit, setTempUnit,
+  }), [page, go, shown, regions, ready, sel, setSel, running, runAnalysis, progress, cancelAnalysis, comparisons, addComparison, removeReportItem, backendVersion, makeCase, openCase, toast, showError, tempUnit, setTempUnit, audience, setAudience,
        chatTurns, chatBusy, sendChat, clearChat, chatContext, huntSelection]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

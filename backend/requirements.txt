@@ -11,6 +11,11 @@ xarray
 netCDF4
 scipy
 pymannkendall
+# forecast models (forecast_service loads data-pipeline/models/*.joblib at start-up; release forecast-models-v1
+# was trained with scikit-learn 1.9 and pickles pandas data that needs pyarrow)
+scikit-learn>=1.9,<1.10
+joblib
+pyarrow
 # test
 pytest
 httpx

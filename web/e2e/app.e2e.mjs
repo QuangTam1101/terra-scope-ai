@@ -20,12 +20,19 @@ describe("Terra-scope full feature E2E", { skip: !up && "servers not running", c
   before(async () => { page = await launch(); await mkdir(OUT, { recursive: true }); });
   after(async () => { await page?.close(); });
 
-  it("landing page and guided tutorial", async () => {
+  it("landing page, experience choice and guided tutorial", async () => {
     await page.goto(APP + "/");
     await page.waitFor(`document.querySelector("h1")?.innerText.includes("Discover Earth")`);
     assert.equal(await page.evaluate(`return document.querySelectorAll("h1").length`), 1);
     await page.click(byText("button", "Get Started"));
+    // Get Started opens the experience choice: two balanced cards, no default selection.
+    await page.waitFor(`location.hash === "#start" && document.querySelectorAll(".ms-card").length === 2`, { label: "experience choice" });
+    const choice = await page.evaluate(`return document.querySelector(".modeselect").innerText`);
+    assert.match(choice, /How would you like to explore Earth\?/);
+    assert.match(choice, /Continue as Explorer/); assert.match(choice, /Continue as Scientist/);
+    await page.click(byText("button", "Continue as Explorer"));
     await page.waitFor(`location.hash === "#explore"`);
+    assert.equal(await page.evaluate(`return localStorage.getItem("terra-scope:audience-mode:v1")`), "explorer");
     await page.waitFor(`document.querySelector('[role="dialog"]')`, { label: "tour dialog" });
     const tourText = await page.evaluate(`return document.querySelector('[role="dialog"]').innerText`);
     assert.match(tourText, /1\s*(of|\/)\s*12|Welcome/i);
@@ -58,6 +65,23 @@ describe("Terra-scope full feature E2E", { skip: !up && "servers not running", c
     assert.match(href, /giovanni\.gsfc\.nasa\.gov\/giovanni\/#service=ArAvTs/);
     assert.match(href, /data=GPM_3IMERGM_07_precipitation/);
     assert.match(href, /endtime=2025-09-30/, "IMERG link is capped at Giovanni's last month");
+  });
+
+  it("experience switch keeps the analysis and makes no new request", async () => {
+    const before = await page.evaluate(`return document.querySelector(".result").innerText`);
+    const n0 = await page.evaluate(`return performance.getEntriesByType("resource").filter(e => e.name.includes("/api/v1/trends") || e.name.includes("/api/v1/series")).length`);
+    await page.click(byText(".modebar button", "Scientist"));
+    await page.waitFor(`document.querySelector(".shell").dataset.audience === "scientist" && /Analysis metadata/.test(document.querySelector(".result").innerText)`, { label: "scientist view" });
+    const sci = await page.evaluate(`return document.querySelector(".result").innerText`);
+    const num = (s) => s.match(/([+−-]\d+\.\d+)\s*mm\/month/)[1];
+    assert.equal(num(sci), num(before), "same slope in both modes");
+    assert.match(sci, /Raw Seasonal MK p/);
+    assert.match(await page.evaluate(`return document.querySelector(".tour-offer")?.innerText ?? ""`), /Take a quick tour of Scientist Mode/);
+    const n1 = await page.evaluate(`return performance.getEntriesByType("resource").filter(e => e.name.includes("/api/v1/trends") || e.name.includes("/api/v1/series")).length`);
+    assert.equal(n1, n0, "switching mode must not recompute");
+    await page.click(byText(".tour-offer button", "Skip"));
+    await page.click(byText(".modebar button", "Explorer"));
+    await page.waitFor(`document.querySelector(".shell").dataset.audience === "explorer" && /What did we find/.test(document.querySelector(".result").innerText)`, { label: "explorer view" });
   });
 
   it("explore: map overlay names the real grid operation", async () => {
@@ -128,21 +152,34 @@ describe("Terra-scope full feature E2E", { skip: !up && "servers not running", c
     assert.match(t, /Backend tools: analyze_trend: verified|analyze_trend/);
   });
 
-  it("report: multi-page document, exports, save and reopen a case, PDF", async () => {
+  it("report (Form D): reader, findings, preview; both editions, exports, save and reopen a case, PDF", async () => {
     await page.click(byText("button.nav", "Report"));
-    await page.waitFor(`document.querySelectorAll(".rpage").length >= 3`);
+    // Step 1: who will read it (defaults to the current Experience: Explorer = Simple).
+    await page.waitFor(`document.querySelectorAll(".redcard").length === 2`, { label: "edition cards" });
+    assert.equal(await page.evaluate(`return document.querySelector('.redcard[aria-checked="true"] .redname').innerText`), "Simple");
+    await page.click(byText("button", "Next: pick findings"));
+    // Step 2: findings in print order, with stamps.
+    await page.waitFor(`document.querySelectorAll(".rpick li").length >= 2`, { label: "finding list" });
+    await page.click(byText("button", "Next: preview"));
+    // Step 3: Simple edition, academic wording, same numbers, technical appendix.
+    await page.waitFor(`document.querySelector(".report-doc")?.getAttribute("aria-label") === "Simple edition report"`, { label: "simple edition" });
+    const plain = await page.evaluate(`return document.querySelector(".report-doc").innerText`);
+    for (const s of ["Abstract", "Strength of evidence", "null hypothesis of no monotonic trend", "Technical appendix", "not a Sen confidence interval", "Data and references"]) assert.ok(plain.includes(s), `simple: ${s}`);
+    await page.evaluate(`const i = document.querySelector('input[aria-label="Report title"]'); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(i, "E2E case"); i.dispatchEvent(new Event("input", {bubbles: true})); return true;`);
+    await page.waitFor(`/E2E case/.test(document.querySelector(".report-doc h1").innerText)`, { label: "title on the cover" });
+    await page.click(byText(".report-page .seg button", "Scientist"));
+    await page.waitFor(`document.querySelector(".report-doc")?.getAttribute("aria-label") === "Scientist edition report"`, { label: "scientist edition" });
     const pages = await page.evaluate(`return document.querySelectorAll(".rpage").length`);
     const overflow = await page.evaluate(`return [...document.querySelectorAll(".rpage")].some(p => p.scrollWidth > p.clientWidth + 1)`);
     assert.ok(pages >= 4 && !overflow, `${pages} pages, overflow ${overflow}`);
     const doc = await page.evaluate(`return document.querySelector(".report-doc").innerText`);
-    for (const s of ["Scientific Evidence Report", "Executive summary", "Raw Seasonal MK p", "not a Sen confidence interval", "Methods and provenance", "Comparison"])
+    for (const s of ["Scientist edition", "Abstract", "Table 1. Summary of findings", "Raw Seasonal MK p", "not a Sen confidence interval", "Methods and provenance", "Comparison", "References"])
       assert.ok(doc.includes(s) || new RegExp(s, "i").test(doc), s);
     assert.ok(!doc.includes("—"), "no long dash in the report");
     const pdf = await page.pdf();
     await writeFile(new URL("report.pdf", OUT), pdf);
     const pdfPages = (pdf.toString("latin1").match(/\/Type\s*\/Page[^s]/g) ?? []).length;
     assert.ok(pdfPages >= pages, `PDF has ${pdfPages} pages for ${pages} report pages`);
-    await page.evaluate(`const i = document.querySelector('input[aria-label="Case title"]'); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(i, "E2E case"); i.dispatchEvent(new Event("input", {bubbles: true})); return true;`);
     await page.click(byText("button", "Save case"));
     await page.waitFor(`/Saved "E2E case"/.test(document.querySelector(".casebox").innerText)`);
     await page.reload();   // real reload: in-memory results are gone, the saved case is in storage

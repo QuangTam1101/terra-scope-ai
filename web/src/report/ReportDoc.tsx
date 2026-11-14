@@ -92,11 +92,11 @@ export function LocatorMap({ boxes, height = 300 }: { boxes: { bbox: [number, nu
   );
 }
 
-function KV({ rows }: { rows: [string, React.ReactNode][] }) {
+export function KV({ rows }: { rows: [string, React.ReactNode][] }) {
   return <dl className="rkv">{rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>;
 }
 
-const Head = ({ m, title }: { m: ReportModel; title: string }) => (
+export const Head = ({ m, title }: { m: ReportModel; title: string }) => (
   <header className="rhead"><span className="rbrand"><Terra size={26} /> TERRA-SCOPE AI</span><span>{title}</span><span>{m.id}</span></header>
 );
 
@@ -201,32 +201,39 @@ export function ReportDoc({ m }: { m: ReportModel }) {
       </section>
       {m.analyses.map((a, i) => <AnalysisPages key={a.key} m={m} a={a} i={i} />)}
       {m.comparisons.map((c) => <ComparisonPage key={c.key} m={m} c={c} />)}
-      <section className="rpage">
-        <Head m={m} title="Methods and provenance" />
-        <h2>Methods and provenance</h2>
-        <table className="rtable">
-          <thead><tr><th scope="col" style={{ width: "46%" }}>Product</th><th scope="col">Provider</th><th scope="col">Native grid</th><th scope="col">Processed grid</th></tr></thead>
-          <tbody>{m.datasets.map((d) => (
-            <tr key={d.product}><td>{d.product} v{d.version}<br /><a className="rurl" href={d.url}>{d.url.replace(/^https?:\/\//, "")}</a></td><td>{d.provider}</td>
-              <td>{Number.isFinite(d.nativeDeg) ? `${d.nativeDeg}°` : "see product page"}</td><td>{Number.isFinite(d.gridDeg) ? `${d.gridDeg}°` : "see product page"}</td></tr>
-          ))}</tbody>
-        </table>
-        <KV rows={[
-          ["Aggregation", "Monthly values; regional series are area averages of all grid cells in the box."],
-          ["Seasonality", "Anomalies remove each calendar month's long-term mean (used for charts, the OLS interval and the adjusted test)."],
-          ["Trend test", "Seasonal Mann-Kendall (raw p-value) decides significance; α = 0.05; requires at least 10 years and 70% of months."],
-          ["Rate", "Seasonal Sen slope, reported per decade."],
-          ["Interval", "95% interval of the OLS slope of anomalies (ols_anomaly). It is a different estimator from Sen and has no HAC adjustment."],
-          ["Autocorrelation", "Hamed-Rao modified Mann-Kendall on anomalies is shown as a diagnostic; it does not change the verdict."],
-          ["Comparisons", "Two regions: block-bootstrap test of the difference of slopes on anomalies. Two datasets: descriptive only."],
-          ["Software", `Terra-scope backend ${m.backendVersion}; NASA data obtained through GES DISC (Harmony) and processed to a common grid.`],
-          ["Reproduce", "The JSON export lists every request (variable, region, period, method, α) and the result it returned."],
-        ]} />
-        <h3>Limitations</h3>
-        <ul>{m.limitations.map((l) => <li key={l}>{l}</li>)}</ul>
-        <p className="rdisc">Terra-scope AI is a student project for the NASA Space Apps Challenge 2026. It uses publicly available NASA data. It is not an
-          official NASA product, and NASA does not endorse it. Statistical significance is not the same as practical importance.</p>
-      </section>
+      <MethodsPage m={m} />
     </article>
+  );
+}
+
+/** Methods, provenance and limitations: the same page in both report styles (the Plain-language report uses it as its appendix). */
+export function MethodsPage({ m }: { m: ReportModel }) {
+  return (
+      <section className="rpage">
+      <Head m={m} title="Methods and provenance" />
+      <h2>Methods and provenance</h2>
+      <table className="rtable">
+        <thead><tr><th scope="col" style={{ width: "46%" }}>Product</th><th scope="col">Provider</th><th scope="col">Native grid</th><th scope="col">Processed grid</th></tr></thead>
+        <tbody>{m.datasets.map((d) => (
+          <tr key={d.product}><td>{d.product} v{d.version}<br /><a className="rurl" href={d.url}>{d.url.replace(/^https?:\/\//, "")}</a></td><td>{d.provider}</td>
+            <td>{Number.isFinite(d.nativeDeg) ? `${d.nativeDeg}°` : "see product page"}</td><td>{Number.isFinite(d.gridDeg) ? `${d.gridDeg}°` : "see product page"}</td></tr>
+        ))}</tbody>
+      </table>
+      <KV rows={[
+        ["Aggregation", "Monthly values; regional series are area averages of all grid cells in the box."],
+        ["Seasonality", "Anomalies remove each calendar month's long-term mean (used for charts, the OLS interval and the adjusted test)."],
+        ["Trend test", "Seasonal Mann-Kendall (raw p-value) decides significance; α = 0.05; requires at least 10 years and 70% of months."],
+        ["Rate", "Seasonal Sen slope, reported per decade."],
+        ["Interval", "95% interval of the OLS slope of anomalies (ols_anomaly). It is a different estimator from Sen and has no HAC adjustment."],
+        ["Autocorrelation", "Hamed-Rao modified Mann-Kendall on anomalies is shown as a diagnostic; it does not change the verdict."],
+        ["Comparisons", "Two regions: block-bootstrap test of the difference of slopes on anomalies. Two datasets: descriptive only."],
+        ["Software", `Terra-scope backend ${m.backendVersion}; NASA data obtained through GES DISC (Harmony) and processed to a common grid.`],
+        ["Reproduce", "The JSON export lists every request (variable, region, period, method, α) and the result it returned."],
+      ]} />
+      <h3>Limitations</h3>
+      <ul>{m.limitations.map((l) => <li key={l}>{l}</li>)}</ul>
+      <p className="rdisc">Terra-scope AI is a student project for the NASA Space Apps Challenge 2026. It uses publicly available NASA data. It is not an
+        official NASA product, and NASA does not endorse it. Statistical significance is not the same as practical importance.</p>
+    </section>
   );
 }

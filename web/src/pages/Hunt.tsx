@@ -28,15 +28,25 @@ const tab = ["compare", "discover", "datasets"] as const;
 export function Hunt() {
   const [mode, setMode] = useState<(typeof tab)[number]>("compare");
   const [preset, setPreset] = useState<{ a: Opt; b: Opt; run: number } | null>(null);
+  const { audience } = useStore();
+  const sci = audience === "scientist";
   return (
     <div className="page">
       <section className="card pad col" data-tour="hunt">
-        <h1 style={{ fontSize: 30 }}>Contradiction hunt</h1>
-        <p className="muted" style={{ margin: 0, font: "600 15px/1.5 var(--body)" }}>
-          Can the same variable rise in one place and fall in another, or can two NASA products disagree? A contradiction is confirmed only when the
-          trends point in opposite directions <b>and</b> the difference between them is statistically significant. Everything else is labelled as
-          descriptive or inconclusive.
-        </p>
+        <h1 style={{ fontSize: 30 }}>{sci ? "Contradiction hunt" : "Where do the results disagree?"}</h1>
+        {sci ? (
+          <p className="muted" style={{ margin: 0, font: "600 15px/1.5 var(--body)" }}>
+            Two regions: block-bootstrap test of the difference of seasonal Sen slopes on anomalies; a contradiction is confirmed only when the
+            trends have opposite signs <b>and</b> the difference has p below 0.05 with a 95% interval that excludes zero. Dataset pairs have no
+            approved difference test and are reported as descriptive only.
+          </p>
+        ) : (
+          <p className="muted" style={{ margin: 0, font: "600 16px/1.55 var(--body)" }}>
+            The same thing can go up in one place and down in another, and two NASA datasets can tell different stories. Here you can compare them.
+            We only say two places really differ when the test is clear about the difference itself; everything else is shown as "not confirmed".
+            Comparing does not tell us <b>why</b> they differ.
+          </p>
+        )}
         <div className="seg" role="tablist" aria-label="Hunt mode">
           {([["compare", "Compare two places"], ["discover", "Discover contradictions"], ["datasets", "Dataset agreement"]] as const).map(([k, t]) => (
             <button key={k} type="button" role="tab" aria-selected={mode === k} className={mode === k ? "on" : ""} onClick={() => setMode(k)}>{t}</button>

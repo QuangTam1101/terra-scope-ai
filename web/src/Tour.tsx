@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { clampStep, TOUR_STEPS, type TourPage } from "./onboarding";
+import { clampStep, TOUR_STEPS, type TourPage, type TourStep } from "./onboarding";
 import { Terra } from "./ui";
 
 interface Props {
   open: boolean;
+  steps?: TourStep[];
   page: string;
   go: (p: TourPage) => void;
   onClose: (completed: boolean) => void;
@@ -17,15 +18,15 @@ const WAIT_MS = 4000;     // how long to wait for a target after navigating
  * Spotlight guided tour. It only navigates between pages and highlights existing controls: it never runs an
  * analysis, never calls Gemini and never changes the user's selection. Escape or "Skip tutorial" closes it.
  */
-export function Tour({ open, page, go, onClose, onReplay }: Props) {
+export function Tour({ open, steps = TOUR_STEPS, page, go, onClose, onReplay }: Props) {
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [missing, setMissing] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const restoreFocus = useRef<HTMLElement | null>(null);
   const wasOpen = useRef(false);
-  const step = TOUR_STEPS[clampStep(index)];
-  const last = index === TOUR_STEPS.length - 1;
+  const step = steps[clampStep(index, steps.length)];
+  const last = index === steps.length - 1;
 
   // Remember where focus was; give it back when the tour closes.
   useEffect(() => {
@@ -81,8 +82,8 @@ export function Tour({ open, page, go, onClose, onReplay }: Props) {
   }, [open, step]);
 
   const close = useCallback((completed: boolean) => onClose(completed), [onClose]);
-  const next = () => (last ? close(true) : setIndex((i) => clampStep(i + 1)));
-  const back = () => setIndex((i) => clampStep(i - 1));
+  const next = () => (last ? close(true) : setIndex((i) => clampStep(i + 1, steps.length)));
+  const back = () => setIndex((i) => clampStep(i - 1, steps.length));
 
   // Keyboard: Escape closes, arrows move, Tab stays inside the tour card.
   useEffect(() => {
@@ -138,12 +139,12 @@ export function Tour({ open, page, go, onClose, onReplay }: Props) {
         </div>
         <p id="tour-body">{step.body}</p>
         {missing && <p className="small muted" role="status">This part of the screen is not available right now, so it is not highlighted.</p>}
-        <div className="tour-progress" role="progressbar" aria-label="Tutorial progress" aria-valuemin={1} aria-valuemax={TOUR_STEPS.length} aria-valuenow={index + 1}
-          aria-valuetext={`Step ${index + 1} of ${TOUR_STEPS.length}`}>
-          <span style={{ width: `${((index + 1) / TOUR_STEPS.length) * 100}%` }} />
+        <div className="tour-progress" role="progressbar" aria-label="Tutorial progress" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={index + 1}
+          aria-valuetext={`Step ${index + 1} of ${steps.length}`}>
+          <span style={{ width: `${((index + 1) / steps.length) * 100}%` }} />
         </div>
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-          <span className="small muted num">Step {index + 1} of {TOUR_STEPS.length}</span>
+          <span className="small muted num">Step {index + 1} of {steps.length}</span>
           {last ? (
             <div className="row" style={{ gap: 8 }}>
               <button type="button" className="btn soft" onClick={() => { setIndex(0); onReplay(); }}>Replay Tutorial</button>

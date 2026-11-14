@@ -185,7 +185,8 @@ def enhance(req: ChatRequest, template: Callable[[ChatRequest], ChatResponse], *
     evidence = base.evidence[0] if kind == "data" else None
     request = GenerationInput(kind=kind, message=req.message, history=bounded_history(req),
                               evidence=verified_summary(evidence) if evidence else None,
-                              approved_statements=approved_statements(evidence) if evidence else {}, request_id=identifier)
+                              approved_statements=approved_statements(evidence) if evidence else {}, request_id=identifier,
+                              audience=getattr(req, "audience_mode", None))
     if not budget.enter(settings.requests_per_minute):
         return use_template(base, budget.reason)
     error = None

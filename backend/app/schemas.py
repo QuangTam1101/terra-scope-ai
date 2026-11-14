@@ -333,6 +333,9 @@ class ChatRequest(BaseModel):
     context: ChatContext = Field(default_factory=ChatContext)
     history: list[ChatHistoryTurn] = Field(default_factory=list, max_length=24)
     use_tools: bool = False
+    # Presentation preference only. It may change tone and depth of wording, never evidence, tools, numbers or
+    # decision rules. None keeps the original (pre dual-audience) wording.
+    audience_mode: Literal["explorer", "scientist"] | None = None
 
 
 class ChatWarning(BaseModel):

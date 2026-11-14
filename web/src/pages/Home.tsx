@@ -2,6 +2,30 @@ import { useContext, type ReactNode } from "react";
 import { AppChrome } from "../chrome";
 import { useStore, WORLD } from "../store";
 import { Terra } from "../ui";
+import { GLOSSARY } from "../glossary";
+
+/** Glossary list: plain definition for Explorer, technical definition for Scientist, the other one in a second line. */
+function ScienceWords() {
+  const { audience } = useStore();
+  const sci = audience === "scientist";
+  return (
+    <section className="card pad col" aria-labelledby="words">
+      <h2 id="words" style={{ fontSize: 22 }}>{sci ? "Glossary" : "Science words, explained"}</h2>
+      <details className="disclose">
+        <summary>{sci ? "Show all terms with technical definitions" : "Show all words"}</summary>
+        <div className="glossary-list">
+          {Object.entries(GLOSSARY).map(([id, g]) => (
+            <div key={id}>
+              <b style={{ font: "600 15px var(--display)" }}>{g.term}</b>
+              <p style={{ margin: "4px 0 0" }}>{sci ? g.technical : g.plain}</p>
+              <p className="small muted" style={{ margin: "4px 0 0" }}>{sci ? `In plain words: ${g.plain}` : `Example: ${g.example}`}</p>
+            </div>
+          ))}
+        </div>
+      </details>
+    </section>
+  );
+}
 
 // Home = a visual user guide: pictures first, as few words as possible.
 
@@ -295,6 +319,8 @@ export function Home() {
           ))}
         </div>
       </section>
+
+      <ScienceWords />
 
       {/* limits */}
       <section className="row" aria-label="Good to know" style={{ gap: 10 }}>

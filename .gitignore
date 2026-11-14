@@ -1,2 +1,6 @@
 # Local Python environment created by developers (scripts/start-local.ps1 expects it here)
 .venv/
+
+# forecast model downloads and backups (large binary files)
+.release-staging/
+data-pipeline/models_local_backup/

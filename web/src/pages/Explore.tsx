@@ -4,7 +4,8 @@ import { areaPlace, cellPlace, useStore, WORLD } from "../store";
 import { PlacePicker } from "../PlacePicker";
 import { Legend, WorldMap, type Layer } from "../WorldMap";
 import { TrendChart } from "../TrendChart";
-import { ci, pval, signed, Stat, Terra, VerdictBadge } from "../ui";
+import { Terra } from "../ui";
+import { ExplorerResult, ScientistResult } from "../ResultViews";
 import { trendGridF, valueGridF } from "../units";
 import { APPEEARS_URL, giovanniUrl } from "../config/giovanni";
 import { globalCells, gridMessage, regionalSteps, type GridOp } from "../progress";
@@ -16,7 +17,8 @@ const GRID_CACHE = new Map<string, TrendGrid | ValueGrid>();
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 export function Explore() {
-  const { variables, regions, sel, setSel, variable, runAnalysis, running, run, showError, go, tempUnit, setTempUnit, progress, cancelAnalysis } = useStore();
+  const { variables, regions, sel, setSel, variable, runAnalysis, running, run, showError, go, tempUnit, setTempUnit, progress, cancelAnalysis, audience } = useStore();
+  const sci = audience === "scientist";
   const [layer, setLayer] = useState<Layer>("trend");
   const [month, setMonth] = useState<number | undefined>(undefined);
   const [trendGrid, setTrendGrid] = useState<TrendGrid | null>(null);
@@ -111,9 +113,9 @@ export function Explore() {
     <div className="explore">
       {/* ---------- set-up: variable → dataset → time range → place ---------- */}
       <section className="card pad col" aria-labelledby="setup">
-        <h2 id="setup" style={{ fontSize: 22 }}>Set up your case</h2>
+        <h2 id="setup" style={{ fontSize: 22 }}>{sci ? "Analysis parameters" : "Set up your case"}</h2>
         <div className="col" style={{ gap: 8 }} data-tour="variable">
-          <span className="label">1 · Environmental variable</span>
+          <span className="label">{sci ? "1 · Variable" : "1 · What would you like to investigate?"}</span>
           <div className="row" style={{ gap: 6 }}>
             {parameters.map(([id, p]) => (
               <button key={id} type="button" className={`chip ${sel.parameter === id ? "on" : ""}`} disabled={!p.available}
@@ -122,7 +124,7 @@ export function Explore() {
               </button>
             ))}
           </div>
-          {variable && <span className="small muted">{variable.description_simple}</span>}
+          {variable && <span className="small muted">{sci ? variable.description_technical : variable.description_simple}</span>}
           {isTemp && (
             <div className="row" style={{ gap: 8 }}>
               <span className="small muted">Show temperature in</span>
@@ -134,7 +136,7 @@ export function Explore() {
           )}
         </div>
         <div className="col" style={{ gap: 8 }} data-tour="dataset">
-          <span className="label">2 · Dataset</span>
+          <span className="label">{sci ? "2 · Product" : "2 · Which NASA dataset should we use?"}</span>
           <div className="row" style={{ gap: 6 }}>
             {datasets.map((d) => (
               <button key={d.id} type="button" className={`chip ${sel.variableId === d.id ? "on" : ""}`} disabled={!d.available}
@@ -148,7 +150,7 @@ export function Explore() {
           )}
         </div>
         <div className="col" style={{ gap: 8 }} data-tour="years">
-          <span className="label">3 · Time range</span>
+          <span className="label">{sci ? "3 · Period (monthly series)" : "3 · During which period?"}</span>
           <div className="row">
             <label className="small muted">From{" "}
               <select className="select" value={sel.startYear} onChange={(e) => setSel({ startYear: Number(e.target.value) })}>
@@ -164,11 +166,11 @@ export function Explore() {
           {sel.endYear - sel.startYear + 1 < 10 && <span className="small muted">Testing needs at least 10 years.</span>}
         </div>
         <div className="col" style={{ gap: 8 }} data-tour="place">
-          <span className="label">4 · Place</span>
+          <span className="label">{sci ? "4 · Region (latitude-longitude box)" : "4 · Where on Earth?"}</span>
           <PlacePicker />
         </div>
         <button type="button" className="btn" data-tour="run" disabled={running || !variable?.available || sel.startYear > sel.endYear} onClick={() => runAnalysis()}>
-          {running ? "Testing…" : "Run analysis"}
+          {running ? "Testing…" : sci ? "Run analysis" : "Analyze the data"}
         </button>
       </section>
 
@@ -211,7 +213,7 @@ export function Explore() {
       </section>
 
       {/* ---------- result ---------- */}
-      <section className="card pad col result" aria-live="polite" aria-labelledby="result">
+      <section className="card pad col result" aria-live="polite" aria-labelledby="result" data-tour="result">
         <h2 id="result" style={{ fontSize: 22 }}>Result</h2>
         {running && progress && (() => {
           const p = regionalSteps(progress);
@@ -280,47 +282,20 @@ function ChartCard() {
 }
 
 function ResultBody() {
-  const { run, go } = useStore();
+  const { run, go, audience } = useStore();
   if (!run) return null;
   const { trend: t, variable: v, place } = run;
-  const u = v.display_units;
-  const q = t.quality;
-  return (
-    <div className="col">
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <VerdictBadge t={t} />
-        <span className="small muted" style={{ fontWeight: 700 }}>{place.label} · {v.dataset_name}</span>
-      </div>
-      {q.sufficient && t.slope_per_decade !== null ? (
-        <div><span className="num" style={{ font: "600 46px/1 var(--display)" }}>{signed(t.slope_per_decade)} {u}</span>{" "}
-          <span style={{ font: "800 16px var(--body)" }}>per decade</span></div>
-      ) : (
-        <p className="warn" style={{ margin: 0 }}>Not enough data to test this trend: at least 10 years and 70% of months are needed. Try a longer period.</p>
-      )}
-      <p style={{ margin: 0, font: "600 15px/1.5 var(--body)" }}>{t.plain_summary}</p>
-      <div className="grid2">
-        <Stat value={signed(t.slope_per_decade)} label={`Sen's slope per decade (${u})`} title="Theil–Sen slope from the Seasonal Mann–Kendall test" />
-        <Stat value={ci(t.slope_ci)} label="95% OLS anomaly CI" title="Targets OLS slope, not seasonal Sen slope; no HAC adjustment" />
-        <Stat value={pval(t.p_value)} label="Raw Seasonal MK p (verdict basis)" title="The regional verdict uses raw seasonal p < alpha" />
-        <Stat value={pval(t.p_value_autocorr_adjusted)} label="Autocorrelation-adjusted p (diagnostic)" title="Separate Hamed–Rao MK on anomalies; not substituted for the regional verdict" />
-      </div>
-      <div className="col" style={{ gap: 6 }}>
-        <span style={{ font: "800 13px var(--body)" }}>Data quality</span>
-        <div style={{ height: 12, borderRadius: 6, background: "var(--track)", overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${Math.round((q.n_months / (q.n_months + q.missing_months || 1)) * 100)}%`, background: "var(--quality)" }} />
-        </div>
-        <span className="small muted num">{q.n_months} of {q.n_months + q.missing_months} months · {Math.round(q.coverage_fraction * 100)}% of the area has data</span>
-      </div>
-      <span className="small muted">The monthly chart is below the map.</span>
-      {t.warnings.length > 0 && <div className="col" style={{ gap: 6 }}>{t.warnings.map((w) => <div key={w} className="warn">{w}</div>)}</div>}
+  const actions = (
+    <>
       <div className="row">
         <button type="button" className="btn soft" onClick={() => go("detective")}>Ask the Detective</button>
         <button type="button" className="btn soft" onClick={() => go("hunt")}>Compare with another place</button>
       </div>
       <NasaCheck variableId={v.id} provider={v.source.provider} bbox={place.bbox} start={t.start} end={t.end} coverage={v.coverage} />
       <span className="footer">Source: {v.source.product} v{v.source.version}, {v.source.provider}.</span>
-    </div>
+    </>
   );
+  return audience === "scientist" ? <ScientistResult run={run} actions={actions} /> : <ExplorerResult run={run} actions={actions} />;
 }
 
 // Lets the user repeat this exact analysis in NASA's own tool, to check our numbers independently.

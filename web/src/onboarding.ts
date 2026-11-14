@@ -1,4 +1,4 @@
-/** Guided tour definition and persisted completion state. Pure module: no React, safe to unit test. */
+/** Guided tour definitions (one per audience) and persisted completion state. Pure module: no React, safe to unit test. */
 export const ONBOARDING_KEY = "terra-scope:onboarding:v1";
 
 export type TourPage = "explore" | "hunt" | "detective" | "report";
@@ -37,31 +37,62 @@ export const TOUR_STEPS: TourStep[] = [
   { id: "report", page: "report", target: '[data-tour="report"]', title: "10. Create a report",
     body: "Analyses you run are collected here with their method and NASA source. Export them as Markdown or print to PDF." },
   { id: "finish", page: "explore", target: null, title: "You're ready, detective!",
-    body: "Start exploring on your own. You can replay this tour any time from the menu." },
+    body: "Start exploring on your own. Want every statistic? Switch the Experience to Scientist at the top of the page. You can replay this tour any time from the menu." },
+];
+
+/** Scientist tour: shorter and technical. Same rule: it only navigates and highlights, never runs anything. */
+export const SCIENTIST_STEPS: TourStep[] = [
+  { id: "welcome", page: "explore", target: null, title: "Scientist Mode",
+    body: "A short technical tour: dataset provenance, grid and period, the trend test and its decision rule, region comparisons and reproducible reports. Nothing is run during the tour." },
+  { id: "dataset", page: "explore", target: '[data-tour="dataset"]', title: "1. Product and version",
+    body: "Each variable maps to a NASA product (GPM IMERG, GLDAS Noah, MERRA-2) processed to a common 0.5 degree grid. Products are satellite estimates, land models or reanalyses, and they can disagree." },
+  { id: "years", page: "explore", target: '[data-tour="years"]', title: "2. Period and sufficiency",
+    body: "Monthly series. A trend is tested only with at least 10 years and 70% of months present; otherwise the verdict is Insufficient evidence." },
+  { id: "map", page: "explore", target: '[data-tour="map"]', title: "3. Cell-wise trend map",
+    body: "Every cell is tested separately with Seasonal Mann-Kendall; hatching marks cells not significant after Benjamini-Hochberg FDR on raw cell p-values (no serial-dependence correction)." },
+  { id: "run", page: "explore", target: '[data-tour="run"]', title: "4. Regional analysis",
+    body: "The region is a latitude-longitude box averaged on the processed grid. The backend returns the seasonal Sen slope per decade, raw and autocorrelation-adjusted p-values and an OLS anomaly interval." },
+  { id: "result", page: "explore", target: '[data-tour="result"]', title: "5. Decision basis",
+    body: "The verdict uses the raw Seasonal Mann-Kendall p-value at alpha 0.05. The Hamed-Rao adjusted p is a diagnostic only, and the OLS interval is not a confidence interval for Sen's slope." },
+  { id: "hunt", page: "hunt", target: '[data-tour="hunt"]', title: "6. Contradiction Hunter",
+    body: "Two regions: block-bootstrap test of the difference of slopes on anomalies. A difference counts only when p is below 0.05 and the 95% interval excludes zero. Dataset pairs are descriptive only." },
+  { id: "detective", page: "detective", target: '[data-tour="detective-input"]', title: "7. Method Advisor",
+    body: "Ask method questions (serial dependence, FDR scope, interval estimator). Answers are grounded in backend tool results; the language model never computes numbers." },
+  { id: "report", page: "report", target: '[data-tour="report"]', title: "8. Reproducible report",
+    body: "The Scientific report lists product, version, region box, period, grid, method and trend IDs; the JSON export holds every request and result for re-running." },
+  { id: "finish", page: "explore", target: null, title: "Ready",
+    body: "Switch to Explorer at any time for plain-language explanations of the same results; numbers and verdicts never change between modes." },
 ];
 
 export interface StorageLike { getItem(k: string): string | null; setItem(k: string, v: string): void }
+export type TourAudience = "explorer" | "scientist";
+
+/** Explorer keeps the original key, so people who finished the first tour are not asked again. */
+export const SCIENTIST_ONBOARDING_KEY = "terra-scope:onboarding:scientist:v1";
+const keyOf = (a: TourAudience) => (a === "scientist" ? SCIENTIST_ONBOARDING_KEY : ONBOARDING_KEY);
+
+export function tourSteps(a: TourAudience = "explorer"): TourStep[] { return a === "scientist" ? SCIENTIST_STEPS : TOUR_STEPS; }
 
 function store(s?: StorageLike | null): StorageLike | null {
   if (s !== undefined) return s;
   try { return typeof localStorage === "undefined" ? null : localStorage; } catch { return null; }
 }
 
-/** True when this browser already finished or skipped the tour. Unavailable storage counts as "not completed". */
-export function isOnboardingDone(s?: StorageLike | null): boolean {
-  try { return store(s)?.getItem(ONBOARDING_KEY) === "done"; } catch { return false; }
+/** True when this browser already finished or skipped this audience's tour. Unavailable storage counts as "not completed". */
+export function isOnboardingDone(s?: StorageLike | null, a: TourAudience = "explorer"): boolean {
+  try { return store(s)?.getItem(keyOf(a)) === "done"; } catch { return false; }
 }
 
 /** Remember completion; returns false when storage is unavailable (private mode), never throws. */
-export function markOnboardingDone(s?: StorageLike | null): boolean {
-  try { const st = store(s); if (!st) return false; st.setItem(ONBOARDING_KEY, "done"); return true; } catch { return false; }
+export function markOnboardingDone(s?: StorageLike | null, a: TourAudience = "explorer"): boolean {
+  try { const st = store(s); if (!st) return false; st.setItem(keyOf(a), "done"); return true; } catch { return false; }
 }
 
-/** Auto-start only for first-time users entering from the landing page, and only once per session. */
-export function shouldAutoStart(fromLanding: boolean, startedThisSession: boolean, s?: StorageLike | null): boolean {
-  return fromLanding && !startedThisSession && !isOnboardingDone(s);
+/** Auto-start only for first-time users entering from the experience choice, and only once per session. */
+export function shouldAutoStart(fromLanding: boolean, startedThisSession: boolean, s?: StorageLike | null, a: TourAudience = "explorer"): boolean {
+  return fromLanding && !startedThisSession && !isOnboardingDone(s, a);
 }
 
-export function clampStep(i: number): number {
-  return Math.max(0, Math.min(TOUR_STEPS.length - 1, Math.trunc(i)));
+export function clampStep(i: number, count: number = TOUR_STEPS.length): number {
+  return Math.max(0, Math.min(count - 1, Math.trunc(i)));
 }

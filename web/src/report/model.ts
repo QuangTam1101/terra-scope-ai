@@ -1,6 +1,10 @@
 // Phase 8.5B: the Scientific Evidence Report as data. Every sentence and number comes from backend responses
 // (trend, series, compare); nothing is estimated here. Pure functions, so exports can be tested offline.
 import type { CompareResponse, SeriesResponse, TrendResponse, Variable } from "../api";
+import { plainFinding } from "../audience";
+
+/** Report presentation: same model and numbers, different wording and order. */
+export type ReportStyle = "plain" | "scientific";
 
 export interface ReportRun {
   key: string; trend: TrendResponse & { method?: string; slope_method?: string; alpha?: number; ci_level?: number };
@@ -150,11 +154,15 @@ export function buildReport(runs: ReportRun[], comparisons: ReportComparison[], 
 const regionText = (e: AnalysisEntry) =>
   `${e.place} (${e.regionKind === "preset" ? `preset "${e.regionId}"` : "bounding-box approximation"}; W ${e.bbox[0]}, S ${e.bbox[1]}, E ${e.bbox[2]}, N ${e.bbox[3]})`;
 
-export function toMarkdown(m: ReportModel): string {
+export function toMarkdown(m: ReportModel, style: ReportStyle = "scientific"): string {
+  const plain = style === "plain";
   const L: string[] = [
-    "# Terra-scope AI: Scientific Evidence Report", "",
+    plain ? "# Terra-scope AI: Evidence Report (plain language)" : "# Terra-scope AI: Scientific Evidence Report", "",
     `- Report ID: ${m.id}`, `- Generated: ${m.generatedAt}`, `- Backend version: ${m.backendVersion}`,
     "- Status: preliminary, not peer reviewed", "",
+    ...(plain ? ["## In plain words", "",
+      ...m.analyses.map((a) => `- **${a.parameter}, ${a.place}:** ${plainFinding({ slope_per_decade: a.slope, significant: a.significant, quality: { sufficient: a.sufficient } }, a.parameter.toLowerCase())}`),
+      "", "A trend shows what changed, not why, and it is not a forecast. The sections below hold every number (technical appendix).", ""] : []),
     "## Executive summary", "", ...m.analyses.map((a) => `- ${a.finding}`), ...m.comparisons.map((c) => `- ${c.title}: ${c.strength}`), "",
   ];
   for (const a of m.analyses) {

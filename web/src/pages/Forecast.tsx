@@ -89,8 +89,9 @@ const GLOSSARY: [string, string][] = [
 ];
 
 export function Forecast() {
-  const { variables, sel, setSel, variable, showError, ready } = useStore();
-  const [audience, setAudience] = useState<Audience>(() => { try { return localStorage.getItem("fcAudience") === "scientist" ? "scientist" : "simple"; } catch { return "simple"; } });
+  const { variables, sel, setSel, variable, showError, ready, audience: appAudience, setAudience: setAppAudience } = useStore();
+  // Uses the app-wide Experience (Explorer = Simple view, Scientist = Scientist view).
+  const audience: Audience = appAudience === "scientist" ? "scientist" : "simple";
   const [mode, setMode] = useState<Mode>("outlook");
   const [months, setMonths] = useState(13);
   const [res, setRes] = useState<ForecastResponse | null>(null);
@@ -101,7 +102,8 @@ export function Forecast() {
   const avail = variables.filter((v) => v.available);
   const today = nowMonth();
 
-  const chooseAudience = (a: Audience) => { setAudience(a); if (a === "simple") setMode("outlook"); try { localStorage.setItem("fcAudience", a); } catch { /* private mode */ } };
+  const chooseAudience = (a: Audience) => setAppAudience(a === "scientist" ? "scientist" : "explorer");
+  useEffect(() => { if (!sci) setMode("outlook"); }, [sci]);
   useEffect(() => { setRes(null); }, [sel.variableId, sel.place, mode]);
   useEffect(() => { forecastApi.reality().then(setReality).catch(() => setReality(null)); }, []);
   useEffect(() => {
@@ -146,7 +148,7 @@ export function Forecast() {
         <div className="row" style={{ justifyContent: "space-between" }}>
           <h2 id="fc-setup" style={{ fontSize: 22, margin: 0 }}>Climate outlook</h2>
           <div className="seg" role="group" aria-label="Level of detail">
-            <button type="button" className={!sci ? "on" : ""} aria-pressed={!sci} onClick={() => chooseAudience("simple")}>Simple</button>
+            <button type="button" className={!sci ? "on" : ""} aria-pressed={!sci} onClick={() => chooseAudience("simple")}>Explorer</button>
             <button type="button" className={sci ? "on" : ""} aria-pressed={sci} onClick={() => chooseAudience("scientist")}>Scientist</button>
           </div>
         </div>

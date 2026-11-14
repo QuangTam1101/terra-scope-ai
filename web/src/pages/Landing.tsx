@@ -195,7 +195,6 @@ export function Landing({ onStart }: { onStart: () => void }) {
       <footer className="lp-footer">
         <span className="brand"><Terra size={28} /> Terra-scope AI</span>
         <span className="small muted">Data: NASA GES DISC (GPM IMERG, GLDAS Noah, MERRA-2). Not affiliated with or endorsed by NASA.</span>
-        <button type="button" className="btn soft" onClick={onStart}>Open the app</button>
       </footer>
     </div>
   );

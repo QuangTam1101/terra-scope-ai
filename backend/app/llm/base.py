@@ -24,6 +24,7 @@ class GenerationInput:
     evidence: dict | None
     approved_statements: dict[str, str]
     request_id: str = ""
+    audience: str | None = None  # "explorer" | "scientist" | None: wording only
 
 
 class ProviderReply(BaseModel):

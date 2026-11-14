@@ -26,7 +26,7 @@ const series={variable_id:variable.id,region:trend.region,units:'mm/month',point
 const place={ref:{type:'preset',id:region.id},label:region.name,bbox:region.bbox};
 const run={key:trend.trend_id,trend,series,variable,place};
 const noop=()=>{};
-globalThis.phase6Store={page:'home',ready:true,variables:[variable],regions:[region],variable,sel:{variableId:variable.id,parameter:'precipitation',startYear:2001,endYear:2024,place},run,history:[run],go:noop,setSel:noop,runAnalysis:async()=>true,showError:noop,clearToast:noop,toast:null,tempUnit:'C',setTempUnit:noop,running:false,chatTurns:[{id:'chat1',question:'Explain the trend',context:{},response:{answer:trend.plain_summary,mode:'template',evidence:[{trend,cited_numbers:[]}],warnings:[],actions:[],disclaimer:'Backend evidence'}}],chatBusy:false,sendChat:async()=>{},clearChat:noop,chatContext:null,huntSelection:null,setHuntSelection:noop,progress:null,cancelAnalysis:noop,comparisons:[],addComparison:noop,removeReportItem:noop,backendVersion:'0.2.0',makeCase:()=>null,openCase:async()=>({ok:0,failed:0,changed:[]})};
+globalThis.phase6Store={page:'home',ready:true,variables:[variable],regions:[region],variable,sel:{variableId:variable.id,parameter:'precipitation',startYear:2001,endYear:2024,place},run,history:[run],go:noop,setSel:noop,runAnalysis:async()=>true,showError:noop,clearToast:noop,toast:null,tempUnit:'C',setTempUnit:noop,running:false,chatTurns:[{id:'chat1',question:'Explain the trend',context:{},response:{answer:trend.plain_summary,mode:'template',evidence:[{trend,cited_numbers:[]}],warnings:[],actions:[],disclaimer:'Backend evidence'}}],chatBusy:false,sendChat:async()=>{},clearChat:noop,chatContext:null,huntSelection:null,setHuntSelection:noop,progress:null,cancelAnalysis:noop,comparisons:[],addComparison:noop,removeReportItem:noop,backendVersion:'0.2.0',makeCase:()=>null,openCase:async()=>({ok:0,failed:0,changed:[]}),audience:'scientist',setAudience:noop};
 const cachePrefix=join(resolve(tmpdir()),'terrascope-page-qa-');
 const qaCache=await mkdtemp(cachePrefix);
 const server=await createServer({cacheDir:qaCache,server:{middlewareMode:true,watch:null},appType:'custom',optimizeDeps:{noDiscovery:true,include:[]},plugins:[{
@@ -38,11 +38,27 @@ try {
   for(const [name,text] of [['Home','Start'],['Explore','Raw Seasonal MK p'],['Hunt','Contradiction hunt'],['Detective','Ask Terra'],['Report','OLS anomaly slope, 95% interval']]) {
     const module=await server.ssrLoadModule(`/src/pages/${name}.tsx`);
     test(`${name} renders offline with selected evidence and semantic controls`,()=>{
+      if(name==='Report'){module.reportDraft.step=3;module.reportDraft.edition=null;}
       const html=renderToStaticMarkup(createElement(module[name]));
       assert.ok(html.includes(text),name);
       assert.ok(html.includes('<button'),name);
-      if(name==='Report'){assert.ok(html.includes('GPM_3IMERGM'));assert.ok(html.includes('Raw Seasonal MK p'));assert.ok(html.includes('not a Sen confidence interval'));assert.ok(html.includes('Export Markdown'));assert.ok(html.includes('Export reproducibility JSON'));}
+      if(name==='Report'){assert.ok(html.includes('Scientist edition report'));assert.ok(html.includes('GPM_3IMERGM'));assert.ok(html.includes('Raw Seasonal MK p'));assert.ok(html.includes('not a Sen confidence interval'));assert.ok(html.includes('Download PDF'));assert.ok(html.includes('Data file (.json)'));assert.ok(html.includes('Abstract'));assert.ok(html.includes('References'));assert.ok(html.includes('the null hypothesis of no monotonic trend is not rejected'));}
       if(name==='Detective'){assert.ok(html.includes('role="log"'));assert.ok(html.includes('not statistically significant'));assert.ok(html.includes('Raw p:'));}
+    });
+  }
+  // Explorer presentation of the SAME fixture: plain wording first, same backend numbers kept in the page.
+  for(const [name,text] of [['Explore','What did we find?'],['Hunt','Where do the results disagree?'],['Report','Simple edition report']]) {
+    const module=await server.ssrLoadModule(`/src/pages/${name}.tsx`);
+    test(`${name} renders the Explorer presentation of the same evidence`,()=>{
+      globalThis.phase6Store={...globalThis.phase6Store,audience:'explorer'};
+      if(name==='Report'){module.reportDraft.step=3;module.reportDraft.edition=null;}
+      try {
+        const html=renderToStaticMarkup(createElement(module[name]));
+        assert.ok(html.includes(text),name);
+        assert.ok(!html.includes('—'),`${name}: no long dash`);
+        if(name==='Explore'){assert.ok(html.includes('+3.16'));assert.ok(html.includes('not strong enough to confirm'));assert.ok(!html.includes('clear upward trend'));}
+        if(name==='Report'){assert.ok(html.includes('Technical appendix'));assert.ok(html.includes('0.110'));assert.ok(html.includes('not a Sen confidence interval'));assert.ok(html.includes('Strength of evidence'));assert.ok(html.includes('Abstract'));}
+      } finally { globalThis.phase6Store={...globalThis.phase6Store,audience:'scientist'}; }
     });
   }
   const routes=await server.ssrLoadModule('/src/pageRouting.ts');
