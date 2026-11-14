@@ -710,7 +710,7 @@ select.select::-ms-expand { display: none; }
 .hunt-card:focus-visible { outline: 3px solid #5b4e94; outline-offset: 2px; }
 .hunt-card.on { border-color: #5b4e94; background: #f6f3fa; }
 .hunt-card-t { font: 700 18px var(--display); }
-.hunt-card-q { font: 700 14.5px/1.4 var(--body); color: #3d3850; }
+.hunt-card-q { font: 700 14.5px/1.4 var(--body); color: #3d3850; min-height: 2.8em; }
 .hunt-intro .hunt-ladder { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font: 600 14.5px/1.5 var(--body); }
 .hunt-ab { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: end; }
 .hunt-ab-side { display: flex; flex-direction: column; gap: 8px; border: 1.5px dashed var(--line); border-radius: 18px; padding: 10px 12px; position: relative; min-width: 0; }
@@ -803,7 +803,7 @@ select.select::-ms-expand { display: none; }
 .place-hint { padding: 4px 10px 6px; }
 
 /* Can / Cannot: two contrasting halves */
-.hunt-cc { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; padding-top: 4px; }
+.hunt-cc { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; align-items: stretch; padding-top: 4px; }
 .hunt-cc-item { display: flex; flex-direction: column; gap: 4px; border-radius: 14px; padding: 8px 10px; font: 600 13px/1.4 var(--body); }
 .hunt-cc-item.can { background: #e3f4ee; color: #174d43; border: 1.5px solid #9fd4c3; }
 .hunt-cc-item.cannot { background: #fdeee4; color: #7a3410; border: 1.5px dashed #e8a57c; }
@@ -821,3 +821,12 @@ select.select::-ms-expand { display: none; }
 .mappick .mapwrap { max-width: calc((100vh - 330px) * 2); margin: 0 auto; width: 100%; }
 .mappick-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 @media (max-width: 700px) { .mappick-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Hunt mode cards: title, question and Can/Cannot rows line up across the three cards */
+@supports (grid-template-rows: subgrid) {
+  .hunt-cards { grid-auto-rows: auto; }
+  .hunt-card { display: grid; grid-row: span 3; grid-template-rows: subgrid; row-gap: 6px; }
+  .hunt-card-q { min-height: 0; }
+  .hunt-cc { padding-top: 4px; }
+}
+.period-row { gap: 8px; align-items: center; flex-wrap: nowrap; }
+.period-row > .small { min-width: 34px; }

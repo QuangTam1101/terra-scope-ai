@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type BBox, type CompareResponse, type HuntCandidate, type HuntResponse, type RegionRef, type SeriesResponse, type TrendResponse, type Variable } from "../api";
 import { useStore } from "../store";
+import { periodEnd, periodStart } from "../period";
 import { TrendChart } from "../TrendChart";
 import { ci, pval, signed, Stat, VerdictBadge } from "../ui";
 import { compareF, seriesF, trendF } from "../units";
@@ -480,7 +481,7 @@ function Discover({ onInspect }: { onInspect: (mode: HuntMode, a: Opt, b: Opt | 
     setBusy(true); setRes(null);
     try {
       setRes(await api.discover({ variable_id: v.id, variable_id_b: twoDatasets && partner ? partner.id : null,
-        start: `${sel.startYear}-01`, end: `${sel.endYear}-12`, extent: ext.bbox, tile_deg: tile, max_candidates: 5 }, c.signal));
+        start: periodStart(sel), end: periodEnd(sel), extent: ext.bbox, tile_deg: tile, max_candidates: 5 }, c.signal));
     } catch (e) { if (!c.signal.aborted) showError(e); } finally { if (ctrl.current === c) { setBusy(false); ctrl.current = null; } }
   };
   const cancel = () => { ctrl.current?.abort(); ctrl.current = null; setBusy(false); };

@@ -18,7 +18,8 @@ export function planChatNavigation(action: ChatAction, variables: Variable[], re
     : preset ? { ref: region, label: preset.name, bbox: preset.bbox } : undefined;
   if (!place) return { ok: false, reason: "The region is not in the current catalog." };
   const selection = { parameter: variable.parameter, variableId: variable.id, place,
-    startYear: Number(p.start.slice(0, 4)), endYear: Number(p.end.slice(0, 4)) };
+    startYear: Number(p.start.slice(0, 4)), endYear: Number(p.end.slice(0, 4)),
+    startMonth: Number(p.start.slice(5, 7)) || 1, endMonth: Number(p.end.slice(5, 7)) || 12 };
   if (action.page === "hunt") {
     if (region.type !== "preset" || p.region_b?.type !== "preset") {
       return { ok: false, reason: "Hunt navigation needs two catalog presets. The comparison evidence stays in Detective." };

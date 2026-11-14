@@ -6,6 +6,7 @@ import { ToolDetails } from "../ToolDetails";
 import { signed, Terra, VerdictBadge } from "../ui";
 import { textToF } from "../units";
 import { XIcon } from "../report/EditionDoc";
+import { periodText } from "../period";
 
 const CAVEAT = /causalit|forecast|not why|hypothes|not proof|do not establish|cannot establish/i;
 const pText = (p: number | null | undefined) => (p === null || p === undefined ? "n/a" : p < 0.001 ? "< 0.001" : p.toFixed(3));
@@ -37,7 +38,7 @@ function EvidenceCard({ evidence, fahrenheit, variables }: { evidence: ChatEvide
       <div className="ev-head">
         <div className="col" style={{ gap: 2, minWidth: 0 }}>
           <b className="ev-title">{v?.parameter_name ?? t.variable_id} · {placeName(t.region)}</b>
-          <span className="small muted">{v?.dataset_name ?? t.source.product} · {t.start.slice(0, 4)} to {t.end.slice(0, 4)}</span>
+          <span className="small muted">{v?.dataset_name ?? t.source.product} · {periodText(t.start, t.end)}</span>
         </div>
         <VerdictBadge t={t} />
       </div>

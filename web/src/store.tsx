@@ -11,7 +11,8 @@ import { initialAudience, saveAudience, type Audience } from "./audience";
 export type Page = "landing" | "start" | "home" | "explore" | "forecast" | "hunt" | "detective" | "report";
 
 export interface Place { ref: RegionRef; label: string; bbox: BBox }
-export interface Selection { parameter: string; variableId: string; startYear: number; endYear: number; place: Place }
+import { periodEnd, periodStart } from "./period";
+export interface Selection { parameter: string; variableId: string; startYear: number; endYear: number; startMonth?: number; endMonth?: number; place: Place }
 export interface Run { key: string; series: SeriesResponse; trend: TrendResponse; variable: Variable; place: Place }
 export interface ChatExchange { id: string; question: string; context: ChatContext; response?: ChatResponse; error?: string }
 
@@ -137,7 +138,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setVariables(v); setRegions(r.regions); setGridCell(r.limits.cell_size_deg); setReady(true);
         // default period = everything the data covers (the backend pre-computes maps for exactly this period)
         const end = v.find((x) => x.id === "merra2_air_temperature_2m")?.coverage?.end;
-        if (end) setSelState((s) => ({ ...s, endYear: Number(end.slice(0, 4)) }));
+        if (end) setSelState((s) => ({ ...s, endYear: Number(end.slice(0, 4)), endMonth: 12 }));
       })
       .catch(showError);
   }, [showError]);
@@ -154,7 +155,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const id = ++reqId.current;
     runCtrl.current?.abort();                         // a newer analysis replaces the old one
     const ctrl = new AbortController(); runCtrl.current = ctrl;
-    const start = `${s.startYear}-01`, end = `${s.endYear}-12`;
+    const start = periodStart(s), end = periodEnd(s);
     const base: RegionalProgress = { place: s.place.label, parameter: variable.parameter_name, dataset: variable.dataset_name,
       start, end, series: "pending", trend: "pending" };
     setProgress(base);

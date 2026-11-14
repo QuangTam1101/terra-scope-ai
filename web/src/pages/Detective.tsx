@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ChatAction, ChatContext } from "../api";
 import { useStore } from "../store";
+import { periodEnd, periodStart } from "../period";
 import { planChatNavigation } from "../chatNavigation";
 import { AnswerCard } from "../chat/AnswerCard";
 import { Terra } from "../ui";
@@ -17,11 +18,11 @@ export function Detective() {
   const [text, setText] = useState("");
   const [navigationError, setNavigationError] = useState<string | null>(null);
   const matchesRun = !chatContext && run?.variable.id === sel.variableId
-    && run.trend.start === `${sel.startYear}-01` && run.trend.end === `${sel.endYear}-12`
+    && run.trend.start === periodStart(sel) && run.trend.end === periodEnd(sel)
     && JSON.stringify(run.place.ref) === JSON.stringify(sel.place.ref);
   const context: ChatContext = chatContext ?? {
     variable_id: sel.variableId, dataset_id: variable?.source.product, region: sel.place.ref,
-    start: `${sel.startYear}-01`, end: `${sel.endYear}-12`,
+    start: periodStart(sel), end: periodEnd(sel),
     ...(matchesRun && run ? { trend_id: run.trend.trend_id } : {}),
   };
   const contextVariable = context.variable_id ? variables.find((v) => v.id === context.variable_id) : undefined;

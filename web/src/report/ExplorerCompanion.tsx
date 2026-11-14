@@ -124,7 +124,8 @@ export function ExplorerCompanion({ m }: { m: ReportModel }) {
   const askDetective = () => {
     if (!run) return;
     setSel({ parameter: run.variable.parameter, variableId: run.variable.id, place: run.place,
-      startYear: Number(a.start.slice(0, 4)), endYear: Number(a.end.slice(0, 4)) });
+      startYear: Number(a.start.slice(0, 4)), endYear: Number(a.end.slice(0, 4)),
+      startMonth: Number(a.start.slice(5, 7)) || 1, endMonth: Number(a.end.slice(5, 7)) || 12 });
     go("detective");
   };
   const w = plainWords(a.parameter);

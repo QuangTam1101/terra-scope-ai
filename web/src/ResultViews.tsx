@@ -6,6 +6,7 @@ import { plainFinding, strengthOf } from "./audience";
 import type { Run } from "./store";
 import { Term } from "./Term";
 import { ci, pval, signed, Stat, VerdictBadge } from "./ui";
+import { periodText } from "./period";
 
 const METHOD: Record<string, string> = {
   seasonal_mk: "Seasonal Mann-Kendall", sen_seasonal: "seasonal Sen slope", ols_anomaly: "OLS slope of monthly anomalies",
@@ -59,7 +60,7 @@ export function ExplorerResult({ run, actions }: { run: Run; actions: ReactNode 
       <Section title="What does the data show?">
         {q.sufficient && t.slope_per_decade !== null ? (
           <div><span className="num" style={{ font: "600 42px/1 var(--display)" }}>{signed(t.slope_per_decade)} {u}</span>{" "}
-            <span style={{ font: "800 15px var(--body)" }}>per decade, {t.start.slice(0, 4)} to {t.end.slice(0, 4)}</span></div>
+            <span style={{ font: "800 15px var(--body)" }}>per decade, {periodText(t.start, t.end)}</span></div>
         ) : <p className="warn" style={{ margin: 0 }}>Not enough data to test this place and period. Try a longer period.</p>}
         <span className="small muted">This is the typical change per decade (<Term id="sen_slope">Sen slope</Term>). The monthly chart below shows every month.</span>
       </Section>

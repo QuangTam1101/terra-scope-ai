@@ -6,6 +6,7 @@ import { api, type BBox, type FramesResponse, type Variable } from "./api";
 import { H, W, land, projection } from "./WorldMap";
 import { colourOf, decodeFrames, DIVERGING, monthLabel, paintFrame, SEQUENTIAL, valueAt, type Frames } from "./timelapseData";
 import { plain } from "./ui";
+import { periodText } from "./period";
 
 type Kind = "anomaly" | "value";
 const SPEEDS = [{ fps: 3, label: "Slow" }, { fps: 6, label: "Normal" }, { fps: 12, label: "Fast" }];
@@ -106,7 +107,7 @@ export function Timelapse({ variable, start, end, bbox, toF }: { variable: Varia
         <canvas ref={canvas} className="tl-canvas" role="img" aria-label={`Time-lapse of ${variable.parameter_name.toLowerCase()} by month, ${month}`}
           onPointerMove={onMove} onPointerLeave={() => setHover(null)} />
         {!frames && !error && (
-          <div className="tl-overlay" role="status">Preparing the monthly maps for {variable.parameter_name.toLowerCase()} ({variable.dataset_name}), {start.slice(0, 4)} to {end.slice(0, 4)}…</div>
+          <div className="tl-overlay" role="status">Preparing the monthly maps for {variable.parameter_name.toLowerCase()} ({variable.dataset_name}), {periodText(start, end)}…</div>
         )}
         {error && <div className="tl-overlay warn" role="alert">{error}</div>}
         {hover && <div className="tl-tip num" style={{ left: hover.px + 12, top: hover.py + 12 }}>{hover.text}</div>}

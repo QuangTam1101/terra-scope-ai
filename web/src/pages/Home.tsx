@@ -160,7 +160,7 @@ export function Home() {
     const place = r ? { ref: { type: "preset" as const, id: r.id }, label: r.name, bbox: r.bbox } : WORLD;
     go("explore");
     const last = v.coverage ? Number(v.coverage.end.slice(0, 4)) : 2025;   // full period: its map is pre-computed
-    runAnalysis({ parameter: v.parameter, variableId: v.id, startYear: 2001, endYear: last, place });
+    runAnalysis({ parameter: v.parameter, variableId: v.id, startYear: 2001, endYear: last, startMonth: 1, endMonth: 12, place });
   };
 
   return (

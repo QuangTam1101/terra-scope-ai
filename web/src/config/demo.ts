@@ -1,8 +1,8 @@
 /**
  * Product demo video configuration (Landing page, "Watch Demo").
  *
- * Today there is NO video: the landing page shows an explicit "Product Demo: Coming Soon" frame and
- * the Watch Demo button only scrolls to it. To publish the real video later, change DEMO_VIDEO only:
+ * The landing page plays the video configured below. With { kind: "none" } it shows an explicit
+ * "Product Demo: Coming Soon" frame instead. To change the video, change DEMO_VIDEO only:
  *
  *   // A local file placed in web/public/demo/ (served as /demo/...)
  *   export const DEMO_VIDEO: DemoVideo = {
@@ -21,7 +21,11 @@ export type DemoVideo =
   | { kind: "file"; title: string; src: string; poster?: string; captions?: string }
   | { kind: "youtube"; title: string; id: string };
 
-export const DEMO_VIDEO: DemoVideo = { kind: "none" };
+// Music-only promo (no speech): the English headlines are burned into the picture, so there is no captions track.
+// Source and QA: media/demo/PROMO_PRODUCTION_NOTES.md. Code change AI-assisted.
+export const DEMO_VIDEO: DemoVideo = {
+  kind: "file", title: "Terra-Scope AI: 30-second promo", src: "/demo/terra-scope-ai-promo-30s.mp4", poster: "/demo/poster.jpg",
+};
 
 /** Only well-formed YouTube ids produce an embed URL (privacy-enhanced domain); anything else is rejected. */
 export function youtubeEmbedUrl(id: string): string | null {

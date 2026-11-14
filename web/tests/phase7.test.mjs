@@ -17,9 +17,12 @@ const brokenStorage = { getItem() { throw new Error('blocked'); }, setItem() { t
 
 try {
   const demo = await server.ssrLoadModule('/src/config/demo.ts');
-  test('demo video: placeholder by default, only well-formed sources are playable', () => {
-    assert.equal(demo.DEMO_VIDEO.kind, 'none');
-    assert.equal(demo.hasPlayableVideo(demo.DEMO_VIDEO), false);
+  test('demo video: the local promo is configured, only well-formed sources are playable', async () => {
+    assert.equal(demo.DEMO_VIDEO.kind, 'file');
+    assert.equal(demo.hasPlayableVideo(demo.DEMO_VIDEO), true);
+    // The configured file and poster really exist in web/public (served as /demo/...).
+    for (const p of [demo.DEMO_VIDEO.src, demo.DEMO_VIDEO.poster]) assert.ok((await readFile(new URL(`../public${p}`, import.meta.url))).length > 1000, p);
+    assert.equal(demo.hasPlayableVideo({ kind: 'none' }), false);
     assert.equal(demo.hasPlayableVideo({ kind: 'youtube', title: 't', id: 'dQw4w9WgXcQ' }), true);
     assert.equal(demo.youtubeEmbedUrl('not a valid id'), null);
     assert.equal(demo.hasPlayableVideo({ kind: 'youtube', title: 't', id: 'javascript:alert(1)' }), false);
@@ -82,13 +85,14 @@ try {
   });
 
   const { Landing } = await server.ssrLoadModule('/src/pages/Landing.tsx');
-  test('landing page renders hero, features, NASA sources, demo placeholder and attribution', () => {
+  test('landing page renders hero, features, NASA sources, the demo video and attribution', () => {
     const html = renderToStaticMarkup(createElement(Landing, { onStart: () => {} }));
-    for (const s of ["Discover Earth", "Get Started", "Watch Demo", "Product Demo: Coming Soon", "GPM IMERG", "GLDAS Noah", "MERRA-2",
+    for (const s of ["Discover Earth", "Get Started", "Watch Demo", "GPM IMERG", "GLDAS Noah", "MERRA-2",
       "Compare Regions", "Ask the AI Detective", "not an official NASA product", "Not affiliated with or endorsed by NASA",
       "does not forecast", "real NASA data: MERRA-2 air temperature trend"]) assert.ok(html.includes(s), s);
-    assert.ok(!html.includes('<video'), 'no fake video player without a configured video');
-    assert.ok(!html.includes('<iframe'), 'no embed without a configured video');
+    assert.ok(html.includes('<video') && html.includes('/demo/terra-scope-ai-promo-30s.mp4'), 'the configured promo video is rendered');
+    assert.ok(!html.includes('Product Demo: Coming Soon'), 'no placeholder once a video is configured');
+    assert.ok(!html.includes('<iframe'), 'no embed for a local file');
     assert.ok(!html.includes('—'), 'no long dash on the landing page');
     assert.ok((html.match(/<h1/g) || []).length === 1, 'exactly one h1');
   });
