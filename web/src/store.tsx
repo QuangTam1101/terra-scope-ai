@@ -1,7 +1,7 @@
 import { isCelsius, seriesF, trendF, variableF, type TempUnit } from "./units";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, errorText, type BBox, type Region, type RegionRef, type SeriesResponse, type TrendResponse, type Variable } from "./api";
-import { pointPlace } from "./places";
+import { pointPlace, setGridCell } from "./places";
 
 export type Page = "home" | "explore" | "hunt" | "detective" | "report";
 
@@ -61,7 +61,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     Promise.all([api.variables(), api.regions()])
-      .then(([v, r]) => { setVariables(v); setRegions(r.regions); setReady(true); })
+      .then(([v, r]) => {
+        setVariables(v); setRegions(r.regions); setGridCell(r.limits.cell_size_deg); setReady(true);
+        // default period = everything the data covers (the backend pre-computes maps for exactly this period)
+        const end = v.find((x) => x.id === "merra2_air_temperature_2m")?.coverage?.end;
+        if (end) setSelState((s) => ({ ...s, endYear: Number(end.slice(0, 4)) }));
+      })
       .catch(showError);
   }, [showError]);
 

@@ -1,5 +1,7 @@
 .env
 .venv/
-data/
 __pycache__/
-.pytest_cache/
+# dữ liệu không commit; chỉ commit README mô tả từng nguồn trong data/raw/<nguồn>/
+data/**
+!data/**/
+!data/raw/*/README.md

@@ -6,6 +6,7 @@ import landTopo from "world-atlas/land-110m.json";
 import type { BBox, TrendGrid, ValueGrid } from "./api";
 import { plain, signed } from "./ui";
 import { Globe } from "./Globe";
+import { cellKey, gridCell } from "./places";
 
 export type Layer = "values" | "trend";
 
@@ -104,6 +105,7 @@ export function WorldMap({ layer, trend, values, loading, selected, selectedLabe
   const [panning, setPanning] = useState(false);
   const scale = useMemo(() => (trend ? trendScale(trend) : 1), [trend]);
   const [mode, setMode] = useState<"2d" | "3d">("2d");
+  const cellDeg = (layer === "trend" ? trend?.cell_size_deg : values?.cell_size_deg) ?? gridCell();
   useEffect(() => {
     if (!selected) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !(e.target instanceof HTMLInputElement)) onClear(); };
@@ -114,9 +116,9 @@ export function WorldMap({ layer, trend, values, loading, selected, selectedLabe
   const lookup = useMemo(() => {
     const m = new Map<string, string>();
     if (layer === "trend" && trend) for (const c of trend.cells)
-      m.set(`${c.lon},${c.lat}`, c.valid ? `${signed(c.slope_per_decade)} ${units} per decade${c.significant_fdr ? "" : " (not significant)"}` : "No data");
+      m.set(cellKey(c.lon, c.lat, trend.cell_size_deg), c.valid ? `${signed(c.slope_per_decade)} ${units} per decade${c.significant_fdr ? "" : " (not significant)"}` : "No data");
     if (layer === "values" && values) for (const c of values.cells)
-      m.set(`${c.lon},${c.lat}`, c.value === null ? "No data" : `Mean ${plain(c.value, Math.abs(c.value) < 1 ? 3 : 1)} ${units}`);
+      m.set(cellKey(c.lon, c.lat, values.cell_size_deg), c.value === null ? "No data" : `Mean ${plain(c.value, Math.abs(c.value) < 1 ? 3 : 1)} ${units}`);
     return m;
   }, [layer, trend, values, units]);
 
@@ -206,7 +208,7 @@ export function WorldMap({ layer, trend, values, loading, selected, selectedLabe
       </div>
       {mode === "3d" ? (
         <Globe layer={layer} trend={trend} values={values} scale={scale} loading={loading} selected={selected}
-          selectedLabel={selectedLabel} lookup={lookup} onPick={onPick} onClear={onClear} />
+          selectedLabel={selectedLabel} lookup={lookup} cellDeg={cellDeg} onPick={onPick} onClear={onClear} />
       ) : (
       <div className="mapwrap">
         <canvas ref={ref} role="img"
@@ -233,7 +235,7 @@ export function WorldMap({ layer, trend, values, loading, selected, selectedLabe
               setHover(null);
               return;
             }
-            const text = lookup.get(`${Math.floor(p.lon) + 0.5},${Math.floor(p.lat) + 0.5}`);
+            const text = lookup.get(cellKey(p.lon, p.lat, cellDeg));
             setHover(text ? { px: p.px, py: p.py, text } : null);
           }}
           onPointerUp={(ev) => {
@@ -281,10 +283,10 @@ export function WorldMap({ layer, trend, values, loading, selected, selectedLabe
         </div>
         {loading && (
           <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "rgba(251,246,236,.55)", borderRadius: 20,
-            font: "800 15px var(--body)" }}>Loading the world map…</div>
+            font: "800 15px var(--body)", textAlign: "center", padding: 20 }}>{layer === "trend" ? <>Calculating the trend for every place on Earth…<br /><span style={{ font: "600 13px var(--body)" }}>A new time range can take about a minute the first time. The full period (2001 to 2025) is ready instantly.</span></> : "Loading the map…"}</div>
         )}
         <span className="num" style={{ position: "absolute", left: 10, bottom: 8, font: "700 11px var(--body)", background: "rgba(255,255,255,.85)",
-          padding: "2px 8px", borderRadius: 999 }}>1° grid · zoom {view.k.toFixed(1)}×</span>
+          padding: "2px 8px", borderRadius: 999 }}>{cellDeg}° grid · zoom {view.k.toFixed(1)}×</span>
       </div>
       )}
     </div>
@@ -329,8 +331,8 @@ function TrendLegend({ trend, units }: { trend: TrendGrid | null; units: string 
   const h = half !== null ? plain(half, Math.abs(half) < 0.1 ? 4 : 2) : "";
   const cols = [
     { bg: DOWN[2], name: "Falling fast", range: h && `below −${h}` },
-    { bg: DOWN[1], name: "Falling", range: h && `−${h} to 0` },
-    { bg: UP[1], name: "Rising", range: h && `0 to +${h}` },
+    { bg: DOWN[1], name: "Falling slowly", range: h && `−${h} to 0` },
+    { bg: UP[1], name: "Rising slowly", range: h && `0 to +${h}` },
     { bg: UP[2], name: "Rising fast", range: h && `above +${h}` },
   ];
   const seg = [

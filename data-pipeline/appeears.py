@@ -114,6 +114,11 @@ def fetch(task_id, out_dir, auth):
         if status == "error":
             sys.exit(f"Task {task_id} failed; check it at https://appeears.earthdatacloud.nasa.gov/explore")
         print("status:", status)
+        if status.startswith("unknown"):  # token can be revoked mid-poll (403 without "status"): log in again
+            try:
+                auth = login()
+            except requests.RequestException:
+                pass
         time.sleep(30)
 
     out = Path(out_dir).resolve()

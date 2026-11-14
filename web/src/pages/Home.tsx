@@ -13,49 +13,63 @@ const ICON: Record<string, ReactNode> = {
   result: <><path {...S} d="M4 19l5-6 4 3 7-9" /><path {...S} d="M15 7h5v5" /></>,
 };
 
-function Tile({ icon, title, sub, bg }: { icon: string; title: string; sub: string; bg: string }) {
+function Step({ n, icon, title, sub, eg, tint, last }: { n: number | string; icon: string; title: string; sub: string; eg?: string; tint: string; last?: boolean }) {
   return (
-    <div className="col" style={{ gap: 8, alignItems: "center", textAlign: "center", flex: "1 1 150px", minWidth: 140 }}>
-      <span style={{ width: 72, height: 72, borderRadius: 24, background: bg, display: "grid", placeItems: "center", color: "var(--ink)" }}>
-        <svg width="34" height="34" viewBox="0 0 24 24" aria-hidden="true">{ICON[icon]}</svg>
-      </span>
-      <b style={{ font: "700 17px var(--display)" }}>{title}</b>
-      <span className="small muted" style={{ fontWeight: 700, lineHeight: 1.35 }}>{sub}</span>
-    </div>
-  );
-}
-const Arrow = () => (
-  <svg width="28" height="20" viewBox="0 0 28 20" aria-hidden="true" style={{ flex: "none", marginTop: 26, color: "#8d86a0" }}>
-    <path {...S} d="M2 10h22M17 3l7 7-7 7" />
-  </svg>
-);
-
-// A small mouse drawing: which button is highlighted, and the gesture drawn next to it.
-function Mouse({ button, gesture, title }: { button: "left" | "right" | "wheel"; gesture: "click" | "drag" | "scroll"; title: string }) {
-  const hl = "#e8735a";
-  return (
-    <div className="col" style={{ alignItems: "center", gap: 8, flex: "1 1 130px" }}>
-      <svg width="110" height="86" viewBox="0 0 110 86" aria-hidden="true">
-        <rect x="12" y="6" width="44" height="72" rx="22" fill="#fff" stroke="#2b2540" strokeWidth="3" />
-        <path d="M12 34h44M34 6v28" stroke="#2b2540" strokeWidth="3" />
-        {button === "left" && <path d="M14 33V28a20 20 0 0 1 18-20v25z" fill={hl} />}
-        {button === "right" && <path d="M54 33V28a20 20 0 0 0-18-20v25z" fill={hl} />}
-        <rect x="30" y="14" width="8" height="14" rx="4" fill={button === "wheel" ? hl : "#fff"} stroke="#2b2540" strokeWidth="2.5" />
-        {gesture === "click" && <g stroke={hl} strokeWidth="3" strokeLinecap="round"><path d="M70 22l8-6M72 32h10M70 42l8 6" /></g>}
-        {gesture === "drag" && <g fill="none" stroke={hl} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M66 60h34M92 52l8 8-8 8" /><rect x="66" y="16" width="32" height="26" rx="4" strokeDasharray="5 4" /></g>}
-        {gesture === "scroll" && <g fill="none" stroke={hl} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M80 14v54M72 22l8-8 8 8M72 60l8 8 8-8" /></g>}
-      </svg>
-      <b style={{ font: "800 14.5px var(--body)", textAlign: "center" }}>{title}</b>
-    </div>
+    <li className="hstep">
+      <div className="hstep-top"><span className={`hstep-num${last ? " last" : ""}`}>{n}</span></div>
+      <div className={`hstep-card${last ? " last" : ""}`} style={{ background: tint }}>
+        <span className="hstep-icon"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">{ICON[icon]}</svg></span>
+        <b>{title}</b>
+        <p>{sub}</p>
+        {eg && <span className="hstep-eg">{eg}</span>}
+      </div>
+    </li>
   );
 }
 
-function Swatch({ color, striped, label }: { color: string; striped?: boolean; label: string }) {
+// Mini animated maps for the map guide: one per gesture (CSS animations in styles.css, off for reduced motion).
+const LAND = "M8 30c10-12 30-14 44-8s18 18 6 26-34 8-44 2S0 40 8 30zM96 18c14-8 40-6 52 6s4 30-12 34-34 2-42-10-8-24 2-30zM70 70c8-6 26-6 32 2s-2 18-14 18-24-12-18-20z";
+const Cursor = () => <path d="M0 0l0 15 4-4 3 7 3-1-3-7 6 0z" fill="#2b2540" stroke="#fff" strokeWidth="1.2" strokeLinejoin="round" />;
+function MapDemo({ kind }: { kind: "click" | "drag" | "pan" | "zoom" }) {
   return (
-    <div className="col" style={{ alignItems: "center", gap: 6, flex: "1 1 90px" }}>
-      <span aria-hidden="true" style={{ width: 64, height: 42, borderRadius: 12, background: color,
-        backgroundImage: striped ? "repeating-linear-gradient(135deg, rgba(255,255,255,.95) 0 2px, transparent 2px 7px)" : undefined }} />
-      <b style={{ font: "800 13.5px var(--body)", textAlign: "center" }}>{label}</b>
+    <svg className={`mapdemo demo-${kind}`} viewBox="0 0 160 100" aria-hidden="true">
+      <rect width="160" height="100" rx="12" fill="#cdeaf0" />
+      <g className="demo-land"><path d={LAND} fill="#f3e3c3" stroke="#d9c49c" strokeWidth="1" /></g>
+      {kind === "click" && <>
+        <circle className="demo-ripple" cx="80" cy="44" r="10" fill="none" stroke="#e8735a" strokeWidth="2" />
+        <rect className="demo-pin" x="75" y="39" width="10" height="10" rx="2" fill="none" stroke="#2b2540" strokeWidth="2.5" />
+        <g transform="translate(80 44)"><Cursor /></g>
+      </>}
+      {kind === "drag" && <>
+        <rect className="demo-box" x="44" y="22" width="70" height="50" rx="3" fill="rgba(232,115,90,.18)" stroke="#e8735a" strokeWidth="2.5" strokeDasharray="6 4" />
+        <g className="demo-dragcursor"><Cursor /></g>
+      </>}
+      {kind === "pan" && <g className="demo-pancursor"><Cursor /></g>}
+      {kind === "zoom" && <g transform="translate(118 18)" stroke="#2b2540" strokeWidth="2.4" strokeLinecap="round" fill="#fff">
+        <rect x="-8" y="-8" width="22" height="22" rx="7" /><path d="M-2 3h10M3 -2v10" />
+      </g>}
+    </svg>
+  );
+}
+function MapTip({ kind, title, how, result }: { kind: "click" | "drag" | "pan" | "zoom"; title: string; how: string; result: string }) {
+  return (
+    <div className="maptip">
+      <MapDemo kind={kind} />
+      <b>{title}</b>
+      <p className="how">{how}</p>
+      <p className="res">{result}</p>
+    </div>
+  );
+}
+
+const STRIPES = "repeating-linear-gradient(135deg, rgba(255,255,255,.95) 0 2px, transparent 2px 7px)";
+// Same six cell styles the trend map draws (WorldMap.paintMap): two shades per direction, pale striped, grey.
+function Swatch({ color, striped, label, note }: { color: string; striped?: boolean; label: string; note: string }) {
+  return (
+    <div className="swatch">
+      <span aria-hidden="true" style={{ background: color, backgroundImage: striped ? STRIPES : undefined }} />
+      <b>{label}</b>
+      <small>{note}</small>
     </div>
   );
 }
@@ -94,7 +108,8 @@ export function Home() {
     if (!v) return;
     const place = r ? { ref: { type: "preset" as const, id: r.id }, label: r.name, bbox: r.bbox } : WORLD;
     go("explore");
-    runAnalysis({ parameter: v.parameter, variableId: v.id, startYear: 2001, endYear: 2024, place });
+    const last = v.coverage ? Number(v.coverage.end.slice(0, 4)) : 2025;   // full period: its map is pre-computed
+    runAnalysis({ parameter: v.parameter, variableId: v.id, startYear: 2001, endYear: last, place });
   };
 
   return (
@@ -105,7 +120,7 @@ export function Home() {
         <div className="col" style={{ flex: 1, minWidth: 260 }}>
           <span className="prelim" style={{ alignSelf: "flex-start" }}>Preliminary · not yet validated</span>
           <h1 style={{ fontSize: 38, lineHeight: 1.1 }}>Is it really changing?</h1>
-          <p style={{ font: "700 17px/1.45 var(--body)", margin: 0 }}>Pick a clue and a place. Terra checks 24 years of NASA data and tells you if the change is real.</p>
+          <p style={{ font: "700 17px/1.45 var(--body)", margin: 0 }}>Pick a clue and a place. Terra checks 25 years of NASA data (2001 to 2025) and tells you if the change is real.</p>
           <div className="row">
             <button type="button" className="btn" onClick={() => go("explore")}>Start</button>
             <button type="button" className="btn soft" onClick={() => runCase("merra2_air_temperature_2m", "mekong_delta")}>Try an example</button>
@@ -116,37 +131,69 @@ export function Home() {
       {/* steps */}
       <section className="card pad col" aria-labelledby="steps" style={{ gap: 16 }}>
         <h2 id="steps" style={{ fontSize: 24 }}>How it works</h2>
-        <div className="row" style={{ alignItems: "flex-start", gap: 6, flexWrap: "wrap", justifyContent: "space-between" }}>
-          <Tile icon="variable" title="1 · Variable" sub="Rain, soil, heat, evaporation" bg="#d8ecff" /><Arrow />
-          <Tile icon="dataset" title="2 · Dataset" sub="Which NASA source" bg="#f3e3c3" /><Arrow />
-          <Tile icon="years" title="3 · Years" sub="2001 to 2024, at least 10" bg="#fde2d4" /><Arrow />
-          <Tile icon="place" title="4 · Place" sub="Name, coordinates or map" bg="#dff5ea" /><Arrow />
-          <Tile icon="result" title="Result" sub="Trend + verdict" bg="#ede6fb" />
-        </div>
+        <ol className="hsteps">
+          <Step n={1} icon="variable" title="What to check" tint="#e6f2ff"
+            sub="Pick the thing you want to follow over time." eg="Rain, soil moisture, temperature, evaporation" />
+          <Step n={2} icon="dataset" title="Which data" tint="#f8eedb"
+            sub="Choose the NASA source. Sources can disagree, so try more than one." eg="e.g. MERRA-2 or GLDAS" />
+          <Step n={3} icon="years" title="When" tint="#fdece3"
+            sub="Choose a start and end year. A trend needs at least 10 years." eg="Data: 2001 to 2025" />
+          <Step n={4} icon="place" title="Where" tint="#e8f7ef"
+            sub="Type a country or city, enter coordinates, or use the map." eg="Anywhere, or the whole world" />
+          <Step n="✓" icon="result" title="Your answer" tint="#f1ecfc" last
+            sub="How fast it rises or falls per decade, and whether that is real or could be chance." eg="Plus a chart of every month" />
+        </ol>
       </section>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: 18 }}>
         {/* map controls */}
-        <section className="card pad col" aria-labelledby="mouse" style={{ gap: 12 }}>
-          <h2 id="mouse" style={{ fontSize: 22 }}>On the map</h2>
-          <div className="row" style={{ justifyContent: "space-around", gap: 4 }}>
-            <Mouse button="left" gesture="click" title="Click: a place" />
-            <Mouse button="left" gesture="drag" title="Drag: an area" />
-            <Mouse button="right" gesture="drag" title="Right drag: move" />
-            <Mouse button="wheel" gesture="scroll" title="Scroll: zoom" />
+        <section className="card pad col" aria-labelledby="mouse" style={{ gap: 14, gridColumn: "1 / -1" }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+            <h2 id="mouse" style={{ fontSize: 22 }}>Choosing a place on the map</h2>
+            <span className="small muted">Prefer typing? In step 4 use <b>Name</b> or <b>Coordinates</b> instead.</span>
           </div>
+          <div className="maptips">
+            <MapTip kind="click" title="Pick one place" how="Left-click once on the map."
+              result="Terra checks the small square (0.5°, about 55 km) under your cursor." />
+            <MapTip kind="drag" title="Draw an area" how="Hold the left button, drag across the map to draw a box, then let go."
+              result="Everything inside the box is averaged and checked." />
+            <MapTip kind="pan" title="Move the map" how="Hold the right button and drag." result="Nothing is selected, the map just slides." />
+            <MapTip kind="zoom" title="Zoom in or out" how="Scroll the mouse wheel, or press + and − on the map."
+              result="Zoom in first to draw small areas precisely." />
+          </div>
+          <span className="small muted">To clear a selection, press × on its label, press Esc, or use Clear in step 4.</span>
         </section>
 
         {/* colours */}
-        <section className="card pad col" aria-labelledby="colours" style={{ gap: 12 }}>
-          <h2 id="colours" style={{ fontSize: 22 }}>Map colours</h2>
-          <div className="row" style={{ justifyContent: "space-around", gap: 6 }}>
-            <Swatch color="#c4621a" label="Increasing" />
-            <Swatch color="#2f6fb3" label="Decreasing" />
-            <Swatch color="#fbe0c4" striped label="Not proven yet" />
-            <Swatch color="#a7a3b0" label="No data" />
+        <section className="card pad col" aria-labelledby="colours" style={{ gap: 14, gridColumn: "1 / -1" }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+            <h2 id="colours" style={{ fontSize: 22 }}>Reading the trend map</h2>
+            <span className="small muted">Each square is one place. Its colour says which way it changed, how fast, and how sure we are.</span>
           </div>
-          <span className="small muted" style={{ textAlign: "center", fontWeight: 700 }}>Darker = faster change</span>
+          <div className="swatches">
+            <div className="swatch-group">
+              <span className="swatch-head" style={{ color: "#2f6fb3" }}>Going down</span>
+              <div className="swatch-row">
+                <Swatch color="#2f6fb3" label="Falling fast" note="Strong, reliable decrease" />
+                <Swatch color="#7fb2e5" label="Falling slowly" note="Small, reliable decrease" />
+              </div>
+            </div>
+            <div className="swatch-group">
+              <span className="swatch-head" style={{ color: "#c4621a" }}>Going up</span>
+              <div className="swatch-row">
+                <Swatch color="#f2a65a" label="Rising slowly" note="Small, reliable increase" />
+                <Swatch color="#c4621a" label="Rising fast" note="Strong, reliable increase" />
+              </div>
+            </div>
+            <div className="swatch-group">
+              <span className="swatch-head">Not sure or no data</span>
+              <div className="swatch-row">
+                <Swatch color="#fbe0c4" striped label="Could be chance" note="Pale stripes: the change is too weak to trust yet (orange or blue shows the direction)" />
+                <Swatch color="#a7a3b0" label="No data" note="This source has nothing here (for example the sea for a land-only source)" />
+              </div>
+            </div>
+          </div>
+          <span className="small muted">"Fast" and "slow" are relative to the rest of the map for the variable you chose. The exact numbers are in the legend under the map.</span>
         </section>
       </div>
 
@@ -156,14 +203,14 @@ export function Home() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 22, alignItems: "center" }}>
           <div className="col" style={{ gap: 10, padding: 18, borderRadius: 24, border: "2px dashed var(--line)" }} aria-label="Example result">
             <div className="row" style={{ gap: 8 }}><Num n={1} /><span className="badge sig">✓ Clear trend (significant)</span></div>
-            <div className="row" style={{ gap: 8 }}><Num n={2} /><span className="num" style={{ font: "600 38px var(--display)" }}>+0.28 °C</span><b>per decade</b></div>
+            <div className="row" style={{ gap: 8 }}><Num n={2} /><span className="num" style={{ font: "600 38px var(--display)" }}>+0.19 °C</span><b>per decade</b></div>
             <div className="row" style={{ gap: 8, flexWrap: "nowrap" }}>
-              <Num n={3} /><div className="stat"><b>[+0.19, +0.33]</b><small>95% CI</small></div>
+              <Num n={3} /><div className="stat"><b>[+0.09, +0.25]</b><small>95% CI</small></div>
               <Num n={4} /><div className="stat"><b>&lt;0.001</b><small>Mann–Kendall p</small></div>
             </div>
             <div className="row" style={{ gap: 8 }}><Num n={5} />
               <div style={{ flex: 1, height: 12, borderRadius: 6, background: "var(--track)" }}><div style={{ width: "100%", height: "100%", borderRadius: 6, background: "var(--quality)" }} /></div>
-              <span className="small muted num">288 / 288 months</span></div>
+              <span className="small muted num">300 / 300 months</span></div>
           </div>
           <ol style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 12 }}>
             {[
@@ -224,7 +271,7 @@ export function Home() {
 
       {/* limits */}
       <section className="row" aria-label="Good to know" style={{ gap: 10 }}>
-        {["Shows what changed, not why", "Past trends, not forecasts", "1° grid (about 110 km)", "Preliminary results"].map((t) => (
+        {["Shows what changed, not why", "Past trends, not forecasts", "0.5° grid (about 55 km)", "Preliminary results"].map((t) => (
           <span key={t} style={{ background: "#fff", borderRadius: 999, padding: "8px 14px", font: "800 13px var(--body)", boxShadow: "var(--shadow)" }}>{t}</span>
         ))}
       </section>

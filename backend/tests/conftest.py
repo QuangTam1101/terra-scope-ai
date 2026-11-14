@@ -4,6 +4,9 @@ import sys
 from pathlib import Path
 
 os.environ.setdefault("WARM_UP", "0")        # test không cần tính sẵn bản đồ
+os.environ["GRID_V2"] = "0"                  # test dùng cube giả, không đọc lưới 0,5° thật
+import tempfile
+os.environ["GRID_CACHE_DIR"] = tempfile.mkdtemp(prefix="terra-grid-cache-")   # không ghi cache của test vào backend/.cache
 
 import numpy as np
 import pandas as pd

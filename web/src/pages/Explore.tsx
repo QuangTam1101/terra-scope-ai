@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api, type TrendGrid, type ValueGrid } from "../api";
 import { areaPlace, cellPlace, useStore, WORLD } from "../store";
 import { PlacePicker } from "../PlacePicker";
@@ -6,6 +6,9 @@ import { Legend, WorldMap, type Layer } from "../WorldMap";
 import { TrendChart } from "../TrendChart";
 import { ci, pval, signed, Stat, Terra, VerdictBadge } from "../ui";
 import { trendGridF, valueGridF } from "../units";
+
+// Maps already loaded, kept for the whole visit (leaving and reopening Explore does not download them again).
+const GRID_CACHE = new Map<string, TrendGrid | ValueGrid>();
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -16,7 +19,6 @@ export function Explore() {
   const [trendGrid, setTrendGrid] = useState<TrendGrid | null>(null);
   const [valueGrid, setValueGrid] = useState<ValueGrid | null>(null);
   const [gridLoading, setGridLoading] = useState(false);
-  const cache = useRef(new Map<string, TrendGrid | ValueGrid>());
 
   const parameters = useMemo(() => {
     const m = new Map<string, { name: string; available: boolean; description: string }>();
@@ -43,13 +45,13 @@ export function Explore() {
     if (!variable?.available) return;
     const start = `${sel.startYear}-01`, end = `${sel.endYear}-12`;
     const key = `${layer}|${variable.id}|${start}|${end}|${layer === "values" ? month ?? "" : ""}`;
-    const hit = cache.current.get(key);
+    const hit = GRID_CACHE.get(key);
     if (hit) { layer === "trend" ? setTrendGrid(hit as TrendGrid) : setValueGrid(hit as ValueGrid); return; }
     let live = true;
     setGridLoading(true);
     const req = layer === "trend" ? api.trendGrid(variable.id, start, end) : api.valueGrid(variable.id, start, end, month);
     req.then((g) => {
-      cache.current.set(key, g);
+      GRID_CACHE.set(key, g);
       if (live) layer === "trend" ? setTrendGrid(g as TrendGrid) : setValueGrid(g as ValueGrid);
     }).catch((e) => live && showError(e)).finally(() => live && setGridLoading(false));
     return () => { live = false; };
@@ -167,7 +169,7 @@ export function Explore() {
       </section>
       <ChartCard />
       <span className="footer" style={{ gridColumn: "1 / -1" }}>
-        Preliminary · not yet validated · NASA data: GPM IMERG, GLDAS Noah, MERRA-2 (1° global grid, 2001 to 2024).{" "}
+        Preliminary · not yet validated · NASA data: GPM IMERG, GLDAS Noah, MERRA-2 ({variable?.spatial_resolution_deg ?? 0.5}° global grid, {years[0]} to {years[years.length - 1]}).{" "}
         <button type="button" className="btn soft" style={{ minHeight: 32, padding: "0 12px", fontSize: 12.5 }} onClick={() => go("report")}>Open report</button>
       </span>
     </div>

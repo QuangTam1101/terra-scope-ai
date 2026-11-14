@@ -22,12 +22,46 @@ def set_cube_dir(path) -> None:
     """Đổi thư mục cube (dùng cho test hoặc khi Long bàn giao dữ liệu ở chỗ khác) và xoá cache."""
     config.CUBE_DIR = papi.CUBE_DIR = Path(path)
     papi.load_cube.cache_clear()
+    _load_v2.cache_clear()
     _meta.cache_clear()
     grid_result.cache_clear()
 
 
+# pipeline id (cube 1° cũ) → tên sản phẩm lưới 0,5° bản mới (preprocess/clean.py) và đơn vị của sản phẩm đó.
+V2_PRODUCT = {"precip": "precip_imerg", "soil_moisture": "sm_0_10cm_gldas", "tair_land": "tair_gldas",
+              "evap_gldas": "evap_gldas", "t2m": "t2m_merra2"}
+V2_UNITS = {"precip_imerg": "mm/month", "sm_0_10cm_gldas": "m3/m3", "tair_gldas": "degC",
+            "evap_gldas": "mm/month", "t2m_merra2": "degC"}
+
+
+def _v2_path(pipeline_id: str) -> Path | None:
+    prod = V2_PRODUCT.get(pipeline_id)
+    if not (config.USE_GRID_V2 and prod):
+        return None
+    p = config.GRID_V2_DIR / f"{prod}.nc"
+    return p if p.exists() else None
+
+
 def cube_path(pipeline_id: str) -> Path:
-    return papi.CUBE_DIR / f"cube_{pipeline_id}.nc"
+    return _v2_path(pipeline_id) or papi.CUBE_DIR / f"cube_{pipeline_id}.nc"
+
+
+def units(pipeline_id: str) -> str:
+    """Đơn vị của dữ liệu thực sự đang dùng (bản mới đổi bốc thoát hơi sang mm/month)."""
+    p = _v2_path(pipeline_id)
+    return V2_UNITS[V2_PRODUCT[pipeline_id]] if p else papi.VARIABLES[pipeline_id][1]
+
+
+def source_label(pipeline_id: str) -> str:
+    p = _v2_path(pipeline_id)
+    return f"{p.stem} (0.5° global grid, data-pipeline preprocess/clean.py)" if p else f"cube_{pipeline_id} (1° grid)"
+
+
+@lru_cache(maxsize=None)
+def _load_v2(path: str, _mtime: float):
+    with xr.open_dataset(path) as ds:
+        name = next(iter(ds.data_vars))
+        return ds[name].load()
 
 
 def is_available(pipeline_id: str) -> bool:
@@ -43,7 +77,8 @@ def _time_index(da) -> pd.DatetimeIndex:
 def _meta(path: str, _mtime: float) -> dict:
     """Thông tin cube đọc từ trục toạ độ (không nạp dữ liệu): thời gian, cỡ ô, vùng phủ.
     Cube có thể là lưới 1° toàn cầu (download_grid.py) hoặc lưới gốc theo vùng (backend/scripts/download_region.py)."""
-    with xr.open_dataarray(path) as da:
+    with xr.open_dataset(path) as ds:
+        da = ds[next(iter(ds.data_vars))]
         t = _time_index(da)
         lat, lon = da["lat"].values.astype("float64"), da["lon"].values.astype("float64")
     res = float(np.round(np.median(np.abs(np.diff(lat))), 4)) if len(lat) > 1 else 1.0
@@ -64,6 +99,9 @@ def coverage(pipeline_id: str) -> tuple[str, str] | None:
 
 
 def load_cube(pipeline_id: str):
+    p = _v2_path(pipeline_id)
+    if p:
+        return _load_v2(str(p), p.stat().st_mtime)
     try:
         return papi.load_cube(pipeline_id)
     except FileNotFoundError:

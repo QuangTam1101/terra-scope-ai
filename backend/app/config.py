@@ -20,6 +20,16 @@ def _default_cube_dir() -> Path:
 
 CUBE_DIR = Path(os.getenv("CUBE_DIR") or _default_cube_dir()).resolve()
 
+# Dữ liệu bản mới của Long (14/11/2026): preprocess/clean.py ghi lưới 0,5° toàn cầu 2001–2025 vào
+# data/processed/grid/<sản phẩm>.nc (vd. precip_imerg.nc). Biến nào đã có file ở đây thì backend dùng file này,
+# chưa có thì quay về cube 1° cũ trong CUBE_DIR. Tắt hẳn bằng GRID_V2=0.
+GRID_V2_DIR = Path(os.getenv("GRID_V2_DIR", str(PIPELINE_DIR / "data" / "processed" / "grid"))).resolve()
+USE_GRID_V2 = os.getenv("GRID_V2", "1") != "0"
+
+# Bản đồ đã tính được lưu ra đĩa (JSON nén gzip): khởi động lại backend không phải tính lại. Xoá thư mục này
+# là tính lại từ đầu; khoá cache gồm thời điểm sửa file dữ liệu nên dữ liệu đổi thì tự tính lại.
+GRID_CACHE_DIR = Path(os.getenv("GRID_CACHE_DIR", str(REPO_ROOT / "backend" / ".cache" / "grids"))).resolve()
+
 # Domain frontend được gọi API (dev Vite mặc định chạy ở cổng 5173). Thêm domain deploy qua CORS_ORIGINS.
 CORS_ORIGINS = [o.strip() for o in os.getenv(
     "CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if o.strip()]

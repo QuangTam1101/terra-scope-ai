@@ -114,3 +114,63 @@ td.n { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 700
   .tabbar button { font-size: 9.5px; min-width: 0; padding: 0 2px; }
 }
 @media print { .sidebar, .tabbar, .noprint { display: none !important; } .shell { padding: 0; } .card { box-shadow: none; } }
+
+/* ---------- Home: how it works ---------- */
+.hsteps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; position: relative; }
+.hsteps::before { content: ""; position: absolute; top: 17px; left: 10%; right: 10%; height: 3px;
+  background: repeating-linear-gradient(90deg, #cfc7dc 0 8px, transparent 8px 14px); }
+.hstep { display: flex; flex-direction: column; }
+.hstep-top { display: flex; justify-content: center; margin-bottom: 12px; position: relative; z-index: 1; }
+.hstep-num { width: 36px; height: 36px; border-radius: 999px; background: var(--ink); color: #fff; display: grid; place-items: center;
+  font: 700 16px var(--display); box-shadow: 0 0 0 6px #fff; }
+.hstep-num.last { background: #7ad3b8; color: var(--ink); }
+.hstep-card { flex: 1; border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.hstep-card.last { box-shadow: inset 0 0 0 2px #b9a7ec; }
+.hstep-icon { width: 46px; height: 46px; border-radius: 14px; background: #fff; display: grid; place-items: center; color: var(--ink);
+  box-shadow: 0 2px 6px rgba(43, 37, 64, .08); }
+.hstep-card b { font: 700 17px var(--display); }
+.hstep-card p { margin: 0; font: 600 13.5px/1.45 var(--body); color: var(--ink); }
+.hstep-eg { margin-top: auto; font: 700 12px var(--body); background: rgba(255, 255, 255, .8); border-radius: 999px; padding: 4px 10px; color: #5e5872; }
+@media (max-width: 980px) { .hsteps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hsteps::before { display: none; } }
+@media (max-width: 520px) { .hsteps { grid-template-columns: 1fr; } }
+
+/* ---------- Home: map guide with animated mini maps ---------- */
+.maptips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.maptip { display: flex; flex-direction: column; gap: 6px; }
+.maptip b { font: 700 16px var(--display); margin-top: 4px; }
+.maptip p { margin: 0; font: 600 13.5px/1.45 var(--body); }
+.maptip .res { color: #5e5872; font-weight: 700; font-size: 12.5px; }
+.mapdemo { width: 100%; height: auto; border-radius: 14px; box-shadow: inset 0 0 0 1px rgba(43, 37, 64, .1); }
+.mapdemo * { transform-box: view-box; }
+.demo-pin { transform-origin: 80px 44px; animation: demo-pop 2.4s ease-out infinite; }
+.demo-ripple { transform-origin: 80px 44px; animation: demo-ripple 2.4s ease-out infinite; }
+.demo-box { transform-origin: 44px 22px; animation: demo-box 3.2s ease-in-out infinite; }
+.demo-dragcursor { animation: demo-dragcur 3.2s ease-in-out infinite; }
+.demo-pan .demo-land { animation: demo-pan 3s ease-in-out infinite alternate; }
+.demo-pancursor { animation: demo-pancur 3s ease-in-out infinite alternate; }
+.demo-zoom .demo-land { transform-origin: 80px 50px; animation: demo-zoom 3s ease-in-out infinite alternate; }
+@keyframes demo-pop { 0%, 20% { transform: scale(0); } 35% { transform: scale(1.25); } 45%, 100% { transform: scale(1); } }
+@keyframes demo-ripple { 0%, 20% { transform: scale(.4); opacity: 0; } 30% { opacity: 1; } 70%, 100% { transform: scale(2.2); opacity: 0; } }
+@keyframes demo-box { 0%, 12% { transform: scale(0); opacity: 1; } 62%, 88% { transform: scale(1); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+@keyframes demo-dragcur { 0%, 12% { transform: translate(44px, 22px); opacity: 1; } 62%, 88% { transform: translate(114px, 72px); opacity: 1; } 100% { transform: translate(114px, 72px); opacity: 0; } }
+@keyframes demo-pan { from { transform: translate(-14px, 0); } to { transform: translate(14px, 0); } }
+@keyframes demo-pancur { from { transform: translate(56px, 50px); } to { transform: translate(84px, 50px); } }
+@keyframes demo-zoom { from { transform: scale(1); } to { transform: scale(1.35); } }
+@media (max-width: 980px) { .maptips { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .maptips { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) {
+  .mapdemo * { animation: none !important; }
+  .demo-dragcursor { transform: translate(114px, 72px); }
+  .demo-pancursor { transform: translate(70px, 50px); }
+}
+
+/* ---------- Home: reading the trend map ---------- */
+.swatches { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 16px; }
+.swatch-group { display: flex; flex-direction: column; gap: 8px; background: #faf7f2; border-radius: 18px; padding: 12px 14px; }
+.swatch-head { font: 800 12.5px var(--body); text-transform: uppercase; letter-spacing: .04em; color: #5e5872; }
+.swatch-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.swatch { display: flex; flex-direction: column; gap: 4px; }
+.swatch > span { width: 100%; height: 40px; border-radius: 10px; box-shadow: inset 0 0 0 1px rgba(43, 37, 64, .08); }
+.swatch b { font: 800 13.5px var(--body); }
+.swatch small { font: 600 12px/1.35 var(--body); color: #5e5872; }
+@media (max-width: 980px) { .swatches { grid-template-columns: 1fr; } }

@@ -4,7 +4,7 @@ import { ci, pval, signed, VERDICT_TEXT, verdictOf } from "../ui";
 const LIMITS = [
   "A trend shows what changed, not why it changed.",
   "Trend lines are estimated past trends, not forecasts.",
-  "Data are averaged on a 1° grid (about 110 km); small areas mix land and sea.",
+  "Data are averaged on a 0.5° grid (about 55 km); small areas mix land and sea.",
   "GLDAS is a land model: land only, with no irrigation or flooding of rice fields.",
   "There is no salinity variable, so salt intrusion cannot be tested.",
   "All results are preliminary and not yet validated against independent sources.",
@@ -20,7 +20,7 @@ export function Report() {
       "# Terra-scope AI evidence report", "", "Preliminary · not yet validated", "",
       "| Place | Variable · dataset | Period | Sen's slope per decade | 95% CI | Mann–Kendall p | Verdict |",
       "|---|---|---|---|---|---|---|", ...rows, "",
-      "## Method", "Monthly area averages on a 1° grid; Seasonal Mann–Kendall test with Sen's slope; Hamed–Rao autocorrelation-adjusted p; 95% CI from a linear fit on anomalies; maps use Benjamini–Hochberg FDR.", "",
+      "## Method", "Monthly area averages on a 0.5° grid; Seasonal Mann–Kendall test with Sen's slope; Hamed–Rao autocorrelation-adjusted p; 95% CI from a linear fit on anomalies; maps use Benjamini–Hochberg FDR.", "",
       "## NASA datasets", ...used.map((v) => `- ${v.source.product} v${v.source.version}, ${v.source.provider}: ${v.source.url}`), "",
       "## Limitations", ...LIMITS.map((l) => `- ${l}`), "",
     ].join("\n");
@@ -65,7 +65,7 @@ export function Report() {
       </section>
       <section className="card pad col">
         <h2 style={{ fontSize: 22 }}>How the evidence was tested</h2>
-        <p style={{ margin: 0, lineHeight: 1.55 }}>Monthly values are averaged over the chosen area on a 1° grid. Seasons are removed, then the Seasonal Mann–Kendall test checks whether the change is steady enough to be unlikely by chance, and Sen's slope gives the rate per decade. A second test (Hamed–Rao) adjusts for months that depend on each other. Maps correct for testing thousands of cells at once (Benjamini–Hochberg FDR).</p>
+        <p style={{ margin: 0, lineHeight: 1.55 }}>Monthly values are averaged over the chosen area on a 0.5° grid. Seasons are removed, then the Seasonal Mann–Kendall test checks whether the change is steady enough to be unlikely by chance, and Sen's slope gives the rate per decade. A second test (Hamed–Rao) adjusts for months that depend on each other. Maps correct for testing thousands of cells at once (Benjamini–Hochberg FDR).</p>
       </section>
       <section className="card pad col">
         <h2 style={{ fontSize: 22 }}>NASA datasets</h2>
