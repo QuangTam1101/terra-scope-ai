@@ -10,8 +10,10 @@ How it works (no new statistics):
      significance pictures.
 4. Ranking: by the weaker tile's significant share (strength of the weaker side), then by the absolute mean
    slope difference, then by distance, then by tile coordinates. No "confidence %" is produced.
-5. Regions mode re-tests the top candidates with the existing /compare test (block-bootstrap difference of
-   slopes on anomalies). Datasets mode has no approved difference test, so it stays descriptive.
+5. Regions mode re-tests the top candidates with the existing /compare test (Hamed-Rao Mann-Kendall p-value on the
+   monthly anomaly difference series A minus B, its Sen slope, and a moving-block bootstrap 95% interval; significant
+   only when p < alpha and the interval excludes zero). Candidates are selected and re-tested on the same data, so they
+   are leads, not confirmed findings. Datasets mode has no approved difference test, so it stays descriptive.
 """
 from __future__ import annotations
 

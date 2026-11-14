@@ -9,6 +9,10 @@ export interface TourStep {
   target: string | null;
   title: string;
   body: string;
+  /** Shown instead of a highlight when the target does not exist yet (for example results before a run). */
+  fallback?: string;
+  /** Asks the page to show a view (no computation), e.g. "hunt:regions". Sent as a "terra-tour-prepare" event. */
+  prepare?: string;
 }
 
 // Each target is a data-tour attribute placed on an existing control. If a target is missing at run time the
@@ -37,7 +41,7 @@ export const TOUR_STEPS: TourStep[] = [
   { id: "report", page: "report", target: '[data-tour="report"]', title: "10. Create a report",
     body: "Analyses you run are collected here with their method and NASA source. Export them as Markdown or print to PDF." },
   { id: "finish", page: "explore", target: null, title: "You're ready, detective!",
-    body: "Start exploring on your own. Want every statistic? Switch the Experience to Scientist at the top of the page. You can replay this tour any time from the menu." },
+    body: "Start exploring on your own. Want every statistic? Switch the Mode to Scientist at the top of the page. You can replay this tour any time from the menu." },
 ];
 
 /** Scientist tour: shorter and technical. Same rule: it only navigates and highlights, never runs anything. */
@@ -95,4 +99,67 @@ export function shouldAutoStart(fromLanding: boolean, startedThisSession: boolea
 
 export function clampStep(i: number, count: number = TOUR_STEPS.length): number {
   return Math.max(0, Math.min(count - 1, Math.trunc(i)));
+}
+
+/* ---------------------------------------------------------------- Contradiction Hunter tour (scoped to the Hunt page) */
+// Separate, versioned completion per audience. It only highlights real Hunt controls and may switch the Hunt view to
+// "Compare regions" so the selectors exist; it never runs a comparison, never calls Gemini, never changes data.
+export const HUNT_TOUR_KEYS: Record<TourAudience, string> = {
+  explorer: "terra-scope:hunt-tour:explorer:v1",
+  scientist: "terra-scope:hunt-tour:scientist:v1",
+};
+const RESULT_FALLBACK = "This part appears after you run a comparison, so it is not highlighted yet.";
+
+export const HUNT_STEPS_EXPLORER: TourStep[] = [
+  { id: "welcome", page: "hunt", target: null, title: "Contradiction Hunter",
+    body: "Different places and datasets can tell different stories. Let's investigate why. Nothing is run during this tour." },
+  { id: "modes", page: "hunt", target: '[data-tour="hunt-modes"]', title: "1. Choose an investigation",
+    body: "Compare two places, two NASA datasets for the same place, or two periods for the same place. Each card says what it can and cannot show." },
+  { id: "config", page: "hunt", target: '[data-tour="hunt-config"]', prepare: "hunt:regions", title: "2. Pick A and B",
+    body: "Choose what goes on each side. Both sides use the same variable, units and years, so the comparison is fair." },
+  { id: "run", page: "hunt", target: '[data-tour="hunt-run"]', prepare: "hunt:regions", title: "3. Run the comparison",
+    body: "When you press this, the server builds both monthly series from NASA data and tests each trend. Nothing is guessed in your browser." },
+  { id: "visual", page: "hunt", target: '[data-tour="hunt-visual"]', fallback: RESULT_FALLBACK, title: "4. Read the maps and charts",
+    body: "A and B sit side by side with the same units. Orange lines rise, blue lines fall; a dashed line means the test did not confirm the trend." },
+  { id: "evidence", page: "hunt", target: '[data-tour="hunt-evidence"]', fallback: RESULT_FALLBACK, title: "5. Understand the evidence",
+    body: "Two arrows pointing opposite ways is a description. Only a test of the gap itself can confirm that two places really change differently." },
+  { id: "detective", page: "hunt", target: '[data-tour="hunt-detective"]', fallback: RESULT_FALLBACK, title: "6. Ask the Detective",
+    body: "Send this comparison to the Detective. It recalculates the evidence itself and explains it; it never invents numbers." },
+  { id: "save", page: "hunt", target: '[data-tour="hunt-save"]', fallback: RESULT_FALLBACK, title: "7. Save and report",
+    body: "Save the investigation in this browser with your own notes, or add it to your report." },
+  { id: "finish", page: "hunt", target: null, title: "Happy hunting!",
+    body: "Start with a card above. You can replay this Hunt tutorial any time from the help button on this page." },
+];
+
+export const HUNT_STEPS_SCIENTIST: TourStep[] = [
+  { id: "welcome", page: "hunt", target: null, title: "Contradiction Hunter",
+    body: "Explore cross-region, cross-product and temporal trend disagreements with traceable evidence. Nothing is computed during the tour." },
+  { id: "modes", page: "hunt", target: '[data-tour="hunt-modes"]', title: "1. Comparison type",
+    body: "Regions: formal difference test on the anomaly difference series. Datasets and periods: descriptive only, because no approved two-sample test exists for them." },
+  { id: "config", page: "hunt", target: '[data-tour="hunt-config"]', prepare: "hunt:regions", title: "2. Configure A and B",
+    body: "Comparability is checked deterministically: physical quantity, units, period overlap, spatial coverage, product kind and native resolution." },
+  { id: "run", page: "hunt", target: '[data-tour="hunt-run"]', prepare: "hunt:regions", title: "3. Execute",
+    body: "Runs /compare (regions) or two /trends requests (datasets, periods). Each side: raw Seasonal Mann-Kendall at α = 0.05 and seasonal Sen slope." },
+  { id: "visual", page: "hunt", target: '[data-tour="hunt-visual"]', fallback: RESULT_FALLBACK, title: "4. Maps and series",
+    body: "Shared time axis, single y-axis in common units, monthly anomalies; trend lines carry the reported Sen slopes. Missing months are gaps, never interpolated." },
+  { id: "evidence", page: "hunt", target: '[data-tour="hunt-evidence"]', fallback: RESULT_FALLBACK, title: "5. Evidence status",
+    body: "Statistically tested difference requires Hamed-Rao p < 0.05 on the A minus B anomaly series and a 95% moving-block bootstrap interval excluding zero. Significant versus non-significant alone is never treated as a difference." },
+  { id: "detective", page: "hunt", target: '[data-tour="hunt-detective"]', fallback: RESULT_FALLBACK, title: "6. Detective handoff",
+    body: "Only identifiers are sent (variable, regions, periods); the backend re-resolves and recomputes the evidence before the model writes anything." },
+  { id: "save", page: "hunt", target: '[data-tour="hunt-save"]', fallback: RESULT_FALLBACK, title: "7. Reproducible record",
+    body: "Saved investigations keep configuration, evidence IDs, statistics, method and limitations (local browser only); Add to Report places it in both report editions." },
+  { id: "finish", page: "hunt", target: null, title: "Ready",
+    body: "Pick a comparison type to begin. Replay this tutorial from the help button on the Hunt page." },
+];
+
+export const huntSteps = (a: TourAudience = "explorer") => (a === "scientist" ? HUNT_STEPS_SCIENTIST : HUNT_STEPS_EXPLORER);
+export function isHuntTourDone(s?: StorageLike | null, a: TourAudience = "explorer"): boolean {
+  try { return store(s)?.getItem(HUNT_TOUR_KEYS[a]) === "done"; } catch { return false; }
+}
+export function markHuntTourDone(s?: StorageLike | null, a: TourAudience = "explorer"): boolean {
+  try { const st = store(s); if (!st) return false; st.setItem(HUNT_TOUR_KEYS[a], "done"); return true; } catch { return false; }
+}
+/** First Hunt visit: start only when the main tour is closed, nothing is running and it was not shown this session. */
+export function shouldAutoStartHunt(onHunt: boolean, mainTourOpen: boolean, busy: boolean, shownThisSession: boolean, s?: StorageLike | null, a: TourAudience = "explorer"): boolean {
+  return onHunt && !mainTourOpen && !busy && !shownThisSession && !isHuntTourDone(s, a);
 }

@@ -86,7 +86,7 @@ try {
     const html = renderToStaticMarkup(createElement(Landing, { onStart: () => {} }));
     for (const s of ["Discover Earth", "Get Started", "Watch Demo", "Product Demo: Coming Soon", "GPM IMERG", "GLDAS Noah", "MERRA-2",
       "Compare Regions", "Ask the AI Detective", "not an official NASA product", "Not affiliated with or endorsed by NASA",
-      "does not forecast", "Illustration, not data"]) assert.ok(html.includes(s), s);
+      "does not forecast", "real NASA data: MERRA-2 air temperature trend"]) assert.ok(html.includes(s), s);
     assert.ok(!html.includes('<video'), 'no fake video player without a configured video');
     assert.ok(!html.includes('<iframe'), 'no embed without a configured video');
     assert.ok(!html.includes('—'), 'no long dash on the landing page');

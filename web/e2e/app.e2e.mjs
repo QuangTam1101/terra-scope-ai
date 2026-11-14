@@ -105,27 +105,29 @@ describe("Terra-scope full feature E2E", { skip: !up && "servers not running", c
   });
 
   it("hunt: discover contradictions, inspect, add to report", async () => {
+    // The Hunt tutorial is covered by e2e/hunt.e2e.mjs; here it is marked as seen so it does not cover the page.
+    await page.evaluate(`localStorage.setItem("terra-scope:hunt-tour:explorer:v1", "done"); localStorage.setItem("terra-scope:hunt-tour:scientist:v1", "done"); return true`);
     await page.click(byText("button.nav", "Hunt"));
-    await page.click(byText('[role="tab"]', "Discover contradictions"));
+    await page.click(byText("button", "Discover Interesting Differences"));
     await page.click(byText("button", "Scan"));
-    await page.waitFor(`document.querySelector(".cand") || /No candidates/.test(${text()})`, { timeout: 180000, label: "discovery result" });
+    await page.waitFor(`document.querySelector(".cand") || /No interesting differences found/.test(${text()})`, { timeout: 180000, label: "discovery result" });
     const cands = await page.evaluate(`return document.querySelectorAll(".cand").length`);
     assert.ok(cands >= 1, "at least one candidate in the Sahel default area");
     const first = await page.evaluate(`return document.querySelector(".cand").innerText`);
-    assert.match(first, /Statistical evidence of disagreement|Inconclusive|Descriptive disagreement|Unsupported comparison/);
-    await page.click(`[...document.querySelectorAll(".cand button")].find(b => b.innerText === "Inspect")`);
-    await page.waitFor(`/Difference A minus B/i.test(${text()})`, { timeout: 60000 });
-    await page.click(byText("button", "Add to report"));
+    assert.match(first, /Difference confirmed by a test|Not settled yet|Described, not tested|The test does not support a difference|Can't be compared|Statistically tested difference|Inconclusive|Descriptive difference|Difference not statistically supported|Not comparable/);
+    await page.click(`[...document.querySelectorAll(".cand button")].find(b => b.innerText === "Investigate this pair")`);
+    await page.click(byText("button", "Run the comparison"));
+    await page.waitFor(`document.querySelector('[data-tour="hunt-evidence"]')`, { timeout: 120000, label: "region comparison" });
+    assert.match(await page.evaluate(`return document.querySelector('[data-tour="hunt-evidence"]').innerText`), /What cannot be concluded\?/);
+    await page.click(byText("button", "Add to Report"));
     await page.waitFor(`${byText("button", "Added to report")}`);
   });
 
-  it("hunt: dataset agreement is descriptive and warns about coverage", async () => {
-    await page.click(byText('[role="tab"]', "Dataset agreement"));
-    await page.waitFor(`${text()}.includes("Dataset agreement")`);
-    const intro = await page.evaluate(`return ${text()}`);
-    if (/no second compatible dataset/i.test(intro)) return;   // precipitation selected: no compatible pair, correctly refused
-    await page.click(byTextStart("button", "Compare the two datasets"));
-    await page.waitFor(`/Agreement \\(descriptive\\)/i.test(${text()})`, { timeout: 60000 });
+  it("hunt: dataset comparison is descriptive and warns about coverage", async () => {
+    await page.click(`[...document.querySelectorAll(".hunt-card")].find((b) => b.querySelector(".hunt-card-t").innerText.trim() === "Compare NASA Datasets")`);
+    await page.waitFor(`/Compare NASA Datasets/.test(document.querySelector('[data-tour="hunt-config"] h2')?.innerText ?? "")`);
+    await page.click(byText("button", "Run the comparison"));
+    await page.waitFor(`/Described, not tested|Descriptive difference/.test(document.querySelector('[data-tour="hunt-evidence"]')?.innerText ?? "")`, { timeout: 120000, label: "dataset comparison" });
   });
 
   it("detective answers with backend evidence" + (GEMINI ? " in Gemini mode" : ""), async () => {
@@ -149,7 +151,7 @@ describe("Terra-scope full feature E2E", { skip: !up && "servers not running", c
     }
     assert.ok(!/Could not answer/.test(t), "detective error");
     if (GEMINI) assert.match(t, /Gemini AI Mode/);
-    assert.match(t, /Backend tools: analyze_trend: verified|analyze_trend/);
+    assert.match(t, /Details and method/);
   });
 
   it("report (Form D): reader, findings, preview; both editions, exports, save and reopen a case, PDF", async () => {

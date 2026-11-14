@@ -8,8 +8,8 @@ export function ToolDetails({ result, fahrenheit }: { result: ChatToolResult; fa
     const raw = result.data as SeriesResponse;
     const temperature = raw.units === "degC" || raw.units === "°C";
     const series = temperature && fahrenheit ? seriesF(raw) : raw;
-    return <section className="col" aria-label="Monthly observations" style={{ width: "100%", minWidth: 0 }}>
-      <b>Monthly observations · {raw.source.product}</b>
+    return <section className="ev-compare" aria-label="Monthly observations" style={{ width: "100%", minWidth: 0 }}>
+      <b className="ev-title">Monthly observations · {raw.region.name ?? "Selected area"}</b>
       <span className="small muted">{raw.points[0]?.t} to {raw.points.at(-1)?.t} · {raw.quality.n_months} valid months · {raw.quality.missing_months} missing</span>
       <TrendChart lines={[{ series, label: raw.region.name ?? "Selected area" }]} anomaly={false} height={240} units={temperature ? (fahrenheit ? "°F" : "°C") : raw.units} />
     </section>;
@@ -25,8 +25,8 @@ export function ToolDetails({ result, fahrenheit }: { result: ChatToolResult; fa
   }
   if (result.tool === "get_dataset_provenance") {
     const p = result.data as { variable: Variable; processing_notes: string[] };
-    return <section className="col" aria-label="Dataset provenance">
-      <b>{p.variable.name} · {p.variable.source.product} v{p.variable.source.version}</b>
+    return <section className="ev-compare" aria-label="Dataset provenance">
+      <b className="ev-title">{p.variable.name} · {p.variable.source.product} v{p.variable.source.version}</b>
       <span>{p.variable.source.provider} · {p.variable.units} · {p.variable.spatial_resolution_deg}° processed grid</span>
       <span>{p.variable.coverage ? `${p.variable.coverage.start} to ${p.variable.coverage.end}` : "Cube unavailable"}</span>
       {p.processing_notes.map((note) => <span className="small muted" key={note}>{note}</span>)}
@@ -35,15 +35,15 @@ export function ToolDetails({ result, fahrenheit }: { result: ChatToolResult; fa
   }
   if (result.tool === "list_available_variables") {
     const catalog = result.data as { variables: Variable[] };
-    return <section aria-label="Variable catalog">{catalog.variables.map((v) => <p className="small" key={v.id}>
-      <b>{v.id}</b> · {v.source.product} · {v.units} · {v.available ? `${v.coverage?.start} to ${v.coverage?.end}` : "not available"}
-    </p>)}</section>;
+    return <section className="ev-compare" aria-label="Variable catalog"><b className="ev-title">Available NASA data</b>
+      <ul className="ev-list">{catalog.variables.map((v) => <li key={v.id}><b>{v.parameter_name}</b> · {v.dataset_name} · {v.display_units} · {v.available ? `${v.coverage?.start.slice(0, 4)} to ${v.coverage?.end.slice(0, 4)}` : "not available yet"}</li>)}</ul>
+    </section>;
   }
   if (result.tool === "list_available_regions") {
     const catalog = result.data as { catalog: RegionsResponse; supported_selection_types: string[] };
-    return <section aria-label="Region catalog"><b>Preset regions</b>
-      {catalog.catalog.regions.map((r) => <p className="small" key={r.id}>{r.id} · {r.name}</p>)}
-      <span className="small muted">Supported selections: {catalog.supported_selection_types.join(", ")}</span>
+    return <section className="ev-compare" aria-label="Region catalog"><b className="ev-title">Ready-made places</b>
+      <ul className="ev-list">{catalog.catalog.regions.map((r) => <li key={r.id}>{r.name}</li>)}</ul>
+      <span className="small muted">You can also pick any country, city, coordinates or a box on the Explore map.</span>
     </section>;
   }
   return null; // Trend cards already show the authoritative TrendResponse.

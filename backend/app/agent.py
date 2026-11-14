@@ -50,6 +50,19 @@ def create_composer(settings):
     return GeminiProvider(settings)
 
 
+def _p_text(p):
+    return "unavailable" if p is None else "p < 0.001" if p < 0.001 else f"p = {p:.3f}"
+
+
+def _difference_sentence(d):
+    """Readable statement of the backend difference test (same numbers and verdict; method names in words)."""
+    diff = d.difference
+    if diff.p_value is None:
+        return "The difference between the two trends could not be tested."
+    # The comparison summary already states the verdict; this sentence only adds the test result.
+    return f"The test of the difference between the two trends gives {_p_text(diff.p_value)}."
+
+
 def trusted_answer(results):
     parts = []
     for result in results:
@@ -58,10 +71,10 @@ def trusted_answer(results):
             continue
         d = result.data
         if isinstance(d, TrendResponse):
-            parts.append(d.plain_summary + f" Source: {d.source.product} v{d.source.version}. Method: {d.method}; slope: {d.slope_method}; interval: {d.ci_method}. Raw p-value determines this decision; adjusted p-value is separate.")
+            parts.append(d.plain_summary + f" Data: {d.source.product} v{d.source.version}.")
         elif isinstance(d, CompareResponse):
-            parts.append(d.plain_summary + f" Difference test: {d.difference.test}; difference p-value: {d.difference.p_value}; significant: {d.difference.significant}. " + d.a.plain_summary + " " + d.b.plain_summary
-                         + f" Source: {d.a.source.product} v{d.a.source.version}. Regional method: {d.a.method}; slope: {d.a.slope_method}; interval: {d.a.ci_method}.")
+            parts.append(d.plain_summary + " " + _difference_sentence(d) + " " + d.a.plain_summary + " " + d.b.plain_summary
+                         + f" Data: {d.a.source.product} v{d.a.source.version}.")
         elif isinstance(d, SeriesResponse):
             parts.append(f"Retrieved {len(d.points)} monthly observations in {d.units} from {d.source.product}; missing months: {d.quality.missing_months}.")
         elif isinstance(d, Provenance):

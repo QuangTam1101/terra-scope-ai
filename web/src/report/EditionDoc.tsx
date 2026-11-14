@@ -484,7 +484,7 @@ function ScientistComparison({ p, c, i }: { p: EditionProps; c: ComparisonEntry;
             <li>{pOk ? "Met" : "Not met"}: Hamed-Rao Mann-Kendall p on the anomaly difference = {pText(d.p_value)} (required below 0.05).</li>
             <li>{ivOk ? "Met" : "Not met"}: the 95% interval of the difference{d.ci ? ` (${num(d.ci[0])} to ${num(d.ci[1])} ${c.units} per decade)` : ""} {ivOk ? "excludes" : "includes"} zero.</li>
           </ul></div>
-      ) : <div className="rnote"><b>Descriptive comparison.</b> No statistical test of a difference between two datasets is implemented; neither product is treated as ground truth.</div>}
+      ) : <div className="rnote"><b>Descriptive comparison.</b> {c.kind === "periods" ? "No statistical test of a change of trend between two periods is implemented; window choice can drive the result." : "No statistical test of a difference between two datasets is implemented; neither product is treated as ground truth."}</div>}
       <p>{compareStatement(c)}</p>
       <figure className="rfig">
         <ReportChart units={c.units} height={150} yLabel={`Monthly anomaly (${c.units})`} lines={[

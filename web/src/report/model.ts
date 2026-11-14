@@ -11,7 +11,7 @@ export interface ReportRun {
   series: SeriesResponse; variable: Variable; place: { label: string; bbox: [number, number, number, number]; ref: { type: string; id?: string } };
 }
 export interface ReportComparison {
-  key: string; kind: "regions" | "datasets"; title: string;
+  key: string; kind: "regions" | "datasets" | "periods"; title: string;
   a: { label: string; dataset: string; trend: TrendResponse; series: SeriesResponse };
   b: { label: string; dataset: string; trend: TrendResponse; series: SeriesResponse };
   units: string; variableName: string;
@@ -40,14 +40,10 @@ export interface ReportModel {
 }
 
 export const LIMITATIONS = [
-  "A trend shows what changed, not why it changed. Possible causes are hypotheses, not conclusions.",
-  "Trend lines are estimated past trends, not forecasts.",
-  "The raw Seasonal Mann-Kendall test assumes independent years; monthly climate series are often autocorrelated, so raw p-values can be optimistic. The autocorrelation-adjusted p-value is a separate diagnostic.",
-  "The 95% interval shown is for the OLS slope of the anomalies, a different estimator from Sen's slope; it is not a Sen-slope confidence interval and has no HAC adjustment.",
-  "Map significance uses Benjamini-Hochberg FDR across cells on raw cell p-values without serial-dependence correction.",
-  "Regions are analysed as latitude-longitude boxes on the processed grid; country and drawn areas are bounding-box approximations.",
-  "GLDAS is a land-surface model and MERRA-2 a reanalysis: neither is a direct local measurement, and products can disagree.",
-  "All results are preliminary and have not been peer reviewed.",
+  "A trend shows what changed, not why it changed.",
+  "Trend lines describe the past; they are not forecasts.",
+  "Monthly climate data are often autocorrelated, so raw p-values can be optimistic.",
+  "GLDAS is a model and MERRA-2 a reanalysis, not direct measurements; datasets can disagree.",
 ];
 
 export const num = (x: number | null | undefined, digits = 2) =>
@@ -124,8 +120,10 @@ function judge(c: ReportComparison): ComparisonEntry {
           ? `The difference is not confirmed: p = ${pText(d.p_value)}, but the 95% bootstrap interval of the difference (${iv}) includes zero. Both conditions are required, so the evidence for a real disagreement is inconclusive.`
           : `The difference between the two trends is not statistically significant (p = ${pText(d.p_value)}; 95% bootstrap interval ${iv}): the evidence for a real disagreement is weak.`;
   } else {
-    strength = "Descriptive comparison only: no statistical test of the difference between two datasets is implemented, so this disagreement is not proven.";
-    cannot.push("Neither product is assumed to be the ground truth.");
+    strength = c.kind === "periods"
+      ? "Descriptive comparison only: no statistical test of a change of trend between two periods is implemented, so this difference is not proven."
+      : "Descriptive comparison only: no statistical test of the difference between two datasets is implemented, so this disagreement is not proven.";
+    cannot.push(c.kind === "periods" ? "A different slope in two periods is not a tested change point; the choice of years can drive the result." : "Neither product is assumed to be the ground truth.");
     const ca = a.quality.coverage_fraction, cb = b.quality.coverage_fraction;
     if (Math.abs(ca - cb) > 0.05)
       cannot.push(`The products cover different parts of the area (${Math.round(ca * 100)}% versus ${Math.round(cb * 100)}% of grid cells, for example land only versus land and sea), so part of the difference reflects coverage, not the trend.`);

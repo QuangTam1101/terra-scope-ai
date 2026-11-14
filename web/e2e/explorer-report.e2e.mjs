@@ -125,6 +125,7 @@ test("Explorer report: interactive companion, accessibility, mobile, mode switch
     await page.click(btn("Ask the Detective a follow-up"));
     await page.waitFor(`location.hash.startsWith("#detective") || document.querySelector('[data-tour="detective-input"]')`, { label: "detective page" });
     await sleep(300); await shot("05-detective");
-    if (page.errors.length) assert.fail(`page errors: ${page.errors.join(" | ")}`);
+    const errs = page.errors.filter((e) => !/favicon\.ico/.test(e));   // a missing favicon is not an app error
+    if (errs.length) assert.fail(`page errors: ${errs.join(" | ")}`);
   } finally { await page.close(); }
 });

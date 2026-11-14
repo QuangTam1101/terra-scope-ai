@@ -210,7 +210,7 @@ export function Report() {
                   <span className="rpick-main">
                     <b>{label}</b>
                     <span className="small muted">{r ? `${r.variable.dataset_name} · ${r.trend.start} to ${r.trend.end} · ${signedNum(r.trend.slope_per_decade)} ${r.variable.display_units} per decade · p ${pText(r.trend.p_value)}`
-                      : `${c!.kind === "regions" ? "Two regions" : "Two datasets"} · from Hunt`}</span>
+                      : `${c!.kind === "regions" ? "Two regions" : c!.kind === "periods" ? "Two periods" : "Two datasets"} · from Hunt`}</span>
                   </span>
                   <span className={`badge rstamp ${st.cls}`}>{st.text}</span>
                   <span className="row" style={{ gap: 6 }}>

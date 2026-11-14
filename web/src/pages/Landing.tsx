@@ -1,26 +1,228 @@
-import { useMemo, type JSX } from "react";
+import { useEffect, useMemo, useRef, type JSX } from "react";
+import { geoEquirectangular, geoOrthographic, geoPath } from "d3-geo";
+import heroTrend from "../assets/heroTrend.json";
+import { land } from "../WorldMap";
 import { DEMO_VIDEO, hasPlayableVideo, youtubeEmbedUrl } from "../config/demo";
-import { Icon, Terra } from "../ui";
+import { Icon, Terra, VERDICT_TEXT } from "../ui";
 
 // Public landing page shown before the application. It loads no map or analysis data: everything here is
-// static text about features that exist today. No results or numbers are shown on this page on purpose.
+// static text about features that exist today, plus a small precomputed trend grid for the hero globe (real NASA data).
 
 const FEATURES = [
-  { icon: "globe", title: "Explore Earth", text: "See real NASA environmental datasets on an interactive world map and a 3D globe." },
-  { icon: "trend", title: "Detect Trends", text: "Turn monthly data into a trend per decade and test whether it is statistically significant." },
-  { icon: "hunt", title: "Compare Regions", text: "Check two places side by side, and whether the difference between them is proven." },
-  { icon: "detective", title: "Ask the AI Detective", text: "Ask in plain language. Answers are built from backend statistics, with the evidence shown." },
-  { icon: "science", title: "Understand the Science", text: "Every result shows its method, p-values, uncertainty and limitations in simple words." },
-  { icon: "report", title: "Create a Report", text: "Collect findings with dataset provenance and export them as Markdown or PDF." },
+  { icon: "globe", tag: "Map", tint: "#e3f1ea", title: "Explore Earth", text: "Real NASA data on a world map and 3D globe." },
+  { icon: "trend", tag: "Statistics", tint: "#fde9da", title: "Detect Trends", text: "See how fast a place is changing, and if it is real." },
+  { icon: "hunt", tag: "Compare", tint: "#e2ecf8", title: "Compare Regions", text: "Put two places side by side, tested fairly." },
+  { icon: "detective", tag: "AI", tint: "#ede6fb", title: "Ask the AI Detective", text: "Ask in plain words. Every answer shows its evidence." },
+  { icon: "science", tag: "Modes", tint: "#fff3cf", title: "Choose Your Level", text: "Explorer for plain words, Scientist for full statistics." },
+  { icon: "report", tag: "Share", tint: "#f6e4ee", title: "Create a Report", text: "Turn your findings into a shareable PDF." },
 ] as const;
 
+/** Small schematic previews of each feature (drawings of the interface, not results). */
+const FEATURE_ART: Record<string, () => JSX.Element> = {
+  globe: () => (
+    <svg viewBox="0 0 220 120" aria-hidden="true">
+      <circle cx="110" cy="62" r="50" fill="#f6f1e8" stroke="#2e2850" strokeWidth="5" />
+      <clipPath id="fa-g"><circle cx="110" cy="62" r="47" /></clipPath>
+      <g clipPath="url(#fa-g)">
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].flatMap((i) => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((j) => {
+          const v = (i * 7 + j * 3) % 10;
+          const c = v < 2 ? "#7fb2e5" : v < 3 ? "#cfe1f4" : v < 6 ? "#f2a65a" : v < 8 ? "#fbe0c4" : "#c4621a";
+          return <rect key={`${i}-${j}`} x={60 + i * 10} y={12 + j * 10} width="9.2" height="9.2" fill={c} />;
+        }))}
+      </g>
+      <path d="M150 20c-9 0-15 7-15 15 0 11 15 25 15 25s15-14 15-25c0-8-6-15-15-15z" fill="#2b2540" />
+      <circle cx="150" cy="35" r="5.5" fill="#fff" />
+    </svg>),
+  trend: () => (
+    <svg viewBox="0 0 220 120" aria-hidden="true">
+      <path d="M20 100h185M20 100V18" stroke="#c9bfae" strokeWidth="2" />
+      <polyline fill="none" stroke="#7a7290" strokeWidth="2.4" strokeLinejoin="round"
+        points="24,84 38,74 52,88 66,70 80,78 94,64 108,72 122,56 136,66 150,50 164,58 178,42 192,50 202,36" />
+      <path d="M24 86L202 40" stroke="#c4621a" strokeWidth="4" strokeLinecap="round" />
+      <rect x="112" y="92" width="96" height="22" rx="11" fill="#2b2540" />
+      <text x="160" y="107" textAnchor="middle" fill="#fff" fontSize="10.5" fontWeight="800" fontFamily="Nunito, sans-serif">Significant trend</text>
+    </svg>),
+  hunt: () => (
+    <svg viewBox="0 0 220 120" aria-hidden="true">
+      <rect x="14" y="22" width="78" height="78" rx="16" fill="#fff" stroke="#f2a65a" strokeWidth="3" />
+      <rect x="128" y="22" width="78" height="78" rx="16" fill="#fff" stroke="#7fb2e5" strokeWidth="3" />
+      <text x="53" y="44" textAnchor="middle" fontSize="13" fontWeight="800" fill="#2b2540" fontFamily="Nunito, sans-serif">Place A</text>
+      <text x="167" y="44" textAnchor="middle" fontSize="13" fontWeight="800" fill="#2b2540" fontFamily="Nunito, sans-serif">Place B</text>
+      <path d="M53 88V56M41 68l12-12 12 12" stroke="#c4621a" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M167 56v32M155 76l12 12 12-12" stroke="#2f6fb3" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="110" cy="61" r="15" fill="#2b2540" />
+      <text x="110" y="65.5" textAnchor="middle" fontSize="12" fontWeight="800" fill="#fff" fontFamily="Nunito, sans-serif">vs</text>
+    </svg>),
+  detective: () => (
+    <svg viewBox="0 0 220 120" aria-hidden="true">
+      <rect x="70" y="10" width="138" height="30" rx="15" fill="#2b2540" />
+      <text x="139" y="29.5" textAnchor="middle" fontSize="11" fontWeight="800" fill="#fff" fontFamily="Nunito, sans-serif">Is rain changing here?</text>
+      <rect x="12" y="50" width="160" height="58" rx="16" fill="#fff" />
+      <rect x="26" y="62" width="120" height="7" rx="3.5" fill="#d9d2e6" />
+      <rect x="26" y="75" width="92" height="7" rx="3.5" fill="#d9d2e6" />
+      <rect x="26" y="89" width="70" height="12" rx="6" fill="#d8ecff" />
+      <text x="61" y="98.2" textAnchor="middle" fontSize="8" fontWeight="800" fill="#1d4f86" fontFamily="Nunito, sans-serif">Evidence</text>
+      <circle cx="194" cy="84" r="16" fill="#7fb2e5" /><circle cx="189" cy="81" r="2.2" fill="#2b2540" /><circle cx="199" cy="81" r="2.2" fill="#2b2540" />
+      <path d="M189 89q5 4 10 0" stroke="#2b2540" strokeWidth="2" fill="none" strokeLinecap="round" />
+    </svg>),
+  science: () => (
+    <svg viewBox="0 0 220 120" aria-hidden="true">
+      <rect x="20" y="14" width="180" height="40" rx="20" fill="#fff" stroke="#e5dccb" strokeWidth="2" />
+      <rect x="24" y="18" width="86" height="32" rx="16" fill="#2b2540" />
+      <text x="67" y="38.5" textAnchor="middle" fontSize="12" fontWeight="800" fill="#fff" fontFamily="Nunito, sans-serif">Explorer</text>
+      <text x="153" y="38.5" textAnchor="middle" fontSize="12" fontWeight="800" fill="#2b2540" fontFamily="Nunito, sans-serif">Scientist</text>
+      <rect x="20" y="66" width="150" height="40" rx="12" fill="#fff" />
+      <rect x="32" y="77" width="96" height="7" rx="3.5" fill="#d9d2e6" />
+      <rect x="32" y="90" width="70" height="7" rx="3.5" fill="#d9d2e6" />
+      <circle cx="188" cy="86" r="15" fill="#6b53b5" />
+      <text x="188" y="92" textAnchor="middle" fontSize="17" fontWeight="800" fill="#fff" fontFamily="Nunito, sans-serif">?</text>
+    </svg>),
+  report: () => (
+    <svg viewBox="0 0 220 120" aria-hidden="true">
+      <rect x="62" y="16" width="80" height="98" rx="8" fill="#fff" stroke="#d9d2e6" strokeWidth="2" transform="rotate(-6 102 65)" />
+      <rect x="78" y="10" width="80" height="98" rx="8" fill="#fff" stroke="#2b2540" strokeWidth="2.5" />
+      <rect x="88" y="20" width="44" height="7" rx="3.5" fill="#2b2540" />
+      <rect x="88" y="32" width="60" height="5" rx="2.5" fill="#d9d2e6" />
+      {[0, 1, 2, 3, 4, 5].map((i) => <rect key={i} x={90 + i * 9} y={70 - [8, 14, 10, 20, 18, 26][i]} width="6" height={[8, 14, 10, 20, 18, 26][i]} rx="1.5" fill={i % 2 ? "#f2a65a" : "#c4621a"} />)}
+      <rect x="88" y="80" width="60" height="5" rx="2.5" fill="#d9d2e6" /><rect x="88" y="90" width="42" height="5" rx="2.5" fill="#d9d2e6" />
+      <rect x="146" y="78" width="40" height="22" rx="7" fill="#e8735a" />
+      <text x="166" y="93" textAnchor="middle" fontSize="11" fontWeight="800" fill="#fff" fontFamily="Nunito, sans-serif">PDF</text>
+    </svg>),
+};
+
 const SOURCES = [
-  { kind: "Satellite estimate", name: "GPM IMERG", product: "GPM_3IMERGM V07", what: "Monthly precipitation merged from a constellation of satellites and calibrated with rain gauges.",
-    url: "https://disc.gsfc.nasa.gov/datasets/GPM_3IMERGM_07/summary" },
-  { kind: "Land surface model", name: "GLDAS Noah", product: "GLDAS_NOAH025_M 2.1", what: "Soil moisture, near-surface air temperature and evapotranspiration over land, from a model driven by observations.",
-    url: "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary" },
-  { kind: "Reanalysis", name: "MERRA-2", product: "M2IMNXASM 5.12.4", what: "2 m air temperature over land and sea from a weather model that continuously assimilates observations.",
-    url: "https://disc.gsfc.nasa.gov/datasets/M2IMNXASM_5.12.4/summary" },
+  { kind: "Satellite estimate", art: "satellite", tint: "#e2ecf8", name: "GPM IMERG", product: "GPM_3IMERGM V07",
+    what: "Monthly rainfall from satellites, checked against rain gauges.",
+    vars: ["Precipitation"], url: "https://disc.gsfc.nasa.gov/datasets/GPM_3IMERGM_07/summary" },
+  { kind: "Land surface model", art: "land", tint: "#e3f1ea", name: "GLDAS Noah", product: "GLDAS_NOAH025_M 2.1",
+    what: "Soil moisture, air temperature and evaporation over land.",
+    vars: ["Soil moisture", "Air temperature", "Evapotranspiration"], url: "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary" },
+  { kind: "Reanalysis", art: "reanalysis", tint: "#fde9da", name: "MERRA-2", product: "M2IMNXASM 5.12.4",
+    what: "Air temperature over land and sea.",
+    vars: ["Air temperature (land and sea)"], url: "https://disc.gsfc.nasa.gov/datasets/M2IMNXASM_5.12.4/summary" },
+] as const;
+
+/** Schematic drawings of the three kinds of evidence (not data). */
+const SOURCE_ART: Record<string, () => JSX.Element> = {
+  satellite: () => (
+    <svg viewBox="0 0 160 90" aria-hidden="true">
+      <path d="M10 82h140" stroke="#2b2540" strokeWidth="3" strokeLinecap="round" />
+      <path d="M24 82c6-10 16-10 22 0M98 82c8-12 22-12 30 0" fill="#9edbb5" />
+      <g transform="rotate(-18 80 26)">
+        <rect x="44" y="20" width="22" height="12" rx="2" fill="#7fb2e5" stroke="#2b2540" strokeWidth="2" />
+        <rect x="94" y="20" width="22" height="12" rx="2" fill="#7fb2e5" stroke="#2b2540" strokeWidth="2" />
+        <path d="M66 26h28" stroke="#2b2540" strokeWidth="2.5" />
+        <rect x="72" y="16" width="16" height="20" rx="4" fill="#fff" stroke="#2b2540" strokeWidth="2.5" />
+      </g>
+      <path d="M80 44l-22 30M80 44l22 30" stroke="#7fb2e5" strokeWidth="2" strokeDasharray="4 4" />
+      {[[62, 58], [76, 66], [92, 56], [100, 70], [70, 74]].map(([x, y]) => (
+        <path key={`${x}-${y}`} d={`M${x} ${y}q-3 5 0 7q3-2 0-7z`} fill="#2f6fb3" />))}
+    </svg>),
+  land: () => (
+    <svg viewBox="0 0 160 90" aria-hidden="true">
+      <rect x="14" y="40" width="132" height="14" fill="#c9a47e" />
+      <rect x="14" y="54" width="132" height="14" fill="#a9825c" />
+      <rect x="14" y="68" width="132" height="14" rx="0" fill="#8a6644" />
+      <path d="M14 40h132" stroke="#2b2540" strokeWidth="3" strokeLinecap="round" />
+      <path d="M48 40V22M48 30c-8-2-12-8-10-12 6 0 10 5 10 12zM48 26c6-4 12-4 14 0-4 4-10 4-14 0z" fill="#5fae7d" stroke="#2f6b46" strokeWidth="1.5" />
+      <path d="M48 40v12M48 46l-6 6M48 46l6 6" stroke="#f6f1e8" strokeWidth="1.6" strokeLinecap="round" />
+      {[0, 1, 2, 3].map((i) => <circle key={i} cx={96 + i * 12} cy={62 + (i % 2) * 6} r="2.4" fill="#7fb2e5" />)}
+      <path d="M104 30q6-14 12 0q6-14 12 0" fill="none" stroke="#c4621a" strokeWidth="2.4" strokeLinecap="round" />
+      <path d="M116 36v-16M110 24l6-6 6 6" fill="none" stroke="#7a7290" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>),
+  reanalysis: () => (
+    <svg viewBox="0 0 160 90" aria-hidden="true">
+      <circle cx="80" cy="46" r="32" fill="#f6f1e8" stroke="#2e2850" strokeWidth="3" />
+      <path d="M48 46h64M80 14c-14 10-14 54 0 64M80 14c14 10 14 54 0 64M54 28h52M54 64h52" fill="none" stroke="#c9bfae" strokeWidth="1.6" />
+      <path d="M62 36c6-6 16-4 16 4s-10 10-14 6-6-6-2-10zM86 54c6-4 14-2 14 4s-8 8-12 6-4-6-2-10z" fill="#9edbb5" />
+      <circle cx="18" cy="22" r="6" fill="#fff" stroke="#2b2540" strokeWidth="2" />
+      <circle cx="142" cy="24" r="6" fill="#fff" stroke="#2b2540" strokeWidth="2" />
+      <circle cx="20" cy="72" r="6" fill="#fff" stroke="#2b2540" strokeWidth="2" />
+      <circle cx="140" cy="70" r="6" fill="#fff" stroke="#2b2540" strokeWidth="2" />
+      <path d="M25 25l18 9M135 27l-18 8M27 69l17-8M133 67l-17-7" stroke="#e8735a" strokeWidth="2" strokeDasharray="3 3" strokeLinecap="round" />
+    </svg>),
+};
+
+const STEPS = [
+  { title: "Select", text: "Pick a variable, a NASA dataset, a place and the years.", art: "select" },
+  { title: "Explore", text: "See where it is rising or falling on the world map.", art: "explore" },
+  { title: "Analyse", text: "The backend computes the trend per decade and tests it.", art: "analyse" },
+  { title: "Explain", text: "Terra explains the result in plain words, with the evidence attached.", art: "explain" },
+] as const;
+
+/** Small schematic drawings of each step (interface sketches, not results). */
+const STEP_ART: Record<string, () => JSX.Element> = {
+  select: () => (
+    <svg viewBox="0 0 120 70" aria-hidden="true">
+      {[["Rainfall", 10], ["Mekong Delta", 30], ["2001 to 2025", 50]].map(([t, y]) => (
+        <g key={t as string}>
+          <rect x="10" y={y as number} width="100" height="15" rx="7.5" fill="#fff" stroke="#d9d2e6" strokeWidth="1.5" />
+          <circle cx="20" cy={(y as number) + 7.5} r="3.5" fill="#6b53b5" />
+          <text x="29" y={(y as number) + 11} fontSize="9" fontWeight="800" fill="#2b2540" fontFamily="Nunito, sans-serif">{t}</text>
+        </g>))}
+    </svg>),
+  explore: () => (
+    <svg viewBox="0 0 120 70" aria-hidden="true">
+      <rect x="10" y="6" width="100" height="58" rx="10" fill="#fff" stroke="#d9d2e6" strokeWidth="1.5" />
+      {[0, 1, 2, 3, 4, 5, 6, 7].flatMap((i) => [0, 1, 2, 3, 4].map((j) => {
+        const v = (i * 5 + j * 7) % 9;
+        const c = v < 2 ? "#7fb2e5" : v < 3 ? "#cfe1f4" : v < 5 ? "#fbe0c4" : v < 7 ? "#f2a65a" : v < 8 ? "#c4621a" : "#e4e1ea";
+        return <rect key={`${i}-${j}`} x={17 + i * 11} y={12 + j * 10} width="10" height="9" rx="2" fill={c} />;
+      }))}
+    </svg>),
+  analyse: () => (
+    <svg viewBox="0 0 120 70" aria-hidden="true">
+      <path d="M12 60h98M12 60V8" stroke="#c9bfae" strokeWidth="1.8" />
+      {[[20, 48], [30, 40], [40, 50], [50, 36], [60, 42], [70, 30], [80, 36], [90, 22], [100, 28]].map(([x, y]) => (
+        <circle key={x} cx={x} cy={y} r="2.8" fill="#7a7290" />))}
+      <path d="M18 50L104 22" stroke="#c4621a" strokeWidth="3.2" strokeLinecap="round" />
+      <rect x="64" y="48" width="44" height="16" rx="8" fill="#2b2540" />
+      <text x="86" y="59" textAnchor="middle" fontSize="8.5" fontWeight="800" fill="#fff" fontFamily="Nunito, sans-serif">tested</text>
+    </svg>),
+  explain: () => (
+    <svg viewBox="0 0 120 70" aria-hidden="true">
+      <path d="M14 10h76a8 8 0 0 1 8 8v26a8 8 0 0 1-8 8H40l-12 10v-10H14a8 8 0 0 1-8-8V18a8 8 0 0 1 8-8z" fill="#fff" stroke="#d9d2e6" strokeWidth="1.5" />
+      <rect x="16" y="20" width="62" height="6" rx="3" fill="#d9d2e6" />
+      <rect x="16" y="31" width="46" height="6" rx="3" fill="#d9d2e6" />
+      <rect x="66" y="36" width="26" height="10" rx="5" fill="#d8ecff" />
+      <circle cx="104" cy="52" r="11" fill="#8cc4ee" /><circle cx="100.5" cy="50" r="1.8" fill="#2b2540" /><circle cx="107.5" cy="50" r="1.8" fill="#2b2540" />
+      <path d="M100.5 55q3.5 3 7 0" stroke="#2b2540" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+    </svg>),
+};
+
+const TRUST = [
+  { title: "Real NASA data", tint: "#e2ecf8", icon: "data",
+    text: "Every map and chart is computed from NASA data. Nothing is simulated." },
+  { title: "Real statistics", tint: "#fde9da", icon: "stats",
+    text: "Seasonal Mann-Kendall test, Sen's slope and false discovery rate control." },
+  { title: "Honest answers", tint: "#ede6fb", icon: "honest",
+    text: "Too little data? It says so. The AI only repeats computed numbers." },
+] as const;
+
+const TRUST_ICON: Record<string, () => JSX.Element> = {
+  data: () => (
+    <svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true">
+      <ellipse cx="24" cy="12" rx="14" ry="5" fill="#fff" stroke="#2f6fb3" strokeWidth="2.4" />
+      <path d="M10 12v24c0 3 6 5 14 5s14-2 14-5V12M10 24c0 3 6 5 14 5s14-2 14-5" fill="none" stroke="#2f6fb3" strokeWidth="2.4" />
+    </svg>),
+  stats: () => (
+    <svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true">
+      <path d="M8 40h34M8 40V8" stroke="#7a7290" strokeWidth="2.4" strokeLinecap="round" />
+      <path d="M12 34L40 14" stroke="#c4621a" strokeWidth="3.4" strokeLinecap="round" />
+      {[[14, 28], [20, 32], [26, 22], [32, 24], [38, 16]].map(([x, y]) => <circle key={x} cx={x} cy={y} r="2.4" fill="#2b2540" />)}
+    </svg>),
+  honest: () => (
+    <svg viewBox="0 0 48 48" width="44" height="44" aria-hidden="true">
+      <path d="M24 6l15 6v10c0 10-6 17-15 20-9-3-15-10-15-20V12z" fill="#fff" stroke="#6b53b5" strokeWidth="2.4" strokeLinejoin="round" />
+      <path d="M17 24l5 5 9-10" fill="none" stroke="#6b53b5" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>),
+};
+
+const LIMITS = [
+  "A trend line describes the past. The trend analysis does not forecast the future.",
+  "A trend shows what changed, not why it changed.",
+  "\"Not significant\" does not mean \"no change\": a longer record may still reveal one.",
+  "Models and reanalyses are not direct measurements, and datasets can disagree.",
 ] as const;
 
 const S = { fill: "none", stroke: "currentColor", strokeWidth: 2.2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -30,32 +232,116 @@ const FEATURE_ICON: Record<string, () => JSX.Element> = {
   science: () => <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path {...S} d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3" /><path {...S} d="M7.5 15h9" /></svg>,
 };
 
-/** Decorative globe made of coloured squares. It is an illustration, never data. */
-function HeroGlobe() {
-  const cells = useMemo(() => {
-    const out: { x: number; y: number; c: string }[] = [];
-    const palette = ["#c4621a", "#f2a65a", "#fbe0c4", "#cfe1f4", "#7fb2e5", "#2f6fb3"];
-    for (let y = 0; y < 14; y++) for (let x = 0; x < 14; x++) {
-      const v = Math.sin(x * 0.9 + y * 0.4) + Math.cos(y * 0.7 - x * 0.3);       // deterministic pattern
-      out.push({ x: 20 + x * 20, y: 20 + y * 20, c: palette[Math.max(0, Math.min(5, Math.floor((v + 2) * 1.5)))] });
+/** Hero globe painted with REAL NASA data: MERRA-2 2 m air temperature trend 2001 to 2025 (seasonal Sen slope per decade,
+ * from the backend trend grid, averaged into 3° squares and stored in assets/heroTrend.json so the landing page needs no
+ * server). Drawn in the app's cute flat style: land is coloured by the trend in the team's map palette (orange = warming,
+ * blue = cooling, one step paler when not significant after FDR), oceans are a flat pastel blue, the 3° squares are smoothed
+ * into soft blobs for display only, and the sphere has a cartoon shine and shadow instead of realistic lighting. */
+const HERO_PX = 460;                          // internal canvas size (CSS scales it)
+const TEX_W = 720, TEX_H = 360;               // equirectangular texture, 0.5° per pixel
+const HERO_UP = [[251, 224, 196], [242, 166, 90], [196, 98, 26]], HERO_DOWN = [[207, 225, 244], [127, 178, 229], [47, 111, 179]];
+const HERO_FLAT = [253, 243, 228], HERO_SEA = [184, 222, 245];
+
+/** Flat colour texture (RGB per 0.5° pixel): posterised trend colour on land, pastel sea elsewhere. */
+function buildTexture(): Uint8ClampedArray {
+  const d = heroTrend as { cell_deg: number; slope_x100: (number | null)[]; sig: string };
+  const nx = 360 / d.cell_deg, ny = 180 / d.cell_deg;
+  // encode slope (R) and significance (G) so they can be smoothed together, then classify every texel
+  const small = document.createElement("canvas"); small.width = nx; small.height = ny;
+  const sctx = small.getContext("2d")!, img = sctx.createImageData(nx, ny);
+  d.slope_x100.forEach((v, i) => {
+    const o = ((ny - 1 - Math.floor(i / nx)) * nx + (i % nx)) * 4;      // data rows run south to north
+    img.data[o] = Math.max(0, Math.min(255, 128 + (v ?? 0) / 100 * 160)); img.data[o + 1] = d.sig[i] === "1" ? 255 : 0; img.data[o + 3] = 255;
+  });
+  sctx.putImageData(img, 0, 0);
+  const big = document.createElement("canvas"); big.width = TEX_W; big.height = TEX_H;
+  const bctx = big.getContext("2d")!;
+  bctx.imageSmoothingEnabled = true; bctx.imageSmoothingQuality = "high";
+  bctx.drawImage(small, 0, 0, TEX_W, TEX_H);
+  const enc = bctx.getImageData(0, 0, TEX_W, TEX_H).data;
+  // land mask from Natural Earth (world-atlas), rasterised on the same grid
+  const mask = document.createElement("canvas"); mask.width = TEX_W; mask.height = TEX_H;
+  const mctx = mask.getContext("2d")!;
+  const eq = geoEquirectangular().scale(TEX_W / (2 * Math.PI)).translate([TEX_W / 2, TEX_H / 2]);
+  mctx.fillStyle = "#fff"; mctx.beginPath(); geoPath(eq, mctx)(land); mctx.fill();
+  const m = mctx.getImageData(0, 0, TEX_W, TEX_H).data;
+  const out = new Uint8ClampedArray(TEX_W * TEX_H * 3);
+  for (let i = 0, j = 0; i < enc.length; i += 4, j += 3) {
+    let c = HERO_SEA;
+    if (m[i + 3] > 127) {
+      const slope = (enc[i] - 128) / 160, a = Math.abs(slope), sig = enc[i + 1] > 127;
+      let k = a < 0.08 ? -1 : a < 0.25 ? 0 : a < 0.45 ? 1 : 2;
+      if (!sig) k = Math.min(k, 0);
+      c = k < 0 ? HERO_FLAT : (slope >= 0 ? HERO_UP : HERO_DOWN)[k];
     }
-    return out;
+    out[j] = c[0]; out[j + 1] = c[1]; out[j + 2] = c[2];
+  }
+  return out;
+}
+
+function HeroGlobe() {
+  const ref = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const cv = ref.current, ctx = cv?.getContext("2d");
+    if (!cv || !ctx) return;
+    const tex = buildTexture();
+    const S = HERO_PX, R = S / 2 - 10, TILT = 18 * Math.PI / 180;
+    // per pixel: texture row, longitude offset from the centre meridian, and a two-tone cartoon shade (fixed while it spins)
+    const idx: number[] = [], row: number[] = [], off: number[] = [], lit: number[] = [];
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const nx = (x + 0.5 - S / 2) / R, ny = -(y + 0.5 - S / 2) / R, rr = nx * nx + ny * ny;
+      if (rr > 1) continue;
+      const z = Math.sqrt(1 - rr);
+      const lat = Math.asin(z * Math.sin(TILT) + ny * Math.cos(TILT));
+      const lon = Math.atan2(nx, z * Math.cos(TILT) - ny * Math.sin(TILT));
+      idx.push((y * S + x) * 4);
+      row.push(Math.min(TEX_H - 1, Math.max(0, Math.floor((90 - lat * 180 / Math.PI) * 2))));
+      off.push(lon * 180 / Math.PI);
+      // cel shading: a crescent on the lower right is one flat step darker
+      const sx = nx - 0.16, sy = ny + 0.16;
+      lit.push(sx * sx + sy * sy > 0.86 && nx - ny > -0.2 ? 0.88 : 1);
+    }
+    const frame = ctx.createImageData(S, S), px = frame.data;
+    const proj = geoOrthographic().scale(R).translate([S / 2, S / 2]).clipAngle(90).precision(0.6);
+    const path = geoPath(proj, ctx);
+    const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    let centre = 100, raf = 0, last = 0;
+    const draw = () => {
+      ctx.clearRect(0, 0, S, S);
+      for (let k = 0; k < idx.length; k++) {
+        let lon = centre + off[k];
+        lon = ((lon + 180) % 360 + 360) % 360;
+        const t = (row[k] * TEX_W + Math.min(TEX_W - 1, Math.floor(lon * 2))) * 3, o = idx[k], f = lit[k];
+        px[o] = tex[t] * f; px[o + 1] = tex[t + 1] * f; px[o + 2] = tex[t + 2] * f; px[o + 3] = 255;
+      }
+      ctx.putImageData(frame, 0, 0);
+      proj.rotate([-centre, -TILT * 180 / Math.PI]);
+      ctx.lineJoin = "round"; ctx.lineCap = "round";
+      ctx.beginPath(); path(land); ctx.strokeStyle = "#2e2850"; ctx.lineWidth = 2.2; ctx.stroke();
+      // cartoon shine: a soft white oval and a small dot on the upper left
+      ctx.save(); ctx.translate(S * 0.33, S * 0.27); ctx.rotate(-0.6);
+      ctx.beginPath(); ctx.ellipse(0, 0, S * 0.11, S * 0.05, 0, 0, 2 * Math.PI); ctx.fillStyle = "rgba(255, 255, 255, .55)"; ctx.fill();
+      ctx.restore();
+      ctx.beginPath(); ctx.arc(S * 0.22, S * 0.38, S * 0.018, 0, 2 * Math.PI); ctx.fillStyle = "rgba(255, 255, 255, .6)"; ctx.fill();
+      // thick ink outline, like the rest of the illustrations
+      ctx.beginPath(); ctx.arc(S / 2, S / 2, R, 0, 2 * Math.PI); ctx.strokeStyle = "#2e2850"; ctx.lineWidth = 9; ctx.stroke();
+    };
+    const tick = (t: number) => {
+      if (last) centre += (t - last) * 0.006;        // about 6 degrees per second
+      last = t; draw(); raf = requestAnimationFrame(tick);
+    };
+    if (still) draw(); else raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, []);
+
+  const label = "Globe showing real NASA data: MERRA-2 air temperature trend per decade, 2001 to 2025. Land is coloured by the trend: orange areas warmed, blue areas cooled; pale colours are not statistically significant.";
   return (
-    <figure className="hero-globe" aria-label="Illustration of a trend map on a globe (not real data)">
-      <svg viewBox="0 0 320 320" role="img" aria-hidden="true">
-        <defs><clipPath id="hg-clip"><circle cx="160" cy="160" r="138" /></clipPath>
-          <radialGradient id="hg-shade" cx="35%" cy="30%" r="75%"><stop offset="0" stopColor="#fff" stopOpacity=".35" /><stop offset="1" stopColor="#1b1730" stopOpacity=".28" /></radialGradient></defs>
-        <circle cx="160" cy="160" r="150" fill="#2e2850" />
-        <g clipPath="url(#hg-clip)" className="hero-globe-spin">
-          <rect width="320" height="320" fill="#cdeaf0" />
-          {cells.map((c, i) => <rect key={i} x={c.x} y={c.y} width="19" height="19" rx="3" fill={c.c} />)}
-        </g>
-        <circle cx="160" cy="160" r="138" fill="url(#hg-shade)" />
-        <circle cx="160" cy="160" r="138" fill="none" stroke="#fff" strokeOpacity=".5" strokeWidth="2" />
-      </svg>
+    <figure className="hero-globe" aria-label={label} title="Real NASA data: MERRA-2 air temperature trend, 2001 to 2025 (orange warming, blue cooling)">
+      <div className="hero-globe-ball">
+        <canvas ref={ref} width={HERO_PX} height={HERO_PX} role="img" aria-label={label} />
+      </div>
       <div className="hero-mascot"><Terra size={120} label="Terra, the Earth detective" /></div>
-      <figcaption>Illustration, not data</figcaption>
     </figure>
   );
 }
@@ -64,9 +350,11 @@ function DemoVideoSection() {
   const v = DEMO_VIDEO;
   const playable = hasPlayableVideo(v);
   return (
-    <section id="demo" className="lp-section" aria-labelledby="demo-title">
-      <span className="lp-eyebrow">Product demo</span>
-      <h2 id="demo-title" className="lp-h2">See Terra-scope in action</h2>
+    <section id="demo" className="lp-section lp-demo" aria-labelledby="demo-title">
+      <div className="lp-head">
+        <span className="lp-eyebrow">Product demo</span>
+        <h2 id="demo-title" className="lp-h2">See Terra-scope in action</h2>
+      </div>
       <div className="lp-video">
         {playable && v.kind === "file" && (
           <video controls preload="metadata" poster={v.poster} aria-label={v.title}>
@@ -82,7 +370,7 @@ function DemoVideoSection() {
           <div className="lp-video-empty" role="status">
             <span className="lp-video-badge">Product Demo: Coming Soon</span>
             <Terra size={110} />
-            <p>The demo video is being recorded. Meanwhile, press <b>Get Started</b> and try the guided tour.</p>
+            <p>The demo video is being recorded.</p>
           </div>
         )}
       </div>
@@ -90,16 +378,54 @@ function DemoVideoSection() {
   );
 }
 
+const NAV = [
+  { id: "features", label: "Features" },
+  { id: "how", label: "How it works" },
+  { id: "data", label: "NASA data" },
+  { id: "trust", label: "Trust" },
+  { id: "demo", label: "Demo" },
+] as const;
+
+function jump(id: string) {
+  const still = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  document.getElementById(id)?.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
+}
+
+/** Decorative page background: soft colour glows, faint latitude and longitude lines, and a few floating squares in the
+ * trend colours (orange = warming, blue = cooling). Purely decorative, hidden from assistive technology. */
+const BACKDROP_CELLS = [
+  { x: 3, y: 14, s: 26, c: "#f2a65a", d: 0 }, { x: 6.5, y: 18, s: 16, c: "#fbe0c4", d: 2 }, { x: 2, y: 38, s: 18, c: "#7fb2e5", d: 4 },
+  { x: 5, y: 62, s: 22, c: "#c4621a", d: 1 }, { x: 2.5, y: 84, s: 14, c: "#cfe1f4", d: 3 }, { x: 94, y: 10, s: 18, c: "#cfe1f4", d: 2 },
+  { x: 96, y: 30, s: 24, c: "#7fb2e5", d: 0 }, { x: 92.5, y: 48, s: 14, c: "#f2a65a", d: 5 }, { x: 95.5, y: 70, s: 20, c: "#fbe0c4", d: 1 },
+  { x: 93, y: 90, s: 26, c: "#2f6fb3", d: 3 },
+];
+
+function LandingBackdrop() {
+  return (
+    <div className="lp-backdrop" aria-hidden="true">
+      <span className="lp-glow lp-glow-a" /><span className="lp-glow lp-glow-b" /><span className="lp-glow lp-glow-c" />
+      <svg className="lp-grat" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+        {[-3, -2, -1, 0, 1, 2, 3].map((k) => <ellipse key={`m${k}`} cx="600" cy="400" rx={Math.abs(k) * 150 || 2} ry="520" />)}
+        {[-2, -1, 0, 1, 2].map((k) => <path key={`p${k}`} d={`M-50 ${400 + k * 150} Q600 ${400 + k * 150 + k * 40} 1250 ${400 + k * 150}`} />)}
+      </svg>
+      {BACKDROP_CELLS.map((c, i) => (
+        <span key={i} className="lp-float" style={{ left: `${c.x}%`, top: `${c.y}%`, width: c.s, height: c.s, background: c.c, animationDelay: `${-c.d * 1.7}s` }} />
+      ))}
+    </div>
+  );
+}
+
 export function Landing({ onStart }: { onStart: () => void }) {
-  const watchDemo = () => document.getElementById("demo")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const watchDemo = () => jump("demo");
   return (
     <div className="landing">
+      <LandingBackdrop />
       <header className="lp-header">
         <span className="brand"><Terra size={34} /> Terra-scope</span>
         <nav aria-label="Landing sections" className="lp-links">
-          <a href="#landing" onClick={(e) => { e.preventDefault(); document.getElementById("features")?.scrollIntoView({ behavior: "smooth" }); }}>Features</a>
-          <a href="#landing" onClick={(e) => { e.preventDefault(); document.getElementById("data")?.scrollIntoView({ behavior: "smooth" }); }}>NASA data</a>
-          <a href="#landing" onClick={(e) => { e.preventDefault(); watchDemo(); }}>Demo</a>
+          {NAV.map((n) => (
+            <a key={n.id} href="#landing" onClick={(e) => { e.preventDefault(); jump(n.id); }}>{n.label}</a>
+          ))}
         </nav>
         <button type="button" className="btn" onClick={onStart}>Get Started</button>
       </header>
@@ -113,7 +439,6 @@ export function Landing({ onStart }: { onStart: () => void }) {
             <button type="button" className="btn lp-cta" onClick={onStart}>Get Started</button>
             <button type="button" className="btn soft lp-cta" onClick={watchDemo}>Watch Demo</button>
           </div>
-          <span className="small muted">A student project for NASA Space Apps Challenge 2026: "Be An Earth System Trend Detective!"</span>
         </div>
         <HeroGlobe />
       </section>
@@ -121,35 +446,87 @@ export function Landing({ onStart }: { onStart: () => void }) {
       <section id="features" className="lp-section" aria-labelledby="features-title">
         <span className="lp-eyebrow">What you can do</span>
         <h2 id="features-title" className="lp-h2">Six ways to investigate a changing planet</h2>
-        <div className="lp-grid3">
-          {FEATURES.map((f) => {
-            const I = FEATURE_ICON[f.icon];
+        <div className="lp-feats">
+          {FEATURES.map((f, i) => {
+            const I = FEATURE_ICON[f.icon], Art = FEATURE_ART[f.icon];
             return (
-              <article key={f.title} className="lp-card">
-                <span className="lp-icon"><I /></span>
-                <h3>{f.title}</h3>
-                <p>{f.text}</p>
+              <article key={f.title} className="lp-feat">
+                <div className="lp-feat-art" style={{ background: f.tint }}>
+                  <span className="lp-feat-num" aria-hidden="true">{i + 1}</span>
+                  <span className="lp-feat-tag">{f.tag}</span>
+                  <Art />
+                </div>
+                <div className="lp-feat-body">
+                  <h3><span className="lp-feat-icon"><I /></span>{f.title}</h3>
+                  <p>{f.text}</p>
+                </div>
               </article>
             );
           })}
         </div>
       </section>
 
-      <section className="lp-section" aria-labelledby="how-title">
+      <section id="how" className="lp-section" aria-labelledby="how-title">
         <span className="lp-eyebrow">How it works</span>
         <h2 id="how-title" className="lp-h2">Select, explore, analyse, explain</h2>
         <ol className="lp-steps">
-          <li><b>Select</b><span>Pick a variable, a NASA dataset, a place and the years.</span></li>
-          <li><b>Explore</b><span>See where it is rising or falling on the world map.</span></li>
-          <li><b>Analyse</b><span>The backend computes the trend per decade and tests it.</span></li>
-          <li><b>Explain</b><span>Terra explains the result in plain words, with the evidence attached.</span></li>
+          {STEPS.map((s, i) => {
+            const Art = STEP_ART[s.art];
+            return (
+              <li key={s.title}>
+                <div className="lp-step-art"><span className="lp-feat-num" aria-hidden="true">{i + 1}</span><Art /></div>
+                <h3>{s.title}</h3>
+                <p>{s.text}</p>
+              </li>
+            );
+          })}
         </ol>
         <div className="lp-question">
-          <Terra size={64} />
-          <div className="col" style={{ gap: 4 }}>
-            <span className="lp-eyebrow" style={{ margin: 0 }}>Example question</span>
-            <b>"Is rainfall in the Mekong Delta really increasing, or could it be natural ups and downs?"</b>
-            <span className="small muted">Terra-scope answers with a rate per decade, a p-value and a plain verdict computed from the data, never a guess.</span>
+          <div className="lp-q-ask">
+            <span className="lp-eyebrow">Example question</span>
+            <div className="lp-q-bubble">
+              <p>"Is rainfall in the Mekong Delta really increasing, or could it be natural ups and downs?"</p>
+            </div>
+            {/* Real result from POST /trends: imerg_precip, preset mekong_delta, 2001-01 to 2024-12 (checked 2026-11-15).
+                Re-check these numbers if the data or the method changes. */}
+            <div className="lp-q-replyrow">
+            <Terra size={52} />
+            <div className="lp-q-reply">
+              <span className="lp-eyebrow">Example answer <span className="lp-real">Real result</span></span>
+              <ul className="lp-reply-list">
+                <li><span className="lp-reply-icon" aria-hidden="true"><svg viewBox="0 0 32 32" width="24" height="24"><path d="M16 25V8M9 14l7-7 7 7" stroke="#c4621a" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg></span><b>+3.43 mm/month per decade</b></li>
+                <li><span className="lp-reply-icon lp-reply-p" aria-hidden="true">p</span><b>p = 0.077</b><span>(needs below 0.05)</span></li>
+                <li className="lp-reply-verdict"><span className="badge np">{VERDICT_TEXT.np}</span><span>It could still be natural ups and downs.</span></li>
+              </ul>
+              <span className="lp-reply-src">NASA GPM IMERG, 2001 to 2024, 288 months</span>
+            </div>
+            </div>
+          </div>
+          <div className="lp-q-answer">
+            <h3 id="q-answer-title">What every answer contains</h3>
+            <ul className="lp-anatomy">
+              <li>
+                <span className="lp-anat-icon" aria-hidden="true"><svg viewBox="0 0 32 32" width="28" height="28"><path d="M9 22V10M4 15l5-5 5 5" stroke="#c4621a" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" /><path d="M23 10v12M18 17l5 5 5-5" stroke="#2f6fb3" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                <div><b>Rate of change per decade</b><span>How fast it rose or fell.</span></div>
+              </li>
+              <li>
+                <span className="lp-anat-icon" aria-hidden="true"><svg viewBox="0 0 32 32" width="28" height="28"><path d="M4 26C10 26 11 6 16 6s6 20 12 20" fill="none" stroke="#7a7290" strokeWidth="2.4" /><path d="M23 22c2 2 3 4 5 4h-5z M9 22c-2 2-3 4-5 4h5z" fill="#e8735a" /></svg></span>
+                <div><b>A significance test</b><span>Is it a real trend, or just chance?</span></div>
+              </li>
+              <li>
+                <span className="lp-anat-icon" aria-hidden="true"><svg viewBox="0 0 32 32" width="28" height="28"><rect x="4" y="9" width="24" height="14" rx="7" fill="#d8ecff" /><path d="M10 16l3 3 6-6" stroke="#1d4f86" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                <div><b>A plain verdict</b>
+                  <span className="lp-verdicts">
+                    <span className="badge sig">{VERDICT_TEXT.sig}</span>
+                    <span className="badge np">{VERDICT_TEXT.np}</span>
+                    <span className="badge ne">{VERDICT_TEXT.ne}</span>
+                  </span></div>
+              </li>
+              <li>
+                <span className="lp-anat-icon" aria-hidden="true"><svg viewBox="0 0 32 32" width="28" height="28"><path d="M8 4h11l5 5v19H8z" fill="#fff" stroke="#2b2540" strokeWidth="2.2" strokeLinejoin="round" /><path d="M12 15h8M12 20h8" stroke="#2b2540" strokeWidth="2.2" strokeLinecap="round" /></svg></span>
+                <div><b>The evidence behind it</b><span>Dataset, place, years and method.</span></div>
+              </li>
+            </ul>
           </div>
         </div>
       </section>
@@ -157,44 +534,77 @@ export function Landing({ onStart }: { onStart: () => void }) {
       <section id="data" className="lp-section" aria-labelledby="data-title">
         <span className="lp-eyebrow">Data</span>
         <h2 id="data-title" className="lp-h2">Built on NASA Earth observation data</h2>
+        <p className="lp-lead">Three public datasets from NASA GES DISC, the same ones NASA Giovanni uses.</p>
         <div className="lp-grid3">
-          {SOURCES.map((s) => (
-            <article key={s.name} className="lp-card">
-              <span className="lp-kind">{s.kind}</span>
-              <h3>{s.name}</h3>
-              <p>{s.what}</p>
-              <a className="small" href={s.url} target="_blank" rel="noreferrer">{s.product} at NASA GES DISC</a>
-            </article>
-          ))}
+          {SOURCES.map((s) => {
+            const Art = SOURCE_ART[s.art];
+            return (
+              <article key={s.name} className="lp-src">
+                <div className="lp-src-art" style={{ background: s.tint }}>
+                  <span className="lp-feat-tag">{s.kind}</span>
+                  <Art />
+                </div>
+                <div className="lp-src-body">
+                  <h3>{s.name}</h3>
+                  <p>{s.what}</p>
+                  <ul className="lp-vars" aria-label={`Variables used from ${s.name}`}>
+                    {s.vars.map((x) => <li key={x}>{x}</li>)}
+                  </ul>
+                  <a className="lp-src-link" href={s.url} target="_blank" rel="noreferrer">
+                    {s.product} at NASA GES DISC<span className="sr-only"> (opens in a new tab)</span>
+                  </a>
+                </div>
+              </article>
+            );
+          })}
         </div>
-        <p className="small muted" style={{ marginTop: 14 }}>Satellite estimates, land models and reanalyses are different kinds of evidence: models and
-          reanalyses are not direct measurements, and datasets can disagree. Terra-scope always shows which one you are using.</p>
+      </section>
+
+      <section id="trust" className="lp-section" aria-labelledby="trust-title">
+        <span className="lp-eyebrow">Why you can trust a result</span>
+        <h2 id="trust-title" className="lp-h2">Real data, real statistics, honest limits</h2>
+        <div className="lp-grid3">
+          {TRUST.map((t) => {
+            const I = TRUST_ICON[t.icon];
+            return (
+              <article key={t.title} className="lp-pillar" style={{ background: t.tint }}>
+                <span className="lp-pillar-icon"><I /></span>
+                <h3>{t.title}</h3>
+                <p>{t.text}</p>
+              </article>
+            );
+          })}
+        </div>
+        <div className="lp-two">
+          <div className="lp-limits">
+            <h3>What Terra-scope does not claim</h3>
+            <ul className="lp-list">
+              {LIMITS.map((l) => <li key={l}>{l}</li>)}
+            </ul>
+          </div>
+          <div className="lp-team">
+            <Terra size={72} />
+            <div>
+              <h3>A student project</h3>
+              <p>Built by a student team for NASA Space Apps Challenge 2026. It is not an official NASA product.</p>
+            </div>
+          </div>
+        </div>
       </section>
 
       <DemoVideoSection />
 
-      <section className="lp-section lp-two" aria-labelledby="trust-title">
-        <div className="lp-card">
-          <span className="lp-eyebrow">Scientific transparency</span>
-          <h2 id="trust-title" className="lp-h2" style={{ fontSize: 26 }}>What Terra-scope does not claim</h2>
-          <ul className="lp-list">
-            <li>Trends describe the past; Terra-scope does not forecast the future.</li>
-            <li>A trend shows what changed, not why it changed.</li>
-            <li>"Not significant" does not mean "no change": a longer record may still reveal one.</li>
-            <li>Results are preliminary and have not been peer reviewed.</li>
-          </ul>
-        </div>
-        <div className="lp-card">
-          <span className="lp-eyebrow">The team</span>
-          <h2 className="lp-h2" style={{ fontSize: 26 }}>A student project</h2>
-          <p>Terra-scope AI is built by a student team for the NASA International Space Apps Challenge 2026. It uses publicly
-            available NASA data. It is not an official NASA product, and NASA does not endorse or operate it.</p>
-        </div>
-      </section>
-
       <footer className="lp-footer">
-        <span className="brand"><Terra size={28} /> Terra-scope AI</span>
-        <span className="small muted">Data: NASA GES DISC (GPM IMERG, GLDAS Noah, MERRA-2). Not affiliated with or endorsed by NASA.</span>
+        <div className="lp-footer-top">
+          <span className="brand"><Terra size={28} /> Terra-scope AI</span>
+          <nav aria-label="Footer" className="lp-footer-links">
+            {NAV.map((n) => (
+              <a key={n.id} href="#landing" onClick={(e) => { e.preventDefault(); jump(n.id); }}>{n.label}</a>
+            ))}
+          </nav>
+        </div>
+        <p className="small muted">Data: NASA GES DISC (GPM IMERG, GLDAS Noah, MERRA-2). Not affiliated with or endorsed by NASA.
+          Built for NASA Space Apps Challenge 2026: "Be An Earth System Trend Detective!"</p>
       </footer>
     </div>
   );

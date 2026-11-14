@@ -1,10 +1,8 @@
-import { useEffect, useState } from "react";
-import { api, type ChatAction, type ChatContext, type ChatEvidence } from "../api";
+import { useState } from "react";
+import type { ChatAction, ChatContext } from "../api";
 import { useStore } from "../store";
 import { planChatNavigation } from "../chatNavigation";
-import { ToolDetails } from "../ToolDetails";
-import { ScientificPanel } from '../ScientificPanel';
-import { textToF } from "../units";
+import { AnswerCard } from "../chat/AnswerCard";
 import { Terra } from "../ui";
 
 export const EXPLORER_QUESTIONS = ["What does this result mean?", "Is the trend clear?", "Can you explain the p-value?",
@@ -12,51 +10,12 @@ export const EXPLORER_QUESTIONS = ["What does this result mean?", "Is the trend 
 export const SCIENTIST_QUESTIONS = ["What statistical test was applied?", "How was serial dependence handled?",
   "What is the basis for the significance verdict?", "Was BH-FDR applied to raw p-values?", "Does the reported confidence interval correspond to Sen's slope?"];
 
-function Evidence({ evidence, fahrenheit }: { evidence: ChatEvidence; fahrenheit: boolean }) {
-  const t = evidence.trend;
-  const temperature = t.units === "degC" || t.units === "°C";
-  const factor = temperature && fahrenheit ? 1.8 : 1;
-  const units = temperature ? (fahrenheit ? "°F" : "°C") : t.units;
-  return (
-    <section className="col" style={{ gap: 6 }} aria-label="Analysis evidence">
-      <b>{t.variable_id} · {t.source.product} · {t.region.name ?? "Selected area"} · {t.start} to {t.end}</b>
-      <span className="small muted">Raw backend evidence. Interpretation appears above.</span>
-      <div>{evidence.cited_numbers.map((c) => (fahrenheit && c.units.startsWith("°C")
-        ? { ...c, value: c.value * 1.8, units: c.units.replace("°C", "°F") } : c)).map((c) => (
-        <span key={c.source_field} className="pill" title={`Source field: ${c.source_field}`}>
-          <b>{c.units === "probability" ? (c.value < 0.001 ? "p <0.001" : `p = ${c.value.toFixed(3)}`)
-            : `${c.value > 0 ? "+" : ""}${Number(c.value.toPrecision(3))} ${c.units}`}</b>
-          <small>{c.label}</small>
-        </span>
-      ))}</div>
-      <span className="small muted">95% OLS interval: {t.slope_ci
-        ? `${(t.slope_ci[0] * factor).toPrecision(3)} to ${(t.slope_ci[1] * factor).toPrecision(3)} ${units} per decade`
-        : "unavailable"}. This interval uses OLS on anomalies, a different estimator from Sen's slope.</span>
-      <details className="small muted">
-        <summary>Source and methods</summary>
-        <div className="col" style={{ gap: 4, marginTop: 6 }}>
-          <a href={t.source.url} target="_blank" rel="noreferrer">{t.source.product} v{t.source.version}</a>
-          <span>{t.source.provider} · {t.source.citation}</span>
-          <span>Test: {t.method} · slope: {t.slope_method} · interval: {t.ci_method}</span>
-          <span>{t.quality.n_months} valid months · {t.quality.missing_months} missing · significance threshold {t.alpha}</span>
-          <span>Raw p: {t.p_value ?? "unavailable"} · autocorrelation-adjusted p: {t.p_value_autocorr_adjusted ?? "unavailable"}. The reported decision uses the raw seasonal test.</span>
-          <span>Analysis: {t.trend_id}</span>
-        </div>
-      </details>
-      {evidence.scientific_advice && <ScientificPanel advice={evidence.scientific_advice} />}
-    </section>
-  );
-}
-
 export function Detective() {
   const { run, sel, variable, regions, variables, runAnalysis, go, tempUnit, ready, chatContext, setSel, setHuntSelection,
     chatTurns: turns, chatBusy: busy, sendChat, clearChat, audience } = useStore();
   const F = tempUnit === "F";
   const [text, setText] = useState("");
   const [navigationError, setNavigationError] = useState<string | null>(null);
-  const [provider, setProvider] = useState<string | null>(null);
-  useEffect(() => { let active = true; void api.llmStatus().then((s) => { if (active) setProvider(s.provider); }).catch(() => {}); return () => { active = false; }; }, []);
-  const lastResponse = turns.filter((t) => t.response).at(-1)?.response;
   const matchesRun = !chatContext && run?.variable.id === sel.variableId
     && run.trend.start === `${sel.startYear}-01` && run.trend.end === `${sel.endYear}-12`
     && JSON.stringify(run.place.ref) === JSON.stringify(sel.place.ref);
@@ -94,7 +53,6 @@ export function Detective() {
         <Terra size={70} />
         <div className="col" style={{ gap: 4, flex: 1 }}>
           <h1 style={{ fontSize: 28 }}>Ask Terra</h1>
-          <span className="tag-ai">{lastResponse ? (lastResponse.mode === "llm" ? "Gemini AI Mode" : "Template Mode: AI unavailable") : provider === "gemini" ? "Gemini selected" : provider === "template" ? "Template Mode" : "Checking AI mode…"}</span>
           <span className="small muted">{contextVariable?.parameter_name ?? context.parameter ?? "Choose a variable"} · {contextVariable?.dataset_name ?? "Choose a dataset"} · {contextRegion} · {context.start} to {context.end}</span>
         </div>
       </section>
@@ -114,21 +72,7 @@ export function Detective() {
           <div key={t.id} className="col" style={{ overflowWrap: "anywhere" }}>
             <div className="bubble-user">{t.question}</div>
             {t.response ? (
-              <div className="card bubble-ai" style={t.response.mode === "template" ? { border: "2px dashed #8d86a0", boxShadow: "none" } : undefined}>
-                <span className="tag-ai">{t.response.mode === "llm" ? "Gemini AI Mode" : "Template Mode: AI unavailable"}</span>
-                <p style={{ margin: 0, font: "600 15px/1.55 var(--body)" }}>{F ? textToF(t.response.answer) : t.response.answer}</p>
-                {t.response.evidence.map((e) => <Evidence key={e.trend.trend_id} evidence={e} fahrenheit={F} />)}
-                {t.response.tool_results?.map((result, index) => <ToolDetails key={`${result.tool}-${index}`} result={result} fahrenheit={F} />)}
-                {t.response.clarification && <span className="warn" role="status">Selection needed: {t.response.clarification}</span>}
-                {t.response.actions.map((a, k) => (
-                  <button key={k} type="button" className="btn soft" style={{ alignSelf: "flex-start" }} onClick={() => void act(a)}>
-                    {a.label}
-                  </button>
-                ))}
-                {t.response.tool_results?.length ? <span className="small muted">Backend tools: {t.response.tool_results.map((r) => `${r.tool}: ${r.ok ? "verified" : "failed"}`).join(", ")}</span> : null}
-                {t.response.warnings.filter((w, i, all) => w.code !== "TEMPLATE_MODE" && all.findIndex((x) => x.message === w.message) === i).map((w, k) => <span key={`${w.code}-${k}`} className="small muted">{w.message}</span>)}
-                <span className="small muted">{t.response.disclaimer}</span>
-              </div>
+              <AnswerCard response={t.response} fahrenheit={F} variables={variables} onAction={(a) => void act(a)} />
             ) : t.error ? <div className="card bubble-ai" role="alert">
               <b>Could not answer this message</b><span>{t.error}</span>
               <button type="button" className="btn soft" disabled={busy || !ready} onClick={() => void sendChat(t.question, t.context)}>Try again</button>

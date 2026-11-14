@@ -9,6 +9,10 @@ interface Props {
   go: (p: TourPage) => void;
   onClose: (completed: boolean) => void;
   onReplay: () => void;
+  /** Labels for the last step (the Hunt tour uses its own wording). */
+  finishLabel?: string;
+  replayLabel?: string;
+  skipLabel?: string;
 }
 
 const PAD = 8;            // space around the highlighted element
@@ -18,7 +22,7 @@ const WAIT_MS = 4000;     // how long to wait for a target after navigating
  * Spotlight guided tour. It only navigates between pages and highlights existing controls: it never runs an
  * analysis, never calls Gemini and never changes the user's selection. Escape or "Skip tutorial" closes it.
  */
-export function Tour({ open, steps = TOUR_STEPS, page, go, onClose, onReplay }: Props) {
+export function Tour({ open, steps = TOUR_STEPS, page, go, onClose, onReplay, finishLabel = "Start Exploring", replayLabel = "Replay Tutorial", skipLabel = "Skip tutorial" }: Props) {
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [missing, setMissing] = useState(false);
@@ -45,9 +49,12 @@ export function Tour({ open, steps = TOUR_STEPS, page, go, onClose, onReplay }: 
     if (!open) return;
     if (step.page !== page) { setRect(null); go(step.page); return; }
     setMissing(false);
+    // Ask the page to show the view this step points at (a view switch only; pages never compute on this event).
+    if (step.prepare) window.dispatchEvent(new CustomEvent("terra-tour-prepare", { detail: step.prepare }));
     if (!step.target) { setRect(null); return; }
     let cancelled = false;
     const t0 = performance.now();
+    const wait = step.fallback ? 900 : WAIT_MS;   // targets that appear only after a run: do not keep the user waiting
     const find = () => {
       if (cancelled) return;
       const el = document.querySelector(step.target!) as HTMLElement | null;
@@ -58,7 +65,7 @@ export function Tour({ open, steps = TOUR_STEPS, page, go, onClose, onReplay }: 
         setRect(el.getBoundingClientRect());
         return;
       }
-      if (performance.now() - t0 > WAIT_MS) { setRect(null); setMissing(true); return; }
+      if (performance.now() - t0 > wait) { setRect(null); setMissing(true); return; }
       window.setTimeout(find, 120);
     };
     find();
@@ -138,7 +145,7 @@ export function Tour({ open, steps = TOUR_STEPS, page, go, onClose, onReplay }: 
           <h2 id="tour-title" style={{ fontSize: 19 }}>{step.title}</h2>
         </div>
         <p id="tour-body">{step.body}</p>
-        {missing && <p className="small muted" role="status">This part of the screen is not available right now, so it is not highlighted.</p>}
+        {missing && <p className="small muted" role="status">{step.fallback ?? "This part of the screen is not available right now, so it is not highlighted."}</p>}
         <div className="tour-progress" role="progressbar" aria-label="Tutorial progress" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={index + 1}
           aria-valuetext={`Step ${index + 1} of ${steps.length}`}>
           <span style={{ width: `${((index + 1) / steps.length) * 100}%` }} />
@@ -147,12 +154,12 @@ export function Tour({ open, steps = TOUR_STEPS, page, go, onClose, onReplay }: 
           <span className="small muted num">Step {index + 1} of {steps.length}</span>
           {last ? (
             <div className="row" style={{ gap: 8 }}>
-              <button type="button" className="btn soft" onClick={() => { setIndex(0); onReplay(); }}>Replay Tutorial</button>
-              <button type="button" className="btn" data-primary onClick={() => close(true)}>Start Exploring</button>
+              <button type="button" className="btn soft" onClick={() => { setIndex(0); onReplay(); }}>{replayLabel}</button>
+              <button type="button" className="btn" data-primary onClick={() => close(true)}>{finishLabel}</button>
             </div>
           ) : (
             <div className="row" style={{ gap: 8 }}>
-              <button type="button" className="btn ghost" onClick={() => close(false)}>Skip tutorial</button>
+              <button type="button" className="btn ghost" onClick={() => close(false)}>{skipLabel}</button>
               <button type="button" className="btn soft" onClick={back} disabled={index === 0}>Back</button>
               <button type="button" className="btn" data-primary onClick={next}>Next</button>
             </div>

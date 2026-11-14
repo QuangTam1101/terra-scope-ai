@@ -35,7 +35,7 @@ const server=await createServer({cacheDir:qaCache,server:{middlewareMode:true,wa
   load(id){if(id==='\0phase6-store')return `export const useStore=()=>globalThis.phase6Store; export const WORLD={ref:{type:'preset',id:'global'},label:'Whole world',bbox:[-180,-90,180,90]}; export const cellPlace=(lon,lat)=>({ref:{type:'bbox',bbox:[lon,lat,lon+1,lat+1]},label:'Cell',bbox:[lon,lat,lon+1,lat+1]}); export const areaPlace=(bbox)=>({ref:{type:'bbox',bbox},label:'Area',bbox});`;},
 }]});
 try {
-  for(const [name,text] of [['Home','Start'],['Explore','Raw Seasonal MK p'],['Hunt','Contradiction hunt'],['Detective','Ask Terra'],['Report','95% CI for the OLS anomaly slope']]) {
+  for(const [name,text] of [['Home','Start'],['Explore','Raw Seasonal MK p'],['Hunt','Investigate differences in environmental trends'],['Detective','Ask Terra'],['Report','95% CI for the OLS anomaly slope']]) {
     const module=await server.ssrLoadModule(`/src/pages/${name}.tsx`);
     test(`${name} renders offline with selected evidence and semantic controls`,()=>{
       if(name==='Report'){module.reportDraft.step=3;module.reportDraft.edition=null;}
@@ -43,11 +43,11 @@ try {
       assert.ok(html.includes(text),name);
       assert.ok(html.includes('<button'),name);
       if(name==='Report'){assert.ok(html.includes('Scientist edition report'));assert.ok(html.includes('GPM_3IMERGM'));assert.ok(html.includes('Raw Seasonal MK p'));assert.ok(html.includes('not the Sen slope'));assert.ok(html.includes('Download PDF'));assert.ok(html.includes('Data file (.json)'));assert.ok(html.includes('Abstract'));assert.ok(html.includes('References'));assert.ok(html.includes('the null hypothesis of no monotonic trend is not rejected'));}
-      if(name==='Detective'){assert.ok(html.includes('role="log"'));assert.ok(html.includes('not statistically significant'));assert.ok(html.includes('Raw p:'));}
+      if(name==='Detective'){assert.ok(html.includes('role="log"'));assert.ok(html.includes('not statistically significant'));assert.ok(html.includes('Details and method'));assert.ok(!html.includes('seasonal_mk'));}
     });
   }
   // Explorer presentation of the SAME fixture: plain wording first, same backend numbers kept in the page.
-  for(const [name,text] of [['Explore','What did we find?'],['Hunt','Where do the results disagree?'],['Report','Explorer edition report']]) {
+  for(const [name,text] of [['Explore','What did we find?'],['Hunt','environmental stories don'],['Report','Explorer edition report']]) {
     const module=await server.ssrLoadModule(`/src/pages/${name}.tsx`);
     test(`${name} renders the Explorer presentation of the same evidence`,()=>{
       globalThis.phase6Store={...globalThis.phase6Store,audience:'explorer'};

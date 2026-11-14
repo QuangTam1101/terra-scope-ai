@@ -47,7 +47,7 @@ export function resultStatement(a: AnalysisEntry): string {
 export function compareHeadline(c: ComparisonEntry): string {
   const s = compareStamp(c);
   const pair = `${c.a.label} versus ${c.b.label}`;
-  if (c.kind !== "regions") return `${c.variableName}, ${pair}: descriptive comparison of two datasets`;
+  if (c.kind !== "regions") return `${c.variableName}, ${pair}: descriptive comparison of two ${c.kind === "periods" ? "periods" : "datasets"}`;
   return s.text === "Difference confirmed" ? `${c.variableName}, ${pair}: statistically significant difference in trends`
     : s.text === "Inconclusive" ? `${c.variableName}, ${pair}: difference in trends inconclusive`
     : s.text === "Not tested" ? `${c.variableName}, ${pair}: difference not testable`
@@ -252,6 +252,7 @@ export function testOutcome(a: AnalysisEntry): { met: boolean | null; title: str
 /** Plain sentence for a comparison, from the backend difference test. */
 export function plainCompare(c: ComparisonEntry): string {
   const s = compareStamp(c);
+  if (c.kind === "periods") return "The same place and dataset were compared over two periods. There is no statistical test for a change of trend between periods, so this comparison only describes them; the years chosen can change the answer.";
   if (c.kind !== "regions") return "These two NASA products were compared side by side. There is no statistical test for differences between products, so this comparison only describes them; neither product is assumed to be correct.";
   if (s.text === "Difference confirmed") return "The two places changed at clearly different rates: the statistical test confirms the difference between their trends.";
   if (s.text === "Inconclusive") return "The two trends look different, but the test cannot confirm it: one of its two conditions is not met, so the result is inconclusive.";

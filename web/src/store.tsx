@@ -191,7 +191,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         region_a: refOf(c.a.trend.region), region_b: refOf(c.b.trend.region), label_a: c.a.label, label_b: c.b.label,
         start: c.a.trend.start, end: c.a.trend.end, method: "seasonal_mk", alpha: 0.05,
         saved_result: { compare_id: c.test!.compare_id, verdict: c.test!.verdict, slope_diff_per_decade: c.test!.difference.slope_diff_per_decade, p_value: c.test!.difference.p_value } })),
-      ...comparisons.filter((c) => c.kind === "datasets").flatMap((c): CaseItem[] => [c.a, c.b].map((side) => ({ kind: "trend", variable_id: side.trend.variable_id,
+      ...comparisons.filter((c) => c.kind !== "regions" || !c.test).flatMap((c): CaseItem[] => [c.a, c.b].map((side) => ({ kind: "trend", variable_id: side.trend.variable_id,
         region: refOf(side.trend.region), place_label: side.label, bbox: side.trend.region.bbox, start: side.trend.start, end: side.trend.end,
         method: "seasonal_mk", alpha: 0.05 }))),
     ].slice(0, 12);
