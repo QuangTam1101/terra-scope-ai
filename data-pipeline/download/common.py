@@ -1,7 +1,8 @@
-"""Phần dùng chung của các script trong download/: vùng nghiên cứu, khoảng thời gian, đăng nhập NASA Earthdata,
-tải file, cắt theo bbox. Tài khoản đọc từ .env (EARTHDATA_USER, EARTHDATA_PASS) qua appeears.load_env()."""
+"""Phần dùng chung của các script trong download/: khoảng thời gian, đăng nhập NASA Earthdata, tải file, chạy job
+Harmony. Tài khoản đọc từ .env (EARTHDATA_USER, EARTHDATA_PASS) qua appeears.load_env()."""
 import os
 import sys
+import time
 from pathlib import Path
 
 import requests
@@ -10,7 +11,6 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 from appeears import load_env  # noqa: E402
 
-BBOX = (94.0, 8.0, 110.0, 35.0)            # W, S, E, N — giống config/mekong_bbox.geojson
 START, END = "2001-01-01", "2024-12-31"    # khoảng phân tích chung
 RAW = ROOT / "data" / "raw"
 URS = "urs.earthdata.nasa.gov"
@@ -57,8 +57,39 @@ def download(url, path, session=None):
     return path
 
 
-def crop(ds, lat="lat", lon="lon"):
-    """Giữ các ô có tâm nằm trong BBOX; chạy được cả khi trục lat tăng hay giảm."""
-    w, s, e, n = BBOX
-    lat_slice = slice(s, n) if ds[lat][0] < ds[lat][-1] else slice(n, s)
-    return ds.sel({lat: lat_slice, lon: slice(w, e)})
+def harmony_job(client, request, out_dir):
+    """Gửi request Harmony (hoặc nối tiếp job ghi trong out_dir/job_id.txt), chờ xong, tải mọi file về out_dir.
+    Không dùng client.wait_for_processing: nó hỏi /jobs/status, và Harmony thỉnh thoảng trả 400 với job dài.
+    job_id.txt chỉ bị xoá khi đã tải hết, nên chạy lại giữa chừng sẽ tải tiếp file còn thiếu, không gửi job mới."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    job_file = out_dir / "job_id.txt"
+    if job_file.exists():
+        job_id = job_file.read_text().strip()
+    else:
+        job_id = client.submit(request)
+        job_file.write_text(job_id)
+    print(out_dir.name, "job", job_id, flush=True)
+    while True:
+        try:
+            status = client.status(job_id).get("status")
+        except Exception as e:                       # lỗi mạng tạm thời → hỏi lại sau
+            print("status lỗi tạm thời:", str(e)[:100], flush=True)
+            status = None
+        if status in ("failed", "canceled"):
+            sys.exit(f"Harmony job {job_id}: {status}")
+        if status == "paused":                       # job > ~300 granule bị Harmony tự dừng sau bước xem trước
+            client.resume(job_id)
+        if status in ("successful", "complete_with_errors"):
+            break
+        time.sleep(30)
+    while True:            # tải treo (client tạo với download_timeout) hoặc rớt mạng → tải lại, file đã đủ được bỏ qua
+        try:
+            files = [f.result() for f in client.download_all(job_id, directory=str(out_dir), overwrite=False)]
+            break
+        except Exception as e:
+            print("tải lỗi, thử lại:", str(e)[:100], flush=True)
+            time.sleep(30)
+    if status == "complete_with_errors":             # giữ job_id.txt để xem lỗi: harmony.earthdata.nasa.gov/jobs/<id>
+        sys.exit(f"Harmony job {job_id}: complete_with_errors, tải được {len(files)} file")
+    job_file.unlink()
+    return files
