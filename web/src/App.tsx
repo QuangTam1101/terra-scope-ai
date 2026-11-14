@@ -1,7 +1,11 @@
 import { StoreProvider, useStore, type Page } from "./store";
 import { Icon, Terra } from "./ui";
 import { Home } from "./pages/Home";
-import { Component, lazy, Suspense, type ReactNode } from 'react';
+import { Landing } from "./pages/Landing";
+import { Tour } from "./Tour";
+import { AppChrome } from "./chrome";
+import { markOnboardingDone, shouldAutoStart } from "./onboarding";
+import { Component, lazy, Suspense, useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 
 // Home does not need the map atlas or analysis/chat pages at first load.
 const Explore = lazy(() => import('./pages/Explore').then((m) => ({ default: m.Explore })));
@@ -30,9 +34,28 @@ const NAV: { id: Page; label: string; icon: () => JSX.Element }[] = [
   { id: "report", label: "Report", icon: Icon.report },
 ];
 
+const HelpIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2.2" /><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6V14M12 17.2v.3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>;
+const BackIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+
 function Shell() {
   const { page, go, toast, clearToast, ready } = useStore();
+  const [tourOpen, setTourOpen] = useState(false);
+  const startedThisSession = useRef(false);
+
+  // Get Started: enter the app; first-time users get the guided tour once (completion is remembered locally).
+  const start = useCallback(() => {
+    go("explore");
+    if (shouldAutoStart(true, startedThisSession.current)) { startedThisSession.current = true; setTourOpen(true); }
+  }, [go]);
+  const replayTutorial = useCallback(() => { startedThisSession.current = true; setTourOpen(false); setTimeout(() => setTourOpen(true), 0); }, []);
+  const toLanding = useCallback(() => { setTourOpen(false); go("landing"); }, [go]);
+  const closeTour = useCallback(() => { markOnboardingDone(); setTourOpen(false); }, []);
+  const chrome = useMemo(() => ({ replayTutorial, toLanding }), [replayTutorial, toLanding]);
+
+  if (page === "landing") return <Landing onStart={start} />;
+
   return (
+    <AppChrome.Provider value={chrome}>
     <div className="shell">
       <nav className="sidebar card" aria-label="Main">
         <span className="brand"><Terra size={34} /> Terra-scope</span>
@@ -41,7 +64,11 @@ function Shell() {
             <n.icon />{n.label}
           </button>
         ))}
-        <span className="prelim" style={{ marginTop: 14 }}>Preliminary · not yet validated</span>
+        <div className="nav-extra">
+          <button type="button" className="nav" onClick={replayTutorial}><HelpIcon />Replay Tutorial</button>
+          <button type="button" className="nav" onClick={toLanding}><BackIcon />About Terra-scope</button>
+        </div>
+        <span className="prelim" style={{ marginTop: 6 }}>Preliminary · not yet validated</span>
       </nav>
       <main className="main">
         {!ready && !toast && <div className="card pad">Connecting to the Terra-scope server…</div>}
@@ -64,7 +91,9 @@ function Shell() {
         <div className="toast" role="alert"><span style={{ flex: 1 }}>{toast}</span>
           <button type="button" aria-label="Dismiss" onClick={clearToast}>×</button></div>
       )}
+      <Tour open={tourOpen} page={page} go={go} onClose={closeTour} onReplay={replayTutorial} />
     </div>
+    </AppChrome.Provider>
   );
 }
 

@@ -150,3 +150,22 @@ npm run build
 Final localhost is left in Gemini Mode at `http://localhost:5173/`, backend
 `http://127.0.0.1:8000/docs`. The immutable audit script refuses to overwrite the existing JSON record;
 do not delete baseline artifacts just to repeat it. Use a separately named artifact for a later review.
+
+## Phase 6C browser QA on a second machine (2026-11-14)
+
+Branch `feature/phase6-scientific-validation` (base `1acedfe`), servers started with
+`scripts/start-local.ps1 -Mode Template` (no launcher change needed). Real browser (Chromium-based app
+pane), real clicks, typing and keyboard. Gemini Mode **not tested**: this machine has no `backend/.env` key.
+
+| Page | Checked in a real browser | Result |
+| --- | --- | --- |
+| Home | Render, "Try an example" button | Passed: opens Explore and runs MERRA-2 Mekong Delta (+0.28 °C/decade, significant) |
+| Explore | Map canvas, trend legend, result card labels, data quality | Passed: "95% OLS anomaly CI", "Raw Seasonal MK p (verdict basis)", "Autocorrelation-adjusted p (diagnostic)", 288/288 months |
+| Hunt | Region selects, run comparison, chart | Passed (Mekong Delta vs Hanoi: same direction). **Issue H1:** after "Try an example", Place A and Place B both default to Mekong Delta, so the button is disabled ("Choose two different places") until the user changes one |
+| Detective | Typed question, Enter key, multi-turn follow-up, evidence, "Add this analysis to Report" | Passed: IMERG Mekong +3.16 mm/month per decade, p = 0.110, not significant; follow-up "What does that p-value mean?" keeps context. **Issue D1:** answer text shows raw method identifiers ("Method: seasonal_mk; slope: sen_seasonal; interval: ols_anomaly"), against the team rule of no raw API field names in the UI (`backend/app/agent.py:61`, `backend/app/llm/runtime.py:211`). **Issue D2:** the input has no visible label (placeholder only) |
+| Report | Rows added from Detective and Explore | Passed: raw p, adjusted p, interval and verdict per row. Export Markdown and Print were **not clicked** (they download files) |
+| All pages at 375 × 812 | Horizontal overflow | Passed: no page overflow; the Report table scrolls inside its own container |
+
+Fixed in this branch (presentation only): the long dash character (U+2014) in 5 user-facing strings
+(`web/src/pages/Detective.tsx`, `web/src/ScientificPanel.tsx`, `backend/app/agent.py`, `backend/app/chat.py`),
+replaced by a colon or parentheses, per the team text rule. Tests after the fix: backend 224/224, frontend 16/16, typecheck passed.

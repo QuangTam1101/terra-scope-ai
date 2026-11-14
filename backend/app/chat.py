@@ -12,7 +12,7 @@ from .schemas import (ChatRequest, ChatResponse, ExplainContext, ExplainRequest,
 
 
 TEMPLATE_NOTICE = (
-    "Template Mode — AI unavailable. Answers use the selected context; places, datasets and dates "
+    "Template Mode: AI unavailable. Answers use the selected context; places, datasets and dates "
     "are not inferred from messages or conversation history. Change the selection in Explore."
 )
 
