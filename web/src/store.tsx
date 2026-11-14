@@ -4,7 +4,7 @@ import { api, errorText, type BBox, type ChatContext, type ChatHistoryTurn, type
 import { pointPlace } from "./places";
 import { pageFromHash } from './pageRouting';
 
-export type Page = "home" | "explore" | "hunt" | "detective" | "report";
+export type Page = "landing" | "home" | "explore" | "hunt" | "detective" | "report";
 
 export interface Place { ref: RegionRef; label: string; bbox: BBox }
 export interface Selection { parameter: string; variableId: string; startYear: number; endYear: number; place: Place }

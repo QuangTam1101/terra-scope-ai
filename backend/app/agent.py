@@ -93,7 +93,7 @@ def response_from_results(results, context, *, mode="template", extra="", reason
     if reason:
         warnings.append(ChatWarning(code="LLM_FALLBACK", message=runtime.FALLBACK_MESSAGES.get(reason, "Agent limit or tool validation failed. Verified results are preserved.")))
     if mode == "template":
-        warnings.insert(0, ChatWarning(code="TEMPLATE_MODE", message="Template Mode — AI unavailable. Results come from backend tools."))
+        warnings.insert(0, ChatWarning(code="TEMPLATE_MODE", message="Template Mode: AI unavailable. Results come from backend tools."))
     values = dict(answer=trusted_answer(results) + (" " + extra if extra else ""), mode=mode,
                   evidence=evidence, actions=[], warnings=warnings, disclaimer="Backend evidence determines all scientific conclusions. AI interpretation may be wrong.",
                   tool_results=results, resolved_context=context)

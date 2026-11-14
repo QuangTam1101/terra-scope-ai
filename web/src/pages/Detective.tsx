@@ -89,7 +89,7 @@ export function Detective() {
         <Terra size={70} />
         <div className="col" style={{ gap: 4, flex: 1 }}>
           <h1 style={{ fontSize: 28 }}>Ask Terra</h1>
-          <span className="tag-ai">{lastResponse ? (lastResponse.mode === "llm" ? "Gemini AI Mode" : "Template Mode — AI unavailable") : provider === "gemini" ? "Gemini selected" : provider === "template" ? "Template Mode" : "Checking AI mode…"}</span>
+          <span className="tag-ai">{lastResponse ? (lastResponse.mode === "llm" ? "Gemini AI Mode" : "Template Mode: AI unavailable") : provider === "gemini" ? "Gemini selected" : provider === "template" ? "Template Mode" : "Checking AI mode…"}</span>
           <span className="small muted">{contextVariable?.parameter_name ?? context.parameter ?? "Choose a variable"} · {contextVariable?.dataset_name ?? "Choose a dataset"} · {contextRegion} · {context.start} to {context.end}</span>
         </div>
       </section>
@@ -110,7 +110,7 @@ export function Detective() {
             <div className="bubble-user">{t.question}</div>
             {t.response ? (
               <div className="card bubble-ai" style={t.response.mode === "template" ? { border: "2px dashed #8d86a0", boxShadow: "none" } : undefined}>
-                <span className="tag-ai">{t.response.mode === "llm" ? "Gemini AI Mode" : "Template Mode — AI unavailable"}</span>
+                <span className="tag-ai">{t.response.mode === "llm" ? "Gemini AI Mode" : "Template Mode: AI unavailable"}</span>
                 <p style={{ margin: 0, font: "600 15px/1.55 var(--body)" }}>{F ? textToF(t.response.answer) : t.response.answer}</p>
                 {t.response.evidence.map((e) => <Evidence key={e.trend.trend_id} evidence={e} fahrenheit={F} />)}
                 {t.response.tool_results?.map((result, index) => <ToolDetails key={`${result.tool}-${index}`} result={result} fahrenheit={F} />)}

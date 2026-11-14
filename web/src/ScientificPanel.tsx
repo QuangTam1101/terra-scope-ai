@@ -9,7 +9,7 @@ export function ScientificPanel({ advice }: { advice: MethodAdvice }) {
       <span>Guidance for analysis {advice.analysis_id}. This status is not a probability that the result is correct.</span>
       {trust && <><b>Statistical verdict</b><span>{trust.statistical_evidence}</span>
         <span>Estimated direction: {trust.estimated_direction} · magnitude: {trust.magnitude ?? 'unavailable'} {trust.units} · decision basis: {trust.decision_basis}</span></>}
-      {([['Applied methods', advice.applied_methods], ['Recommendations — not additional computations', advice.recommended_methods],
+      {([['Applied methods', advice.applied_methods], ['Recommendations (not additional computations)', advice.recommended_methods],
          ['Available, not applied here', advice.available_methods], ['Unsupported or requiring review', advice.unsupported_methods]] as const).map(([title, methods]) => <section key={title} aria-label={title}>
         <b>{title}</b>{methods.map((m) => <p key={`${m.method}-${m.rule_id}`}><strong>{m.method}</strong> ({m.status.replaceAll('_', ' ')}): {m.explanation}</p>)}
       </section>)}
