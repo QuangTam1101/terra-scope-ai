@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
+    "test": "node --test tests/chatNavigation.test.mjs tests/pages.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -3,10 +3,11 @@ Swagger: http://localhost:8000/docs · OpenAPI: http://localhost:8000/openapi.js
 import logging
 import os
 import threading
+from uuid import uuid4
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import APIRouter, FastAPI, Query
+from fastapi import APIRouter, FastAPI, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
@@ -63,6 +64,17 @@ def variables():
     return service.variables()
 
 
+@api.get("/llm/status")
+def llm_status():
+    settings = config.llm_settings()
+    import re
+    model = settings.model if re.fullmatch(r"gemini-[a-zA-Z0-9.-]{1,80}", settings.model) else "invalid"
+    if settings.api_key and settings.api_key in model:
+        model = "redacted"
+    return {"provider": settings.provider if settings.provider in {"gemini", "template"} else "unsupported",
+            "model": model, "configured": bool(settings.api_key) and settings.valid}
+
+
 @api.get("/regions", response_model=RegionsResponse)
 def regions():
     return service.regions()
@@ -105,8 +117,10 @@ def explain(req: ExplainRequest):
 
 
 @api.post("/chat", response_model=ChatResponse, response_model_exclude_unset=True)
-def chat_response(req: ChatRequest):
-    return chat.respond(req)
+def chat_response(req: ChatRequest, response: Response):
+    identifier = uuid4().hex
+    response.headers["X-Request-ID"] = identifier
+    return chat.respond(req, request_id=identifier)
 
 
 @api.get("/jobs/{job_id}")

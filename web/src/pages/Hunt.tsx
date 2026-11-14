@@ -13,9 +13,9 @@ const VERDICT: Record<CompareResponse["verdict"], { text: string; cls: string }>
 };
 
 export function Hunt() {
-  const { regions, variable, sel, run, showError, tempUnit } = useStore();
-  const [a, setA] = useState<string>(run?.place.ref.type === "preset" ? run.place.ref.id : "sahel_hint");
-  const [b, setB] = useState<string>("mekong_delta");
+  const { regions, variable, sel, run, showError, tempUnit, huntSelection } = useStore();
+  const [a, setA] = useState<string>(huntSelection?.a ?? (run?.place.ref.type === "preset" ? run.place.ref.id : "sahel_hint"));
+  const [b, setB] = useState<string>(huntSelection?.b ?? "mekong_delta");
   const [busy, setBusy] = useState(false);
   const [raw, setRes] = useState<{ cmp: CompareResponse; sa: SeriesResponse; sb: SeriesResponse } | null>(null);
   // the API answers in °C; convert for display when °F is chosen

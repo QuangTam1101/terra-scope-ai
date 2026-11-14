@@ -5,6 +5,7 @@ import react from "@vitejs/plugin-react";
 // Production: set VITE_API_BASE_URL to the deployed backend origin.
 export default defineConfig({
   plugins: [react()],
+  cacheDir: "node_modules/.vite-terrascope",
   server: {
     port: 5173,
     proxy: { "/api": { target: "http://127.0.0.1:8000", changeOrigin: true } },

@@ -1,10 +1,24 @@
 import { StoreProvider, useStore, type Page } from "./store";
 import { Icon, Terra } from "./ui";
 import { Home } from "./pages/Home";
-import { Explore } from "./pages/Explore";
-import { Hunt } from "./pages/Hunt";
-import { Detective } from "./pages/Detective";
-import { Report } from "./pages/Report";
+import { Component, lazy, Suspense, type ReactNode } from 'react';
+
+// Home does not need the map atlas or analysis/chat pages at first load.
+const Explore = lazy(() => import('./pages/Explore').then((m) => ({ default: m.Explore })));
+const Hunt = lazy(() => import('./pages/Hunt').then((m) => ({ default: m.Hunt })));
+const Detective = lazy(() => import('./pages/Detective').then((m) => ({ default: m.Detective })));
+const Report = lazy(() => import('./pages/Report').then((m) => ({ default: m.Report })));
+
+class PageBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() {
+    return this.state.failed ? <section className="card pad col" role="alert">
+      <b>The page could not load.</b><span>Check the local server connection, then reload. Reloading clears session chat and results.</span>
+      <button className="btn" type="button" onClick={() => location.reload()}>Reload application</button>
+    </section> : this.props.children;
+  }
+}
 
 import type { JSX } from "react";
 
@@ -31,11 +45,13 @@ function Shell() {
       </nav>
       <main className="main">
         {!ready && !toast && <div className="card pad">Connecting to the Terra-scope server…</div>}
+        <PageBoundary key={page}><Suspense fallback={<div className="card pad" role="status" aria-live="polite">Loading page…</div>}>
         {page === "home" && <Home />}
         {page === "explore" && <Explore />}
         {page === "hunt" && <Hunt />}
         {page === "detective" && <Detective />}
         {page === "report" && <Report />}
+        </Suspense></PageBoundary>
       </main>
       <nav className="tabbar" aria-label="Main">
         {NAV.map((n) => (

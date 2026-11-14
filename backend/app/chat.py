@@ -1,8 +1,8 @@
-"""Deterministic chat adapter. No model, external calls, or statistical calculations.
+"""Deterministic chat service with optional backend-only model enhancement.
 
 FAQ content describes the methods already documented in service.py and pipeline/api.py.
-History is accepted for the future conversational interface, but never treated as evidence.
-The explicit context is authoritative; template mode does not extract places from prose.
+History is accepted by the provider, but never treated as scientific evidence.
+The legacy template path uses explicit context. Phase 4 resolves selections deterministically.
 """
 import re
 
@@ -12,12 +12,24 @@ from .schemas import (ChatRequest, ChatResponse, ExplainContext, ExplainRequest,
 
 
 TEMPLATE_NOTICE = (
-    "Template Mode — AI not connected. Answers use the selected context; places, datasets and dates "
+    "Template Mode — AI unavailable. Answers use the selected context; places, datasets and dates "
     "are not inferred from messages or conversation history. Change the selection in Explore."
 )
 
 # Small, reviewed method glossary, not a general-purpose knowledge base.
 FAQ = {
+    "what is seasonal mann-kendall": (
+        "Seasonal Mann-Kendall tests for a monotonic trend while comparing observations within "
+        "the same calendar season. A detected trend does not establish a cause or forecast the future."
+    ),
+    "what is autocorrelation": (
+        "Autocorrelation is dependence between observations across time. Related observations "
+        "can carry less independent information, which matters when assessing evidence for a trend."
+    ),
+    "what is trend detection": (
+        "Trend detection assesses whether a time series contains a persistent direction of change "
+        "relative to its variability, under the assumptions of the selected statistical test."
+    ),
     "what is a p-value": (
         "Under the no-trend hypothesis and the test assumptions, a p-value measures how likely a test "
         "statistic at least as extreme as the observed one would be. It is not the probability that "
@@ -33,6 +45,9 @@ FAQ = {
     ),
 }
 FAQ_ALIASES = {
+    "what is seasonal mann–kendall": "what is seasonal mann-kendall",
+    "what does autocorrelation mean": "what is autocorrelation",
+    "why use sen's slope": "what is sen's slope",
     "what is a p value": "what is a p-value",
     "what does the p-value mean": "what is a p-value",
     "what does the p-value mean here": "what is a p-value",
@@ -48,7 +63,7 @@ def _base(answer: str, warnings: list[dict]) -> dict:
             "disclaimer": service.EXPLAIN_DISCLAIMER}
 
 
-def respond(req: ChatRequest) -> ChatResponse:
+def template_response(req: ChatRequest) -> ChatResponse:
     ctx = req.context
     cached = service.stored_trend(ctx.trend_id) if ctx.trend_id else None
     variable = service.get_variable(ctx.variable_id) if ctx.variable_id is not None else None
@@ -103,3 +118,11 @@ def respond(req: ChatRequest) -> ChatResponse:
         for a in explanation["actions"] if a["type"] == "run_trend"
     ]
     return ChatResponse(**result)
+
+
+def respond(req: ChatRequest, *, request_id: str | None = None) -> ChatResponse:
+    if req.use_tools:
+        from .conversation import respond as converse
+        return converse(req, template_response, request_id)
+    from .llm.runtime import enhance
+    return enhance(req, template_response, request_id=request_id)
