@@ -140,10 +140,10 @@ function MiniChart({ anomaly }: { anomaly: boolean }) {
   const d = pts.map((y, i) => `${i ? "L" : "M"}${(8 + (i * (W - 16)) / (n - 1)).toFixed(1)} ${y.toFixed(1)}`).join("");
   return (
     <svg width="100%" viewBox={`0 0 ${W} ${H}`} aria-hidden="true" style={{ background: "var(--bg)", borderRadius: 16 }}>
-      {anomaly && <line x1="8" x2={W - 8} y1={H / 2} y2={H / 2} stroke="rgba(43,37,64,.3)" />}
-      {anomaly && <polygon points={`8,${H / 2 + 22} ${W - 8},${H / 2 - 20} ${W - 8},${H / 2 - 42} 8,${H / 2 + 8}`} fill="#f5b98a" fillOpacity=".45" />}
-      <path d={d} fill="none" stroke="#5e5872" strokeWidth="1.6" strokeOpacity=".8" />
-      {anomaly && <path d={`M8 ${H / 2 + 15} L${W - 8} ${H / 2 - 31}`} stroke="#c4621a" strokeWidth="4.5" strokeLinecap="round" />}
+      {anomaly && <line x1="8" x2={W - 8} y1={H / 2} y2={H / 2} style={{ stroke: "var(--ink)" }} strokeOpacity={0.25} strokeDasharray="4 4" />}
+      {anomaly && <polygon points={`8,${H / 2 + 22} ${W - 8},${H / 2 - 20} ${W - 8},${H / 2 - 42} 8,${H / 2 + 8}`} style={{ fill: "var(--band-up)" }} fillOpacity={0.35} />}
+      <path d={d} fill="none" style={{ stroke: "var(--ink)" }} strokeWidth="1.8" strokeOpacity={0.7} strokeLinejoin="round" />
+      {anomaly && <path d={`M8 ${H / 2 + 15} L${W - 8} ${H / 2 - 31}`} style={{ stroke: "var(--up-3)" }} strokeWidth="4" strokeLinecap="round" />}
     </svg>
   );
 }

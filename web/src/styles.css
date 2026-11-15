@@ -907,7 +907,6 @@ select.select::-ms-expand { display: none; }
 [data-theme="dark"] .lp-steps li:nth-child(4) .lp-step-art { background: var(--hover); }
 [data-theme="dark"] .lp-team { background: var(--hover); }
 [data-theme="dark"] .nasacheck { background: var(--hover); }
-[data-theme="dark"] .fc-neg { color: var(--muted); }
 [data-theme="dark"] .meter { background: var(--hover); }
 [data-theme="dark"] .hunt-card.on { background: var(--hover); }
 [data-theme="dark"] .hunt-card-q { color: var(--muted); }
@@ -922,3 +921,23 @@ select.select::-ms-expand { display: none; }
 [data-theme="dark"] .ev-rate { color: var(--ink); }
 [data-theme="dark"] .ev-rate.up { color: var(--up-2); }
 [data-theme="dark"] .ev-rate.down { color: var(--down-2); }
+/* dark mode: readable accents for small text (contrast audit, 16/11) */
+[data-theme="dark"] .lp-eyebrow { color: #c3b4f5; }
+[data-theme="dark"] .swatch-head { color: var(--muted); }
+[data-theme="dark"] .swatch small { color: var(--muted); }
+[data-theme="dark"] .linkbtn { color: var(--down-2); }
+[data-theme="dark"] [style^="color: rgb(47, 111, 179)"], [data-theme="dark"] [style*="; color: rgb(47, 111, 179)"] { color: var(--down-2) !important; }
+[data-theme="dark"] [style^="color: rgb(196, 98, 26)"], [data-theme="dark"] [style*="; color: rgb(196, 98, 26)"] { color: var(--up-2) !important; }
+/* dark mode: shared .rchart charts outside the report paper (Explore yearly view, Hunt, companion) */
+[data-theme="dark"] .rchart text[fill="#3d3850"], [data-theme="dark"] .rchart text[fill="#2b2540"] { fill: var(--muted); }
+[data-theme="dark"] .rchart line[stroke="#e4e0ea"], [data-theme="dark"] .rchart path[stroke="#e4e0ea"] { stroke: var(--line); }
+[data-theme="dark"] .rchart [stroke="#3d3850"], [data-theme="dark"] .rchart [stroke="#2b2540"] { stroke: var(--muted); }
+[data-theme="dark"] .rchart circle[fill="#2b2540"], [data-theme="dark"] .rchart rect[fill="#2b2540"] { fill: var(--ink); }
+[data-theme="dark"] .rpage .rchart text[fill="#3d3850"] { fill: #3d3850; }
+[data-theme="dark"] .rpage .rchart text[fill="#2b2540"] { fill: #2b2540; }
+[data-theme="dark"] .rpage .rchart line[stroke="#e4e0ea"], [data-theme="dark"] .rpage .rchart path[stroke="#e4e0ea"] { stroke: #e4e0ea; }
+[data-theme="dark"] .rpage .rchart [stroke="#3d3850"] { stroke: #3d3850; }
+[data-theme="dark"] .rpage .rchart [stroke="#2b2540"] { stroke: #2b2540; }
+[data-theme="dark"] .rpage .rchart circle[fill="#2b2540"], [data-theme="dark"] .rpage .rchart rect[fill="#2b2540"] { fill: #2b2540; }
+[data-theme="dark"] .fc-pos { color: #5fd3a3; } [data-theme="dark"] .fc-neg { color: #f39a88; }
+:root:not([data-theme="dark"]) [style^="color: rgb(196, 98, 26)"], :root:not([data-theme="dark"]) [style*="; color: rgb(196, 98, 26)"] { color: #a24c12 !important; }

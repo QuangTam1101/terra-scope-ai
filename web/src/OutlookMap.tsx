@@ -11,6 +11,12 @@ const cellColor = (c: ForecastMapCell) => {
   return mix(NEUTRAL, d >= 0 ? ABOVE : BELOW, Math.min(1, Math.abs(d) / 0.45));
 };
 const pct = (x: number) => `${Math.round(x * 100)}%`;
+const MAX_ZOOM = 12;
+type View = { k: number; cx: number; cy: number };             // zoom factor and top-left corner, in map units (W x H)
+const clampView = (v: View): View => {
+  const k = Math.min(MAX_ZOOM, Math.max(1, v.k));
+  return { k, cx: Math.min(W - W / k, Math.max(0, v.cx)), cy: Math.min(H - H / k, Math.max(0, v.cy)) };
+};
 
 export function OutlookMap({ variableId, mode, months, unitsLabel, onPick }: { variableId: string; mode: Mode; months: string[]; unitsLabel: string; onPick: (lat: number, lon: number) => void }) {
   const [month, setMonth] = useState(months[Math.min(2, months.length - 1)]);
@@ -22,6 +28,9 @@ export function OutlookMap({ variableId, mode, months, unitsLabel, onPick }: { v
   const cache = useRef(new Map<string, ForecastMap>());
   const cv = useRef<HTMLCanvasElement>(null);
   const [cssW, setCssW] = useState(760);
+  const [view, setView] = useState<View>({ k: 1, cx: 0, cy: 0 });
+  const drag = useRef<{ x: number; y: number; cx: number; cy: number; moved: boolean } | null>(null);
+  const [grabbing, setGrabbing] = useState(false);
 
   useEffect(() => {
     const key = `${variableId}|${mode}|${month}`;
@@ -55,21 +64,45 @@ export function OutlookMap({ variableId, mode, months, unitsLabel, onPick }: { v
     const dpr = window.devicePixelRatio || 1;
     canvas.width = cssW * dpr; canvas.height = (cssW / 2) * dpr;
     const ctx = canvas.getContext("2d")!;
-    ctx.setTransform((cssW * dpr) / W, 0, 0, (cssW * dpr) / W, 0, 0);
+    const sc = (cssW * dpr * view.k) / W;
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(sc, 0, 0, sc, -view.cx * sc, -view.cy * sc);
     const path = geoPath(projection, ctx);
     ctx.fillStyle = "#cdeaf0"; ctx.fillRect(0, 0, W, H);
     ctx.beginPath(); path(land); ctx.fillStyle = "#f3e3c3"; ctx.fill();
     const cw = W / 360 + 0.3, ch = H / 180 + 0.3;
     data?.cells.forEach((c) => { ctx.fillStyle = cellColor(c); ctx.fillRect(((c.lon + 180 - 0.5) / 360) * W, ((90 - c.lat - 0.5) / 180) * H, cw, ch); });
-    ctx.beginPath(); path(land); ctx.strokeStyle = "rgba(90,70,40,.55)"; ctx.lineWidth = 0.8; ctx.stroke();
-  }, [data, cssW]);
+    ctx.beginPath(); path(land); ctx.strokeStyle = "rgba(90,70,40,.55)"; ctx.lineWidth = 0.8 / Math.sqrt(view.k); ctx.stroke();
+  }, [data, cssW, view]);
 
-  const locate = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // screen pixel (CSS) -> map units, with the current zoom
+  const toMap = (px: number, py: number) => ({ x: view.cx + (px * W) / (cssW * view.k), y: view.cy + (py * W) / (cssW * view.k) });
+  const zoomAt = (factor: number, px = cssW / 2, py = cssW / 4) => setView((v) => {
+    const m = { x: v.cx + (px * W) / (cssW * v.k), y: v.cy + (py * W) / (cssW * v.k) };
+    const k = Math.min(MAX_ZOOM, Math.max(1, v.k * factor));
+    return clampView({ k, cx: m.x - (px * W) / (cssW * k), cy: m.y - (py * W) / (cssW * k) });
+  });
+  // wheel zoom around the cursor; a non-passive listener so the page does not scroll while zooming the map
+  useEffect(() => {
+    const c = cv.current; if (!c) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const r = c.getBoundingClientRect();
+      zoomAt(e.deltaY < 0 ? 1.25 : 1 / 1.25, e.clientX - r.left, e.clientY - r.top);
+    };
+    c.addEventListener("wheel", onWheel, { passive: false });
+    return () => c.removeEventListener("wheel", onWheel);
+  });
+
+  const locate = (e: React.PointerEvent<HTMLCanvasElement> | React.MouseEvent<HTMLCanvasElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
-    const lon = Math.floor(((e.clientX - r.left) / r.width) * 360 - 180) + 0.5;
-    const lat = Math.floor(90 - ((e.clientY - r.top) / r.height) * 180) + 0.5;
-    return { lon, lat, px: e.clientX - r.left, py: e.clientY - r.top };
+    const px = e.clientX - r.left, py = e.clientY - r.top, m = toMap(px, py);
+    const lon = Math.floor((m.x / W) * 360 - 180) + 0.5;
+    const lat = Math.floor(90 - (m.y / H) * 180) + 0.5;
+    return { lon, lat, px, py };
   };
+  const iconBtn = { width: 40, height: 40, borderRadius: 12, border: 0, background: "var(--surface)", boxShadow: "var(--shadow)",
+    font: "800 18px var(--body)", color: "var(--ink)", cursor: "pointer" } as const;
 
   return (
     <section className="card pad col" aria-label="Global outlook map">
@@ -83,17 +116,36 @@ export function OutlookMap({ variableId, mode, months, unitsLabel, onPick }: { v
       </div>
       <span className="small muted">
         Each square is 1° wide. <b style={{ color: "#c4621a" }}>Orange</b> = tilted toward above-normal {unitsLabel}, <b style={{ color: "#2f6fb3" }}>blue</b> = tilted toward below-normal,
-        pale = no clear tilt. Hover for the probabilities, click a square to forecast that place.
+        pale = no clear tilt. Hover for the probabilities, click a square to forecast that place. Scroll or use + and − to zoom, drag to move.
       </span>
       <div style={{ position: "relative", width: "100%" }}>
-        <canvas ref={cv} style={{ width: cssW, height: cssW / 2, borderRadius: 14, cursor: "crosshair", display: "block", opacity: loading ? 0.5 : 1 }}
-          role="img" aria-label={`Forecast outlook map for ${data?.t ?? month}`}
-          onMouseMove={(e) => { const p = locate(e); const c = lookup.get(`${p.lon},${p.lat}`); setHover(c ? { px: p.px, py: p.py, c } : null); }}
-          onMouseLeave={() => setHover(null)}
-          onClick={(e) => { const p = locate(e); if (lookup.has(`${p.lon},${p.lat}`)) onPick(p.lat, p.lon); }} />
-        {loading && <div className="small" style={{ position: "absolute", top: 10, left: 12, background: "#fff", padding: "4px 10px", borderRadius: 999 }}>Loading the map…</div>}
+        <canvas ref={cv} style={{ width: cssW, height: cssW / 2, borderRadius: 14, cursor: grabbing ? "grabbing" : view.k > 1 ? "grab" : "crosshair", display: "block", opacity: loading ? 0.5 : 1, touchAction: view.k > 1 ? "none" : "pan-y" }}
+          role="img" aria-label={`Forecast outlook map for ${data?.t ?? month}. Scroll or use the buttons to zoom, drag to move.`}
+          onPointerDown={(e) => { drag.current = { x: e.clientX, y: e.clientY, cx: view.cx, cy: view.cy, moved: false }; }}
+          onPointerMove={(e) => {
+            const d = drag.current;
+            if (d && e.buttons === 1 && view.k > 1) {
+              const dx = e.clientX - d.x, dy = e.clientY - d.y;
+              if (Math.abs(dx) + Math.abs(dy) > 4) { d.moved = true; setGrabbing(true); setHover(null); e.currentTarget.setPointerCapture(e.pointerId); }
+              if (d.moved) { const u = W / (cssW * view.k); setView(clampView({ k: view.k, cx: d.cx - dx * u, cy: d.cy - dy * u })); return; }
+            }
+            const p = locate(e); const c = lookup.get(`${p.lon},${p.lat}`); setHover(c ? { px: p.px, py: p.py, c } : null);
+          }}
+          onPointerUp={(e) => {
+            const d = drag.current; drag.current = null; setGrabbing(false);
+            if (d && !d.moved) { const p = locate(e); if (lookup.has(`${p.lon},${p.lat}`)) onPick(p.lat, p.lon); }
+          }}
+          onPointerLeave={() => { if (!drag.current) setHover(null); }}
+          onDoubleClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); zoomAt(2, e.clientX - r.left, e.clientY - r.top); }} />
+        <div className="col" style={{ position: "absolute", right: 10, top: 10, gap: 6 }}>
+          <button type="button" aria-label="Zoom in" title="Zoom in" style={iconBtn} disabled={view.k >= MAX_ZOOM} onClick={() => zoomAt(1.6)}>+</button>
+          <button type="button" aria-label="Zoom out" title="Zoom out" style={iconBtn} disabled={view.k <= 1} onClick={() => zoomAt(1 / 1.6)}>−</button>
+          <button type="button" aria-label="Show the whole world" title="Show the whole world" style={{ ...iconBtn, fontSize: 12 }} onClick={() => setView({ k: 1, cx: 0, cy: 0 })}>1:1</button>
+        </div>
+        {view.k > 1 && <span className="small" style={{ position: "absolute", left: 10, bottom: 8, background: "var(--surface)", padding: "2px 8px", borderRadius: 999, opacity: 0.92 }}>zoom {view.k.toFixed(1)}× · drag to move</span>}
+        {loading && <div className="small" style={{ position: "absolute", top: 10, left: 12, background: "var(--surface)", padding: "4px 10px", borderRadius: 999 }}>Loading the map…</div>}
         {hover && (
-          <div className="small" style={{ position: "absolute", left: Math.min(hover.px + 12, cssW - 200), top: hover.py + 12, background: "#fff", padding: "6px 10px", borderRadius: 12, boxShadow: "0 4px 14px rgba(0,0,0,.18)", pointerEvents: "none", whiteSpace: "nowrap" }}>
+          <div className="small" style={{ position: "absolute", left: Math.min(hover.px + 12, cssW - 200), top: hover.py + 12, background: "var(--surface)", padding: "6px 10px", borderRadius: 12, boxShadow: "0 4px 14px rgba(0,0,0,.18)", pointerEvents: "none", whiteSpace: "nowrap" }}>
             <b>{hover.c.lat}°, {hover.c.lon}°</b><br />below {pct(hover.c.p_below)} · near {pct(1 - hover.c.p_below - hover.c.p_above)} · above {pct(hover.c.p_above)}
           </div>
         )}

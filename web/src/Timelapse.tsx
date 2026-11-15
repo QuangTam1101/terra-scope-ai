@@ -99,8 +99,8 @@ export function Timelapse({ variable, start, end, bbox, toF }: { variable: Varia
     <div className="col tl" style={{ gap: 10 }}>
       <div className="row" style={{ justifyContent: "space-between", gap: 10 }}>
         <div className="seg" role="group" aria-label="Time-lapse shows">
-          <button type="button" className={kind === "anomaly" ? "on" : ""} aria-pressed={kind === "anomaly"} onClick={() => setKind("anomaly")}>Compared with usual</button>
           <button type="button" className={kind === "value" ? "on" : ""} aria-pressed={kind === "value"} onClick={() => setKind("value")}>Actual values</button>
+          <button type="button" className={kind === "anomaly" ? "on" : ""} aria-pressed={kind === "anomaly"} onClick={() => setKind("anomaly")}>Compared with usual</button>
         </div>
         <span className="tl-month num" aria-live="off">{month}</span>
       </div>

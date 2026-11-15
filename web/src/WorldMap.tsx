@@ -197,7 +197,7 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
     onArea([w, s, Math.max(e, w + 1), Math.max(n, s + 1)]);
   };
 
-  const iconBtn = { width: 44, height: 44, borderRadius: 14, border: 0, background: "#fff", boxShadow: "var(--shadow)",
+  const iconBtn = { width: 44, height: 44, borderRadius: 14, border: 0, background: "var(--surface)", boxShadow: "var(--shadow)",
     font: "800 20px var(--body)", color: "var(--ink)", cursor: "pointer" } as const;
 
   return (
@@ -273,7 +273,7 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
           );
         })()}
         {hover && !drag && (
-          <div className="num" style={{ position: "absolute", left: hover.px + 12, top: hover.py + 12, background: "#fff", borderRadius: 12,
+          <div className="num" style={{ position: "absolute", left: hover.px + 12, top: hover.py + 12, background: "var(--surface)", borderRadius: 12,
             padding: "4px 10px", font: "700 12.5px var(--body)", boxShadow: "var(--shadow)", pointerEvents: "none", whiteSpace: "nowrap" }}>
             {hover.text}
           </div>
@@ -289,7 +289,7 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
             <span>{loadingInfo?.title ?? "Loading the map…"}{loadingInfo?.detail && <><br /><span style={{ font: "600 13px var(--body)" }}>{loadingInfo.detail}</span></>}</span>
           </div>
         )}
-        <span className="num" style={{ position: "absolute", left: 10, bottom: 8, font: "700 11px var(--body)", background: "rgba(255,255,255,.85)",
+        <span className="num" style={{ position: "absolute", left: 10, bottom: 8, font: "700 11px var(--body)", background: "var(--surface)", opacity: 0.92,
           padding: "2px 8px", borderRadius: 999 }}>{cellDeg}° grid · zoom {view.k.toFixed(1)}×</span>
       </div>
       )}
