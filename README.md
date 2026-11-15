@@ -4,7 +4,7 @@
 
 NASA Space Apps Challenge 2026 · Challenge: *Be An Earth System Trend Detective!*
 
-- **Live app:** https://terra-scope-ai-zeta.vercel.app
+- **Live app:** https://terra-scope-nasa.vercel.app/
 - **Technical report:** [report/Terra-scope_AI_Technical_Report.pdf](report/Terra-scope_AI_Technical_Report.pdf)
 - **Pitch deck:** https://www.canva.com/design/DAHa8U-ibRg/uep93YIb23vUrkqF0aZ1kw/view
 
