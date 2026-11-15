@@ -69,7 +69,7 @@ jobs:
           trap 'kill "$sampler" 2>/dev/null || true' EXIT
           docker exec terra-api python /verification/smoke-forecast.py --repo-root /app \
             --base-url http://127.0.0.1:8000 --output /tmp/linux-forecast.json | tee validation-reports/smoke.log
-          docker cp terra-api:/tmp/linux-forecast.json validation-reports/linux-forecast.json
+          docker exec terra-api cat /tmp/linux-forecast.json > validation-reports/linux-forecast.json
       - name: Collect diagnostic evidence and stop only the test container
         if: always()
         run: |
