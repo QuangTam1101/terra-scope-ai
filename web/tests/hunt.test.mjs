@@ -81,6 +81,15 @@ try {
     assert.equal(L.overlapMonths({ start: '2001-01', end: '2012-12' }, { start: '2013-01', end: '2025-12' }), 0);
   });
 
+  test('a newly chosen dataset resets the years to its record; requests stay inside the data', () => {
+    const smap = { start: '2015-04', end: '2025-12' }, gpcc = { start: '2001-01', end: '2020-12' }, imerg = { start: '2001-01', end: '2024-12' };
+    assert.deepEqual(L.recordYears('regions', smap), { startA: 2015, endA: 2025, startB: 2015, endB: 2025 });
+    assert.deepEqual(L.recordYears('datasets', imerg, gpcc), { startA: 2001, endA: 2020, startB: 2001, endB: 2020 });
+    assert.deepEqual(L.recordYears('periods', imerg), { startA: 2001, endA: 2012, startB: 2013, endB: 2024 });
+    assert.deepEqual(L.requestPeriod(2015, 2025, smap), { start: '2015-04', end: '2025-12' });
+    assert.deepEqual(L.requestPeriod(2001, 2024, imerg, gpcc), { start: '2001-01', end: '2020-12' });
+  });
+
   test('wording never overstates the evidence', () => {
     const opp = ['opposite_direction'];
     assert.match(L.conclusion('descriptive_difference', opp, true), /does not prove that the underlying trends are statistically different/);

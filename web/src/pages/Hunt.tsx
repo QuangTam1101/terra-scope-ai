@@ -12,7 +12,7 @@ import { LocatorMap } from "../report/ReportDoc";
 import { compatiblePartner, EXTENTS } from "../explore";
 import { clampPeriod } from "../PlaceCompare";
 import {
-  CATEGORY_LABEL, categorize, checkComparability, conclusion, detectiveRequest, evidenceStatus, EXAMPLE_QUESTIONS, explainComparison, overlapMonths,
+  CATEGORY_LABEL, categorize, checkComparability, conclusion, detectiveRequest, evidenceStatus, EXAMPLE_QUESTIONS, explainComparison, overlapMonths, recordYears, requestPeriod,
   STATUS_LABEL, VALIDITY_LABEL, type Category, type HuntMode, type Side,
 } from "../hunt/logic";
 import { PlaceField } from "../hunt/PlaceField";
@@ -191,8 +191,8 @@ function Workspace({ mode, reopen, onReopened, onSaved }: { mode: HuntMode; reop
     if (!va || !vb) return;
     const id = ++reqId.current;               // stale-result guard: only the latest request may update the screen
     const oa = opt(c.a), ob = opt(mode === "regions" ? c.b : c.a);
-    const pa = { start: `${c.startA}-01`, end: `${c.endA}-12` };
-    const pb = mode === "periods" ? { start: `${c.startB}-01`, end: `${c.endB}-12` } : pa;
+    const pa = requestPeriod(c.startA, c.endA, va.coverage, vb.coverage);
+    const pb = mode === "periods" ? requestPeriod(c.startB, c.endB, va.coverage) : pa;
     setBusy(true); setAdded(false); setMsg(null);
     try {
       let r: Result;
@@ -302,7 +302,11 @@ function Workspace({ mode, reopen, onReopened, onSaved }: { mode: HuntMode; reop
         <h2 id="hw-h" style={{ fontSize: 22 }}>{CARDS.find((c) => c.mode === mode)!.title}</h2>
         <div className="row">
           <label className="col small muted" style={{ gap: 4, flex: 1, minWidth: 220 }}>{mode === "datasets" ? "Dataset A" : "Variable and dataset"}
-            <select className="select" value={cfg.variableId} onChange={(e) => setCfg({ variableId: e.target.value, variableIdB: compatiblePartner(e.target.value, variables)?.id ?? "" })}>
+            <select className="select" value={cfg.variableId} onChange={(e) => {
+              // A newly chosen dataset starts from its whole record, like Explore.
+              const a = variables.find((v) => v.id === e.target.value), b = compatiblePartner(e.target.value, variables);
+              setCfg({ variableId: e.target.value, variableIdB: b?.id ?? "", ...recordYears(mode, a?.coverage ?? null, mode === "datasets" ? b?.coverage ?? null : a?.coverage ?? null) });
+            }}>
               {varList.map((v) => <option key={v.id} value={v.id}>{v.parameter_name} · {v.dataset_name}</option>)}</select></label>
           {mode === "datasets" && (
             <label className="col small muted" style={{ gap: 4, flex: 1, minWidth: 220 }}>Dataset B (compatible only)

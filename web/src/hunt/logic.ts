@@ -32,6 +32,19 @@ export function overlapMonths(a: { start: string; end: string }, b: { start: str
   const s = later(a.start, b.start), e = earlier(a.end, b.end);
   return s > e ? 0 : months(s, e);
 }
+type Coverage = Variable["coverage"];
+/** Years after choosing a variable: its whole record (in "datasets" the years both share; in "periods" two halves). */
+export function recordYears(mode: HuntMode, a: Coverage, b: Coverage = a) {
+  const y = (ym: string | undefined, d: number) => Number(ym?.slice(0, 4) ?? d);
+  const s = Math.max(y(a?.start, 2001), y(b?.start, 2001)), e = Math.min(y(a?.end, 2025), y(b?.end, 2025)), mid = Math.round((s + e) / 2);
+  return { startA: s, endA: mode === "periods" ? mid - 1 : e, startB: mode === "periods" ? mid : s, endB: e };
+}
+/** Whole picked years cut to the months the data holds (SMAP starts 2015-04): the server rejects any month outside. */
+export function requestPeriod(startYear: number, endYear: number, ...covs: Coverage[]) {
+  let start = `${startYear}-01`, end = `${endYear}-12`;
+  for (const c of covs) if (c) { start = later(start, c.start); end = earlier(end, c.end); }
+  return { start, end };
+}
 const kindOf = (product: string) => {
   const p = product.toUpperCase();
   return p.includes("IMERG") || p.startsWith("GPM") ? "satellite-based estimate" : p.includes("GLDAS") ? "land-surface model"
