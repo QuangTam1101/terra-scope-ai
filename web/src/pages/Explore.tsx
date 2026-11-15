@@ -10,6 +10,7 @@ import { Term } from "../Term";
 import { seriesCsv } from "../report/model";
 import { periodEnd, periodMonths, periodStart } from "../period";
 import { PlacePicker } from "../PlacePicker";
+import { countryPlace, placeShape } from "../places";
 import { Legend, WorldMap, type Layer } from "../WorldMap";
 import { TrendChart } from "../TrendChart";
 import { Terra } from "../ui";
@@ -154,7 +155,8 @@ export function Explore() {
     const v = variables.find((x) => x.id === st.variableId && x.available);
     const r = st.place?.kind === "region" ? regions.find((x) => x.id === (st.place as { id: string }).id) : undefined;
     const place: Place | undefined = !st.place ? undefined : st.place.kind === "cell" ? cellPlace(st.place.lon, st.place.lat)
-      : st.place.kind === "box" ? areaPlace(st.place.bbox) : r && { ref: { type: "preset", id: r.id }, label: r.name, bbox: r.bbox };
+      : st.place.kind === "box" ? areaPlace(st.place.bbox) : st.place.kind === "country" ? countryPlace(st.place.name)
+      : r && { ref: { type: "preset", id: r.id }, label: r.name, bbox: r.bbox };
     const target = v ?? variable;
     if (!target || (!v && !place)) return;
     const start = st.start ?? periodStart(sel), end = st.end ?? periodEnd(sel);
@@ -283,7 +285,8 @@ export function Explore() {
             bbox={sel.place.bbox[2] - sel.place.bbox[0] >= 360 ? null : sel.place.bbox} />
         ) : <>
         <WorldMap layer={layer} trend={shownTrend} values={shownValues} loading={gridLoading} loadingInfo={gridInfo} units={units}
-          selected={sel.place.bbox[2] - sel.place.bbox[0] >= 360 ? null : sel.place.bbox} selectedLabel={sel.place.label}
+          selected={sel.place.bbox[2] - sel.place.bbox[0] >= 360 && sel.place.ref.type !== "country" ? null : sel.place.bbox}
+          shape={placeShape(sel.place)} selectedLabel={sel.place.label}
           onClear={() => runAnalysis({ place: WORLD })}
           onPick={(lon, lat) => { const p = cellPlace(lon, lat); runAnalysis({ place: p }); }}
           onArea={(bbox) => runAnalysis({ place: areaPlace(bbox) })} />

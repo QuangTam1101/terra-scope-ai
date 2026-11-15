@@ -87,9 +87,11 @@ interface Props {
   /** What is really running while `loading` (Phase 8.5A); falls back to a neutral message. */
   loadingInfo?: { title: string; detail: string } | null;
   selected: BBox | null; selectedLabel?: string; onClear: () => void; onPick: (lon: number, lat: number) => void; onArea: (bbox: BBox) => void; units: string;
+  /** Country border: drawn instead of the `selected` box, which then only places the label. */
+  shape?: GeoJSON.Feature | null;
 }
 
-export function WorldMap({ layer, trend, values, loading, loadingInfo, selected, selectedLabel, onClear, onPick, onArea, units }: Props) {
+export function WorldMap({ layer, trend, values, loading, loadingInfo, selected, selectedLabel, onClear, onPick, onArea, units, shape }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [cssW, setCssW] = useState(0);                       // displayed canvas width, to place the selection label
   useEffect(() => {
@@ -138,21 +140,30 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
     if (selected) {
       const [w, s, e, n] = selected;
       const rx = x(w), ry = y(n), rw = x(e) - x(w), rh = y(s) - y(n);
-      // 1) dim everything outside the selection so the chosen area stands out
-      ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.rect(rx, ry, rw, rh);
-      ctx.fillStyle = "rgba(43,37,64,.32)"; ctx.fill("evenodd");
-      // 2) double outline: white halo, then dark ink line
       ctx.lineJoin = "round";
-      ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 6 / k; ctx.strokeRect(rx, ry, rw, rh);
-      ctx.strokeStyle = "#2b2540"; ctx.lineWidth = 2.5 / k; ctx.strokeRect(rx, ry, rw, rh);
-      // 3) corner marks
-      const c = Math.min(10 / k, rw / 2, rh / 2);
-      ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 4 / k; ctx.lineCap = "round";
-      ctx.beginPath();
-      for (const [cx, cy, dx, dy] of [[rx, ry, 1, 1], [rx + rw, ry, -1, 1], [rx, ry + rh, 1, -1], [rx + rw, ry + rh, -1, -1]]) {
-        ctx.moveTo(cx + dx * c, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy + dy * c);
+      if (shape) {
+        // country: dim outside its border (even-odd also dims holes, e.g. Lesotho inside South Africa), then outline it
+        ctx.beginPath(); ctx.rect(0, 0, W, H); path(shape);
+        ctx.fillStyle = "rgba(43,37,64,.32)"; ctx.fill("evenodd");
+        ctx.beginPath(); path(shape);
+        ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 6 / k; ctx.stroke();
+        ctx.strokeStyle = "#2b2540"; ctx.lineWidth = 2.5 / k; ctx.stroke();
+      } else {
+        // 1) dim everything outside the selection so the chosen area stands out
+        ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.rect(rx, ry, rw, rh);
+        ctx.fillStyle = "rgba(43,37,64,.32)"; ctx.fill("evenodd");
+        // 2) double outline: white halo, then dark ink line
+        ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 6 / k; ctx.strokeRect(rx, ry, rw, rh);
+        ctx.strokeStyle = "#2b2540"; ctx.lineWidth = 2.5 / k; ctx.strokeRect(rx, ry, rw, rh);
+        // 3) corner marks
+        const c = Math.min(10 / k, rw / 2, rh / 2);
+        ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 4 / k; ctx.lineCap = "round";
+        ctx.beginPath();
+        for (const [cx, cy, dx, dy] of [[rx, ry, 1, 1], [rx + rw, ry, -1, 1], [rx, ry + rh, 1, -1], [rx + rw, ry + rh, -1, -1]]) {
+          ctx.moveTo(cx + dx * c, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy + dy * c);
+        }
+        ctx.stroke();
       }
-      ctx.stroke();
       // 4) a single cell is tiny on screen: add a locator ring around it
       if (rw * k < 18) {
         const cx = rx + rw / 2, cy = ry + rh / 2;
@@ -161,7 +172,7 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
         ctx.strokeStyle = "#2b2540"; ctx.lineWidth = 2.2 / k; ctx.stroke();
       }
     }
-  }, [layer, trend, values, selected, scale, view]);
+  }, [layer, trend, values, selected, shape, scale, view]);
 
   // ---------- coordinates & zoom ----------
   const toLonLat = (clientX: number, clientY: number) => {
@@ -210,7 +221,7 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
       </div>
       {mode === "3d" ? (
         <Globe layer={layer} trend={trend} values={values} scale={scale} loading={loading} loadingInfo={loadingInfo} selected={selected}
-          selectedLabel={selectedLabel} lookup={lookup} cellDeg={cellDeg} onPick={onPick} onClear={onClear} />
+          shape={shape} selectedLabel={selectedLabel} lookup={lookup} cellDeg={cellDeg} onPick={onPick} onClear={onClear} />
       ) : (
       <div className="mapwrap">
         <canvas ref={ref} role="img"

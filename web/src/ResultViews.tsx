@@ -124,7 +124,8 @@ export function ScientistResult({ run, actions }: { run: Run; actions: ReactNode
         <table className="metatable"><tbody>
           <tr><th>Variable</th><td>{v.parameter_name} ({u})</td></tr>
           <tr><th>Product</th><td>{t.source.product} v{t.source.version} · {t.source.provider}</td></tr>
-          <tr><th>Region</th><td>{place.label} · {t.region.type === "preset" ? `catalog preset "${t.region.id}"` : "bounding-box approximation"}</td></tr>
+          <tr><th>Region</th><td>{place.label} · {t.region.type === "preset" ? `catalog preset "${t.region.id}"` : t.region.type === "country"
+            ? "country border (Natural Earth 1:110m): grid cells whose centre is inside it" : "bounding-box approximation"}</td></tr>
           <tr><th>Box (W, S, E, N)</th><td>{b[0]}°, {b[1]}°, {b[2]}°, {b[3]}°</td></tr>
           <tr><th>Period</th><td>{t.start} to {t.end}, monthly</td></tr>
           <tr><th>Grid</th><td>{v.spatial_resolution_deg}° processed (native {v.native_resolution_deg}°), area mean of cells in the box</td></tr>

@@ -91,8 +91,12 @@ it with air temperature as if they were the same quantity.
 ### 3.1 From a place to a monthly series
 - The backend takes every grid cell whose **centre** lies inside the chosen box and averages them for each month,
   weighting each cell by cos(latitude) so cells near the poles (which are smaller) count less.
-- A single point (city, coordinates, map click) becomes the one grid cell that contains it. A drawn shape is analysed
-  using its bounding box. Areas that cross the 180° meridian are not supported.
+- A single point (city, coordinates, map click) becomes the one grid cell that contains it. A box drawn on the map uses
+  every cell whose centre is inside the box. Drawn boxes that cross the 180° meridian are not supported.
+- A **country** follows its real border (Natural Earth 1:110m): only cells whose centre is inside the border count, so
+  a neighbour or the sea inside the country's bounding box is left out. Countries split by the 180° meridian (Russia,
+  Fiji) work. A country smaller than one grid cell (Luxembourg or Cyprus on the 1° grid) uses the cell nearest its
+  centre, and the result says so.
 
 ### 3.2 Removing the seasons (anomalies)
 - The **anomaly** of a month is its value minus the average of that same calendar month over all years

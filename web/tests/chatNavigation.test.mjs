@@ -64,6 +64,13 @@ test('unknown variable and region never navigate to unrelated defaults', () => {
   assert.equal(planChatNavigation(action('explore', { variable_id: 'fake' }), variables, regions).ok, false);
   assert.equal(planChatNavigation(action('report', { region: { type: 'preset', id: 'fake' } }), variables, regions).ok, false);
 });
+test('a country navigates through the page lookup and fails safely without it', () => {
+  const region = { type: 'country', id: 'Vietnam' };
+  const place = { ref: region, label: 'Vietnam', bbox: [102, 8, 110, 24] };
+  const result = planChatNavigation(action('explore', { region }), variables, regions, (n) => (n === 'Vietnam' ? place : undefined));
+  assert.equal(result.ok, true); assert.deepEqual(result.selection.place, place);
+  assert.equal(planChatNavigation(action('explore', { region }), variables, regions).ok, false);
+});
 test('Explore keeps the original bbox', () => {
   const region = { type: 'bbox', bbox: [101, 9, 105, 12] };
   const result = planChatNavigation(action('explore', { region }), variables, regions);

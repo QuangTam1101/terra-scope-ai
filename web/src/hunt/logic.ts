@@ -2,7 +2,7 @@
 // Nothing here computes a statistic. It reads backend /trends and /compare results and decides, by explicit rules:
 // whether two results can be compared (validity), what kind of difference they show (categories), and how strong the
 // evidence for a difference is (status). A formal difference test exists only for two regions (backend /compare).
-import type { CompareResponse, TrendResponse, Variable } from "../api";
+import { refOfRegion, type CompareResponse, type TrendResponse, type Variable } from "../api";
 
 export type HuntMode = "regions" | "datasets" | "periods";
 export type Category = "opposite_direction" | "magnitude_difference" | "different_significance_labels" | "dataset_disagreement"
@@ -214,7 +214,7 @@ export function conclusion(status: EvidenceStatus, cats: Category[], sci: boolea
 
 /** Detective handoff: the question and a context the backend resolves and recomputes itself (no client numbers are trusted). */
 export function detectiveRequest(mode: HuntMode, a: Side, b: Side, sci: boolean) {
-  const ta = a.trend, tb = b.trend, ref = (t: TrendResponse) => t.region.type === "preset" && t.region.id ? { type: "preset" as const, id: t.region.id } : { type: "bbox" as const, bbox: t.region.bbox };
+  const ta = a.trend, tb = b.trend, ref = (t: TrendResponse) => refOfRegion(t.region);
   const v = a.variable.parameter_name.toLowerCase();
   if (mode === "regions") return {
     message: sci ? `Compare the ${v} trends of ${a.label} and ${b.label} (${a.variable.dataset_name}, ${ta.start} to ${ta.end}). Which difference test was applied, is the slope difference statistically supported, and how does serial dependence affect interpretation?`

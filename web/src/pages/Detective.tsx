@@ -3,6 +3,7 @@ import type { ChatAction, ChatContext } from "../api";
 import { useStore } from "../store";
 import { periodEnd, periodStart } from "../period";
 import { planChatNavigation } from "../chatNavigation";
+import { countryPlace } from "../places";
 import { AnswerCard } from "../chat/AnswerCard";
 import { Terra } from "../ui";
 
@@ -37,7 +38,7 @@ export function Detective() {
   };
 
   const act = async (action: ChatAction) => {
-    const plan = planChatNavigation(action, variables, regions);
+    const plan = planChatNavigation(action, variables, regions, countryPlace);
     if (!plan.ok) { setNavigationError(plan.reason); return; }
     setNavigationError(null);
     if (plan.page === "hunt" && plan.hunt) {

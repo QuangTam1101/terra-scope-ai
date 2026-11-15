@@ -6,7 +6,8 @@ const BASE = ((import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace
 export type BBox = [number, number, number, number];
 export type RegionRef =
   | { type: "preset"; id: string }
-  | { type: "bbox"; bbox: BBox };
+  | { type: "bbox"; bbox: BBox }
+  | { type: "country"; id: string };   // Natural Earth 1:110m name; analysed by its border, not its box
 
 export interface DataSource { product: string; version: string; provider: string; url: string; citation?: string }
 export interface Quality { n_months: number; missing_months: number; coverage_fraction: number; sufficient: boolean }
@@ -21,6 +22,9 @@ export interface Region { id: string; name: string; bbox: BBox; is_demo: boolean
 export interface RegionsResponse { regions: Region[]; limits: { max_bbox_area_deg2: number; min_cells: number; cell_size_deg: number } }
 
 export interface RegionOut { type: string; id?: string | null; name?: string | null; bbox: BBox }
+/** Request ref that repeats an answered region (presets and countries by id, anything else by its box). */
+export const refOfRegion = (r: RegionOut): RegionRef =>
+  (r.type === "preset" || r.type === "country") && r.id ? { type: r.type, id: r.id } : { type: "bbox", bbox: r.bbox };
 export interface SeriesPoint { t: string; value: number | null; anomaly: number | null; valid_fraction: number }
 export interface SeriesResponse {
   variable_id: string; region: RegionOut; units: string; points: SeriesPoint[]; climatology: (number | null)[];

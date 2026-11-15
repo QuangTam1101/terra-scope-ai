@@ -12,6 +12,7 @@
 !data-pipeline/pipeline/**
 !data-pipeline/config/
 !data-pipeline/config/regions.geojson
+!data-pipeline/config/countries-110m.json
 !data-pipeline/processed_data/
 !data-pipeline/processed_data/grid/
 !data-pipeline/processed_data/grid/cube_precip.nc

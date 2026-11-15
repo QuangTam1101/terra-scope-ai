@@ -12,7 +12,7 @@ from .errors import ApiError
 
 from pipeline import api as papi  # noqa: E402
 from pipeline.contradictions import pair_difference_test  # noqa: E402,F401  (re-export)
-from pipeline.grid import grid_trend, region_series  # noqa: E402,F401
+from pipeline.grid import grid_trend, region_series, shape_mask  # noqa: E402,F401
 from pipeline.trends import anomaly, trend_one  # noqa: E402,F401
 
 papi.CUBE_DIR = config.CUBE_DIR

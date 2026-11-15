@@ -80,7 +80,7 @@ def trusted_answer(results):
         elif isinstance(d, Provenance):
             parts.append(f"{d.variable.name}: {d.variable.source.product} v{d.variable.source.version}, {d.variable.source.provider}. " + " ".join(d.processing_notes))
         elif isinstance(d, RegionCatalog):
-            parts.append("Available region presets: " + ", ".join(r.id for r in d.catalog.regions) + ". Supported selections: preset and bbox.")
+            parts.append("Available region presets: " + ", ".join(r.id for r in d.catalog.regions) + ". Supported selections: preset, bbox and country.")
         elif isinstance(d, MethodAdvice):
             parts.append('Scientific method guidance: ' + ' '.join(m.explanation for m in d.applied_methods) + ' ' + ' '.join(w.explanation for w in d.warnings))
             if d.trust_assessment:

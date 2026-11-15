@@ -159,7 +159,9 @@ Code của từng bước ở **03**, chi tiết adapter ở **02**, thuật to�
    4. Hiệu chỉnh Benjamini–Hochberg (FDR) trên mọi ô → `p_value_fdr`.
    5. Không hiệu chỉnh giá trị trùng (ties) trong phương sai MK, nên p hơi lớn hơn, tức là thận trọng hơn (03, K21).
 2. **Vùng bất kỳ:**
-   1. `region_series(cube, bbox)`: trung bình trọng số cos(vĩ độ) các ô có tâm trong bbox, kèm `valid_frac` từng tháng.
+   1. `region_series(cube, bbox, rings=None)`: trung bình trọng số cos(vĩ độ) các ô có tâm trong bbox, kèm `valid_frac` từng tháng.
+      Có `rings` (đường viền quốc gia) thì chỉ lấy ô có tâm trong đường viền (`shape_mask`, quy tắc chẵn-lẻ: lỗ như Lesotho
+      trong Nam Phi bị loại, đảo được tính); `valid_frac` tính trên các ô đó.
    2. `trend_one(series)`: Seasonal MK + Sen, Hamed-Rao MK trên anomaly, OLS trên anomaly ± CI 95%, cờ `insufficient_data` (< 10 năm hoặc < 70% tháng).
 3. Mọi độ dốc quy về đơn vị / thập kỷ.
 

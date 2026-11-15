@@ -102,6 +102,23 @@ def test_global_region_and_area_limit(client, monkeypatch):
          400, "REGION_TOO_LARGE")
 
 
+
+def test_country_region_uses_border_cells(client, monkeypatch):
+    from app import catalog
+    base = {"variable_id": "imerg_precip", **PERIOD}
+    body = client.post("/api/v1/trends", json={**base, "region": {"type": "country", "id": "Vietnam"}}).json()
+    assert body["region"]["type"] == "country" and body["region"]["id"] == "Vietnam"
+    box = client.post("/api/v1/trends", json={**base, "region": {"type": "bbox",
+                                                                 "bbox": list(catalog.COUNTRIES["Vietnam"].bbox)}}).json()
+    # khung bao gồm cả ô Lào/Campuchia phía tây (xu hướng khác trong cube giả); đường viền thì không
+    assert body["trend_id"] != box["trend_id"] and body["slope_per_decade"] != box["slope_per_decade"]
+    _err(client.post("/api/v1/trends", json={**base, "region": {"type": "country", "id": "Atlantis"}}), 404, "NOT_FOUND")
+    # nước nhỏ hơn một ô (Luxembourg trên lưới 1°): dùng ô gần tâm, kèm cảnh báo, không 400
+    ring = ((104.6, 8.6), (104.9, 8.6), (104.9, 8.9), (104.6, 8.6))
+    monkeypatch.setitem(catalog.COUNTRIES, "Tiny", catalog.Country("Tiny", (104.6, 8.6, 104.9, 8.9), (ring,)))
+    r = client.post("/api/v1/trends", json={**base, "region": {"type": "country", "id": "Tiny"}})
+    assert r.status_code == 200 and any("nearest its centre" in w for w in r.json()["warnings"])
+
 def test_value_heatmap(client):
     body = client.get("/api/v1/values/grid", params={"variable_id": "imerg_precip", **PERIOD,
                                                      "bbox": "100,5,104,10"}).json()

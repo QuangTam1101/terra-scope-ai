@@ -244,3 +244,50 @@ def _load_regions() -> dict[str, Region]:
 
 
 REGIONS: dict[str, Region] = _load_regions()
+
+
+@dataclass(frozen=True)
+class Country:
+    name: str
+    bbox: tuple[float, float, float, float]
+    rings: tuple                      # các vòng (N, 2) lon/lat của mọi mảnh, cho pipeline.grid.shape_mask
+
+
+def _load_countries() -> dict[str, Country]:
+    """Đường viền quốc gia Natural Earth 1:110m (world-atlas 2.0.2, cùng file frontend vẽ và tìm kiếm), khoá theo tên.
+    TopoJSON: mỗi cung lưu toạ độ lượng tử hoá dạng chênh lệch; chỉ số âm ~i là cung i đi ngược."""
+    path = config.PIPELINE_DIR / "config" / "countries-110m.json"
+    if not path.exists():
+        return {}
+    topo = json.loads(path.read_text(encoding="utf-8"))
+    (sx, sy), (tx, ty) = topo["transform"]["scale"], topo["transform"]["translate"]
+    arcs = []
+    for arc in topo["arcs"]:
+        x = y = 0
+        pts = []
+        for dx, dy in arc:
+            x, y = x + dx, y + dy
+            pts.append((x * sx + tx, y * sy + ty))
+        arcs.append(pts)
+
+    def ring(idx: list[int]) -> list:
+        out: list = []
+        for i in idx:
+            pts = arcs[i] if i >= 0 else arcs[~i][::-1]
+            out.extend(pts if not out else pts[1:])   # cung sau bắt đầu ở điểm cuối của cung trước
+        return out
+
+    countries: dict[str, Country] = {}
+    for g in topo["objects"]["countries"]["geometries"]:
+        polys = [g["arcs"]] if g["type"] == "Polygon" else g["arcs"] if g["type"] == "MultiPolygon" else []
+        rings = tuple(tuple(ring(r)) for poly in polys for r in poly)
+        if not rings:
+            continue
+        lons = [p[0] for r in rings for p in r]
+        lats = [p[1] for r in rings for p in r]
+        name = g["properties"]["name"]
+        countries[name] = Country(name, (min(lons), min(lats), max(lons), max(lats)), rings)
+    return countries
+
+
+COUNTRIES: dict[str, Country] = _load_countries()

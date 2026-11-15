@@ -121,6 +121,11 @@ def resolve_region(ref) -> tuple[dict, tuple, list[str]]:
         bbox, out = r.bbox, {"type": "preset", "id": r.id, "name": r.name}
     elif ref.type == "bbox":
         bbox, out = tuple(ref.bbox), {"type": "bbox", "name": ref.name}
+    elif ref.type == "country":
+        c = catalog.COUNTRIES.get(ref.id)
+        if c is None:
+            raise ApiError(404, "NOT_FOUND", f"Unknown country '{ref.id}'.", {"country": ref.id})
+        bbox, out = c.bbox, {"type": "country", "id": c.name, "name": c.name}
     else:
         bbox, w = _geometry_to_bbox(ref.geometry)
         warnings.append(w)
@@ -151,7 +156,13 @@ def _check_time(v: catalog.Variable, start: str, end: str) -> None:
                        {"coverage": {"start": cov[0], "end": cov[1]}})
 
 
-def _region_values(v: catalog.Variable, bbox: tuple, start: str, end: str) -> tuple[pd.Series, pd.Series, list]:
+def _country_of(region: dict) -> str | None:
+    return region.get("id") if region.get("type") == "country" else None
+
+
+def _region_values(v: catalog.Variable, bbox: tuple, start: str, end: str,
+                   country: str | None = None) -> tuple[pd.Series, pd.Series, list]:
+    """Chuỗi tháng của vùng. `country`: chỉ các ô có tâm trong đường viền quốc gia (catalog.COUNTRIES)."""
     cube = bridge.load_cube(v.pipeline_id)
     m = bridge.meta(v.pipeline_id)
     w, s, e, n = bbox
@@ -160,15 +171,25 @@ def _region_values(v: catalog.Variable, bbox: tuple, start: str, end: str) -> tu
         raise ApiError(404, "NO_DATA", f"This region is outside the area covered by the {v.name.lower()} data.",
                        {"bbox": list(bbox), "data_extent": list(m["extent"])})
     lat, lon = cube["lat"].values, cube["lon"].values
+    extra, rings = [], None
+    if country:
+        c = catalog.COUNTRIES[country]
+        lat_in, lon_in = lat[(lat >= s) & (lat <= n)], lon[(lon >= w) & (lon <= e)]
+        if len(lat_in) and len(lon_in) and bridge.shape_mask(lat_in, lon_in, c.rings).any():
+            rings = c.rings
+        else:                         # nước nhỏ hơn một ô: dùng ô gần tâm khung bao nhất, và nói rõ
+            cs = m["cell_size_deg"]
+            la, lo = lat[np.abs(lat - (s + n) / 2).argmin()], lon[np.abs(lon - (w + e) / 2).argmin()]
+            bbox = w, s, e, n = (lo - cs / 2, la - cs / 2, lo + cs / 2, la + cs / 2)
+            extra.append(f"{c.name} is smaller than one {cs:g}° data square, so the square nearest its centre is used.")
     if not (((lat >= s) & (lat <= n)).any() and ((lon >= w) & (lon <= e)).any()):
         raise ApiError(400, "REGION_TOO_SMALL",
                        f"Region does not contain the centre of any {m['cell_size_deg']:g}° grid cell. "
                        "Draw a larger area.", {"bbox": list(bbox), "cell_size_deg": m["cell_size_deg"]})
-    extra = []
     if w < ew or s < es or e > ee or n > en:
         extra.append("Part of this region is outside the data area; only the covered part is analysed.")
     try:
-        value, frac = bridge.region_series(cube, bbox)
+        value, frac = bridge.region_series(cube, bbox, rings)
     except AssertionError:
         raise ApiError(404, "NO_DATA", "The data grid has no cells inside this region.", {"bbox": list(bbox)})
     idx = pd.date_range(f"{start}-01", f"{end}-01", freq="MS")
@@ -208,7 +229,7 @@ def series(req: SeriesRequest) -> dict:
     v = get_variable(req.variable_id)
     region, bbox, warnings = resolve_region(req.region)
     _check_time(v, req.start, req.end)
-    value, frac, extra = _region_values(v, bbox, req.start, req.end)
+    value, frac, extra = _region_values(v, bbox, req.start, req.end, _country_of(region))
     warnings = warnings + extra
     anom = bridge.anomaly(value)
     clim = value.groupby(value.index.month).mean().reindex(range(1, 13))
@@ -239,7 +260,7 @@ def _trend_summary(v, region, start, end, slope, p, significant, sufficient) -> 
 
 
 def _compute_trend(v, region, bbox, start, end, alpha, warnings) -> tuple[dict, pd.Series]:
-    value, frac, extra = _region_values(v, bbox, start, end)
+    value, frac, extra = _region_values(v, bbox, start, end, _country_of(region))
     warnings = warnings + extra
     try:
         tr = bridge.trend_one(value)
@@ -267,7 +288,10 @@ def _compute_trend(v, region, bbox, start, end, alpha, warnings) -> tuple[dict, 
         trend_line = [{"t": value.index[0].strftime("%Y-%m"), "value": b},
                       {"t": value.index[-1].strftime("%Y-%m"), "value": b + per_month * (len(value) - 1)}]
 
-    trend_id = _make_id("tr", {"v": v.id, "bbox": bbox, "start": start, "end": end, "alpha": alpha})
+    key = {"v": v.id, "bbox": bbox, "start": start, "end": end, "alpha": alpha}
+    if _country_of(region):                 # cùng khung bao nhưng khác vùng: id phải khác
+        key["country"] = _country_of(region)
+    trend_id = _make_id("tr", key)
     res = {
         "trend_id": trend_id, "variable_id": v.id, "region": region, "start": start, "end": end,
         "units": v.units, "method": "seasonal_mk", "slope_method": "sen_seasonal",
@@ -597,9 +621,9 @@ def trend_sensitivity(req: TrendRequest) -> dict:
     """Xu hướng và p theo năm bắt đầu: cùng trend_one + cùng luật kết luận như /trends, một lần nạp dữ liệu.
     points sắp theo số năm tăng dần: điểm cuối = đúng kỳ của request (= kết quả /trends)."""
     v = get_variable(req.variable_id)
-    _, bbox, _ = resolve_region(req.region)
+    region, bbox, _ = resolve_region(req.region)
     _check_time(v, req.start, req.end)
-    value = _region_values(v, bbox, req.start, req.end)[0]
+    value = _region_values(v, bbox, req.start, req.end, _country_of(region))[0]
     starts = [req.start] + [f"{y}-01" for y in range(int(req.start[:4]) + 1, int(req.end[:4]) + 1)]
     points = []
     for start in starts:

@@ -72,6 +72,10 @@ Khi chưa có cube, các endpoint phân tích trả `503 DATA_NOT_READY` và `/v
 Khớp với frontend hiện tại:
 - Vùng `{"type": "geojson", "geometry": {...}}` mà frontend gửi cho điểm/polygon được chấp nhận: điểm → ô 1° chứa điểm,
   polygon → khung bao; luôn kèm `warnings`.
+- Vùng `{"type": "country", "id": "<tên Natural Earth>"}`: chỉ lấy ô có tâm nằm trong đường viền quốc gia
+  (`data-pipeline/config/countries-110m.json`, world-atlas 2.0.2 1:110m, cùng file frontend vẽ; `grid.shape_mask`). Tên lạ →
+  `404 NOT_FOUND`. Nước nhỏ hơn một ô (trên lưới 1°: Luxembourg, Síp, Bắc Síp, Jamaica, Palestine) dùng ô gần tâm khung bao, kèm
+  warning. Chat (`tools.py`) nhận cả `country`; giới hạn 1000 độ² của agent vẫn tính theo khung bao.
 - `/explain` nhận `context.period` dạng `"2005-2024"` hoặc `"2005-01/2024-12"`; thiếu vùng thì dùng vùng demo.
 
 ## Test

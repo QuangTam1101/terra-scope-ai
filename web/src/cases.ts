@@ -29,7 +29,8 @@ const isBBox = (b: unknown): b is BBox => Array.isArray(b) && b.length === 4 && 
   && b[0] >= -180 && b[2] <= 180 && b[1] >= -90 && b[3] <= 90 && b[0] < b[2] && b[1] < b[3];
 const isRegion = (r: unknown): r is RegionRef => !!r && typeof r === "object" &&
   (((r as RegionRef).type === "preset" && typeof (r as { id?: unknown }).id === "string" && /^[a-z0-9_]{1,40}$/.test((r as { id: string }).id))
-    || ((r as RegionRef).type === "bbox" && isBBox((r as { bbox?: unknown }).bbox)));
+    || ((r as RegionRef).type === "bbox" && isBBox((r as { bbox?: unknown }).bbox))
+    || ((r as RegionRef).type === "country" && typeof (r as { id?: unknown }).id === "string" && /^.{1,80}$/u.test((r as { id: string }).id)));
 const isId = (x: unknown) => typeof x === "string" && /^[a-z0-9_]{1,60}$/.test(x);
 const okPeriod = (s: unknown, e: unknown) => typeof s === "string" && typeof e === "string" && MONTH.test(s) && MONTH.test(e) && s <= e;
 const text = (x: unknown, n = 120) => (typeof x === "string" ? x.slice(0, n) : "");

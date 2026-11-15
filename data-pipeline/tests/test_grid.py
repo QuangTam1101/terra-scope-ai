@@ -5,7 +5,7 @@ import xarray as xr
 
 from pipeline.contradictions import hunt_global
 from pipeline.giovanni_adapter import build_cube, convert_cube
-from pipeline.grid import bin_to_grid, grid_trend, hotspot_regions, region_series
+from pipeline.grid import bin_to_grid, grid_trend, hotspot_regions, region_series, shape_mask
 
 TIME = pd.date_range("2001-01-01", "2024-12-01", freq="MS")
 
@@ -58,6 +58,27 @@ def test_region_series_weighted_and_quality():
     assert np.isclose(v["2010-07-01"], (jul * w).sum() / w.sum())
     assert frac["2010-01-01"] == 0.5 and frac["2010-07-01"] == 1.0
 
+
+
+def test_shape_mask_hole_and_island():
+    """Chẵn-lẻ: lỗ (nước nằm trong nước khác, vd. Lesotho) bị loại, mảnh rời (đảo) được tính."""
+    lat = lon = np.arange(0.5, 10)
+    outer = [(0, 0), (6, 0), (6, 6), (0, 6), (0, 0)]
+    hole = [(2, 2), (4, 2), (4, 4), (2, 4), (2, 2)]
+    island = [(8, 8), (10, 8), (10, 10), (8, 10), (8, 8)]
+    m = shape_mask(lat, lon, [outer, hole, island])
+    assert m.sum() == 36 - 4 + 4
+    assert m[0, 0] and not m[2, 2] and m[8, 8] and not m[7, 7] and not m[0, 7]
+
+
+def test_region_series_with_border_ignores_cells_outside():
+    cube = _cube(np.array([0.5, 1.5]), np.array([0.5, 1.5]), lambda y, la, lo: np.where(lo > 1, 10.0, 0.0))
+    ring = [(0, 0), (1, 0), (1, 2), (0, 2), (0, 0)]           # chỉ cột lon 0.5 nằm trong đường viền
+    v, frac = region_series(cube, (0, 0, 2, 2), [ring])
+    w = np.cos(np.deg2rad([0.5, 1.5]))
+    jul = cube.sel(time="2010-07-01", lon=0.5).values
+    assert np.isclose(v["2010-07-01"], (jul * w).sum() / w.sum())
+    assert (frac == 1.0).all()
 
 def test_hunt_global_finds_opposite_hotspots():
     lat, lon = np.arange(0.5, 12), np.arange(0.5, 20)

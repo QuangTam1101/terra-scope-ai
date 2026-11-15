@@ -27,7 +27,14 @@ class GeoJSONRegion(BaseModel):
     name: Optional[str] = None
 
 
-RegionRef = Annotated[Union[PresetRegion, BBoxRegion, GeoJSONRegion], Field(discriminator="type")]
+class CountryRegion(BaseModel):
+    """Một quốc gia theo tên Natural Earth 1:110m (catalog.COUNTRIES): chỉ lấy các ô có tâm trong đường viền."""
+    type: Literal["country"]
+    id: str = Field(min_length=1, max_length=80)
+    name: Optional[str] = None
+
+
+RegionRef = Annotated[Union[PresetRegion, BBoxRegion, GeoJSONRegion, CountryRegion], Field(discriminator="type")]
 
 
 class SeriesRequest(BaseModel):
@@ -351,10 +358,10 @@ class ChatEvidence(BaseModel):
 
 class ChatActionParams(BaseModel):
     variable_id: str
-    region: Union[PresetRegion, BBoxRegion]
+    region: Union[PresetRegion, BBoxRegion, CountryRegion]
     start: Month
     end: Month
-    region_b: Optional[Union[PresetRegion, BBoxRegion]] = None
+    region_b: Optional[Union[PresetRegion, BBoxRegion, CountryRegion]] = None
 
 
 class ChatAction(BaseModel):
@@ -366,7 +373,7 @@ class ChatAction(BaseModel):
 
 class RegionCatalog(BaseModel):
     catalog: RegionsResponse
-    supported_selection_types: list[Literal["preset", "bbox"]]
+    supported_selection_types: list[Literal["preset", "bbox", "country"]]
 
 
 class Provenance(BaseModel):

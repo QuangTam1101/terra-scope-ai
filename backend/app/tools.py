@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 from . import bridge, catalog, service
 from .errors import ApiError
 from .scientific_schemas import MethodAdvice
-from .schemas import (BBoxRegion, CompareRequest, CompareResponse, Month, PresetRegion,
+from .schemas import (BBoxRegion, CompareRequest, CountryRegion, CompareResponse, Month, PresetRegion,
                       RegionsResponse, SeriesRequest, SeriesResponse, TrendRequest, TrendResponse,
                       VariableItem, VariablesResponse, ToolResult, ToolError, ToolWarning, RegionCatalog, Provenance)
 
@@ -50,7 +50,12 @@ class BBoxInput(StrictModel):
     bbox: list[float] = Field(min_length=4, max_length=4)
 
 
-ToolRegion = Annotated[Union[PresetInput, BBoxInput], Field(discriminator="type")]
+class CountryInput(StrictModel):
+    type: Literal["country"]
+    id: str = Field(min_length=1, max_length=80)
+
+
+ToolRegion = Annotated[Union[PresetInput, BBoxInput, CountryInput], Field(discriminator="type")]
 
 
 class VariableInput(StrictModel):
@@ -82,7 +87,12 @@ class ComparisonInput(PeriodInput):
 
 
 def _region(ref, variable):
-    converted = PresetRegion(type="preset", id=ref.id) if ref.type == "preset" else BBoxRegion(type="bbox", bbox=tuple(ref.bbox))
+    if ref.type == "country":
+        if ref.id not in catalog.COUNTRIES:
+            raise ApiError(404, "UNKNOWN_REGION", "Unknown country.")
+        converted = CountryRegion(type="country", id=ref.id)
+    else:
+        converted = PresetRegion(type="preset", id=ref.id) if ref.type == "preset" else BBoxRegion(type="bbox", bbox=tuple(ref.bbox))
     if converted.type == "preset" and converted.id not in catalog.REGIONS:
         raise ApiError(404, "UNKNOWN_REGION", "Unknown region preset.")
     _, bbox, _ = service.resolve_region(converted)
@@ -140,7 +150,7 @@ _TOOLS = {
         ToolDefinition("list_available_variables", "Discover valid variable and dataset IDs, units, availability and coverage.", EmptyInput, VariablesResponse,
                        lambda _: VariablesResponse.model_validate(service.variables())),
         ToolDefinition("list_available_regions", "Discover authoritative presets and safe spatial selection types.", EmptyInput, RegionCatalog,
-                       lambda _: RegionCatalog(catalog=RegionsResponse.model_validate(service.regions()), supported_selection_types=["preset", "bbox"])),
+                       lambda _: RegionCatalog(catalog=RegionsResponse.model_validate(service.regions()), supported_selection_types=["preset", "bbox", "country"])),
         ToolDefinition("get_time_series", "Read at most 300 monthly observations with quality, units and provenance.", AnalysisInput, SeriesResponse,
                        lambda args: _analysis(args, "series"), True),
         ToolDefinition("analyze_trend", "Compute a regional seasonal MK/Sen trend. Raw and adjusted tests and OLS interval attribution remain distinct.", AnalysisInput, TrendResponse,

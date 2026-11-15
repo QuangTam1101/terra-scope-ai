@@ -65,6 +65,15 @@ test('app places map to link places and back', () => {
   assert.deepEqual(linkPlace({ type: 'bbox', bbox: [100, 8, 110, 22] }), { kind: 'box', bbox: [100, 8, 110, 22] });
 });
 
+test('countries link by their Natural Earth name and round-trip, odd names included', () => {
+  assert.deepEqual(linkPlace({ type: 'country', id: 'Vietnam' }), { kind: 'country', name: 'Vietnam' });
+  assert.equal(exploreHash({ place: { kind: 'country', name: 'Vietnam' } }), '#explore?place=country:Vietnam');
+  for (const name of ["Côte d'Ivoire", 'Dem. Rep. Congo', 'Bosnia and Herz.', 'Timor-Leste'])
+    assert.deepEqual(parseExplore(exploreHash({ place: { kind: 'country', name } })), { place: { kind: 'country', name } });
+  for (const bad of ['country:', 'country:<script>', `country:${'a'.repeat(81)}`])
+    assert.deepEqual(parseExplore(`#explore?place=${bad}`), {});
+});
+
 test('share link keeps the site address and replaces only the hash', () => {
   globalThis.location = new URL('https://example.org/app/?x=1#report?case=abc');
   assert.equal(shareUrl({ variableId: 'imerg_precip' }), 'https://example.org/app/?x=1#explore?v=imerg_precip');
