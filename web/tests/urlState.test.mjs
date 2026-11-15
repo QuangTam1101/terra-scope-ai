@@ -37,7 +37,7 @@ test('other pages are untouched and a bare #explore is empty', () => {
 test('unknown or invalid values are dropped, never thrown', () => {
   const bad = ['v=Bad%20Id', 'v=<script>', 'place=region:', 'place=region:a b', 'place=planet:mars', 'place=cell:95,0', 'place=cell:1',
     'place=cell:abc,2', 'place=cell:1e2,3', 'place=box:10,5,5,10', 'place=box:-200,0,10,10', 'place=box:1,2,3', 'from=2001-13',
-    'from=2000-12', 'to=2026-01', 'to=2025-1', 'view=map', 'compare=yes', 'zzz=1', '%E0%A4%A'];
+    'from=2000-12', 'to=2027-01', 'to=2025-1', 'view=map', 'compare=yes', 'zzz=1', '%E0%A4%A'];
   for (const q of bad) assert.deepEqual(parseExplore(`#explore?${q}`), {}, q);
   assert.deepEqual(parseExplore('#explore?v=imerg_precip&view=nope&from=2030-01'), { variableId: 'imerg_precip' });
   assert.deepEqual(parseExplore('#explore?from=2020-01&to=2010-12'), {}, 'reversed period drops both');
@@ -53,9 +53,9 @@ test('cells snap to the centre of their 0.5° grid cell, boxes to 0.5° grid lin
   assert.equal(exploreHash({ place: { kind: 'cell', lat: 10.1, lon: 105.9 } }), '#explore?place=cell:10.25,105.75');
 });
 
-test('months stay within 2001-01 to 2025-12', () => {
-  assert.deepEqual(parseExplore('#explore?from=2001-01&to=2025-12'), { start: '2001-01', end: '2025-12' });
-  assert.deepEqual(parseExplore('#explore?from=2000-12&to=2026-01'), {});
+test('months stay within 2001-01 to 2026-12', () => {
+  assert.deepEqual(parseExplore('#explore?from=2001-01&to=2026-07'), { start: '2001-01', end: '2026-07' });
+  assert.deepEqual(parseExplore('#explore?from=2000-12&to=2027-01'), {});
   assert.deepEqual(parseExplore('#explore?from=2010-06'), { start: '2010-06' });
 });
 
