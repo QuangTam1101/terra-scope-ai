@@ -114,7 +114,7 @@ Chi phí: kiểm tra [Render pricing](https://render.com/pricing), [disk](https:
 | Backend, tùy chọn | `GRID_CACHE_DIR`, `PIPELINE_DIR`, `CUBE_DIR`, `GRID_V2_DIR`, `GRID_V2` | Paths Linux; chỉ override nếu thực sự đã provision dữ liệu tương ứng |
 | Backend hosting | `PORT` | Host cấp; không đặt cổng Windows vào production |
 
-Không đưa `.env` local lên Git, image hoặc Vercel. `backend/.env` tự load local; môi trường process trên host ưu tiên hơn file. `GEMINI_MODEL` hiện ví dụ là `gemini-4-argon`, chưa xác minh quyền sử dụng trên Google project trong lượt này. Key trống vẫn chạy Template Mode. Không thêm `VITE_GEMINI_API_KEY`.
+Không đưa `.env` local lên Git, image hoặc Vercel. `backend/.env` tự load local; môi trường process trên host ưu tiên hơn file. `GEMINI_MODEL` hiện ví dụ là `gemini-3.8-flash`, chưa xác minh quyền sử dụng trên Google project trong lượt này. Key trống vẫn chạy Template Mode. Không thêm `VITE_GEMINI_API_KEY`.
 
 ## 5. Vercel Dashboard — chủ repo thực hiện
 

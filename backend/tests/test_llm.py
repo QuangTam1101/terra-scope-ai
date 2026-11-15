@@ -71,7 +71,7 @@ def test_official_provider_success_and_limits(monkeypatch):
     assert created[0]["http_options"].timeout == 30000
     assert created[0]["http_options"].retry_options.attempts == 1
     kwargs = generate.call_args.kwargs
-    assert kwargs["model"] == "gemini-4-argon"
+    assert kwargs["model"] == "gemini-3.8-flash"
     assert kwargs["config"].max_output_tokens == 1024
     assert kwargs["config"].response_schema is None
     assert kwargs["config"].response_json_schema == ProviderReply.model_json_schema()
@@ -250,7 +250,7 @@ def test_project_model_diagnostics_only_read_metadata(monkeypatch, capsys):
     from backend.scripts import diagnose_gemini_models
 
     monkeypatch.setenv("GEMINI_API_KEY", SECRET)
-    model = SimpleNamespace(name="models/gemini-4-argon", supported_actions=["generateContent"])
+    model = SimpleNamespace(name="models/gemini-3.8-flash", supported_actions=["generateContent"])
 
     class MetadataClient:
         models = SimpleNamespace(get=lambda **kwargs: model, list=lambda **kwargs: SimpleNamespace(page=[model]))
@@ -266,7 +266,7 @@ def test_project_model_diagnostics_only_read_metadata(monkeypatch, capsys):
     output = capsys.readouterr().out
     report = json.loads(output)
     assert report["generation_requests"] == 0 and report["configured_model_http_status"] == 200
-    assert report["visible_generation_models"] == ["gemini-4-argon"] and SECRET not in output
+    assert report["visible_generation_models"] == ["gemini-3.8-flash"] and SECRET not in output
 
 
 @pytest.mark.parametrize("answer,finish", [

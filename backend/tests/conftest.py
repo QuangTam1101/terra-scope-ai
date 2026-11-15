@@ -32,7 +32,7 @@ def isolate_llm(monkeypatch):
 
     monkeypatch.setenv("GEMINI_API_KEY", "")
     monkeypatch.setenv("LLM_PROVIDER", "gemini")
-    monkeypatch.setenv("GEMINI_MODEL", "gemini-4-argon")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.8-flash")
     monkeypatch.setenv("LLM_TIMEOUT_SECONDS", "30")
     monkeypatch.setenv("LLM_MAX_OUTPUT_TOKENS", "1024")
     monkeypatch.setenv("LLM_REQUESTS_PER_MINUTE", "10")

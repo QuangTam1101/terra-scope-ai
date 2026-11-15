@@ -55,7 +55,7 @@ if str(PIPELINE_DIR) not in sys.path:
 class LLMSettings:
     provider: str = "gemini"
     api_key: str = field(default="", repr=False)
-    model: str = "gemini-4-argon"
+    model: str = "gemini-3.8-flash"
     timeout: float = 30
     max_output_tokens: int = 1024
     requests_per_minute: int = 10
@@ -74,6 +74,6 @@ def llm_settings() -> LLMSettings:
     return LLMSettings(
         provider=os.getenv("LLM_PROVIDER", "gemini").strip().lower(),
         api_key=os.getenv("GEMINI_API_KEY", "").strip(),
-        model=os.getenv("GEMINI_MODEL", "gemini-4-argon").strip(),
+        model=os.getenv("GEMINI_MODEL", "gemini-3.8-flash").strip(),
         timeout=timeout, max_output_tokens=tokens, requests_per_minute=rpm, valid=valid,
     )
