@@ -103,7 +103,7 @@ Mỗi nguồn có một adapter "hấp thụ" sự phức tạp đó. Nhờ vậ
 - Đăng nhập Harmony bằng tài khoản trong `.env` thành công (job HOSS được tạo).
 - Job HOSS 1 tháng chạy được cho cả 3 collection (50–85 s). Cấu trúc file khớp `read_grid_file`. IMERG dùng lịch julian; GLDAS chỉ từ 60°S. `build_cube` trên file thật cho giá trị hợp lý (02 §4.6).
 - Lưới toàn cầu đã tải xong (13/11): 5 cube 2001–2024 (288 tháng × 180 × 360 ô). Giá trị hợp lý (02 §4.6); 4 hàm API chạy được trên cube thật.
-- Ẩm đất GLDAS = 1,0 m³/m³ cố định trên ô băng (03, K22).
+- Ẩm đất GLDAS = 1,0 m³/m³ cố định trên ô băng; `load_cube` che 954 ô băng/ven băng (03, K22).
 
 *Pipeline*
 - `grid_trend` khớp `pymannkendall.seasonal_test` từng ô; toàn cầu 1° × 24 năm ~4 s, 12 năm ~1 s; chuỗi vùng 4 ms; nhiễu thuần cho 0 ô significant sau FDR.

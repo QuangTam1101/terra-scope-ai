@@ -361,7 +361,7 @@ CSV của Giovanni có **phần đầu là metadata**: tên biến, đơn vị, 
 - ✅ Lỗi `403` trước đó là do tài khoản chưa authorize app GES DISC. Earthdata báo rõ khi gọi thẳng file trên `data.gesdisc.earthdata.nasa.gov`: *"Pre authorization required for this application"*, kèm link https://urs.earthdata.nasa.gov/approve_app?client_id=e2WVk8Pw6weeLUKZYOxvTQ. Authorize xong là chạy được.
 - ✅ Job 1 tháng mất 50–85 s. File tháng nặng 7 MB (IMERG), 0,8 MB (GLDAS), 0,5 MB (MERRA-2), nên cả 288 tháng × 5 biến ≈ 3 GB.
 - ✅ `build_cube` chạy trên file thật tháng 7/2010: mưa ĐBSCL 241 mm, nam Sahara 16 mm; ẩm đất ĐBSCL 0,36, Sahara 0,09 m³/m³.
-- ⚠️ GLDAS gán ẩm đất **100 kg/m² cố định** (= 1,0 m³/m³) cho ô phủ băng (Greenland, Patagonia, Alaska…), vượt khoảng sanity 0–0,6. Chuỗi không đổi nên xu hướng = 0; chưa che. Trên cube đủ 24 năm: 563 ô 1° = 1,0 cố định (3,3% ô đất liền) và 391 ô ven băng có giá trị trộn ~0,77 (03, K22).
+- ⚠️ GLDAS gán ẩm đất **100 kg/m² cố định** (= 1,0 m³/m³) cho ô phủ băng (Greenland, Patagonia, Alaska…), vượt khoảng sanity 0–0,6. Chuỗi không đổi nên xu hướng = 0; từ 15/11/2026 `api.load_cube` che cả ô có lúc > 0,6. Trên cube đủ 24 năm: 563 ô 1° = 1,0 cố định (3,3% ô đất liền) và 391 ô ven băng có giá trị trộn ~0,77 (03, K22).
 - ✅ **Tải đủ 288 tháng × 5 biến (13/11).** Cube nào cũng có 288 tháng liên tục, 2001-01 → 2024-12, lưới 180 × 360, float32 75 MB. Giá trị trung bình 24 năm tại vài ô:
 
   | Cube | Hà Nội | Sahara | Amazon | Ô có dữ liệu |

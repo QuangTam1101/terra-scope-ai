@@ -7,6 +7,7 @@ from pathlib import Path
 
 import xarray as xr
 
+from .checks import SANITY
 from .contradictions import hunt_global, pair_difference_test
 from .grid import grid_trend, region_series
 from .trends import trend_one
@@ -64,7 +65,12 @@ def load_cube(variable):
     path = CUBE_DIR / f"cube_{variable}.nc"
     if not path.exists():
         raise FileNotFoundError(f"Chưa có dữ liệu lưới cho {variable} ({path})")
-    return xr.open_dataarray(path).load()
+    da = xr.open_dataarray(path).load()
+    if variable == "soil_moisture":
+        # K22 (docs/03): GLDAS ghi 1,0 m³/m³ cố định trên ô băng, ô 1° ven băng có giá trị trộn 0,6–1,0. Che cả ô (mọi tháng)
+        # nếu có lúc vượt khoảng SANITY: 954 ô trên cube 2001–2024. Cube 0,5° đã che băng ở 0,25° nên không đổi gì.
+        da = da.where(da.max("time") <= SANITY["soil_moisture"][1])
+    return da
 
 
 def _meta(variable):

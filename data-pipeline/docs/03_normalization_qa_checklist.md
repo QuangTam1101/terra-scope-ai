@@ -299,7 +299,7 @@ Khoảng kỳ vọng **thô** để bắt lỗi lớn, không phải chuẩn kho
 | `pet` | 0 … 700 mm/tháng | |
 | `et_pet_ratio` | 0 … 1.2 | > 1.2 nhiều nơi → sai công thức tổng tháng |
 | `precip` | 0 … 3000 mm/tháng | ~0.1–1 cả năm → quên × 24 × số ngày (vẫn là mm/hr) |
-| `soil_moisture` | 0 … 0.6 m³/m³ | ~20–40 → quên ÷ 100. Đúng 1,0 ở ô băng là giá trị cố định của GLDAS (K22), không phải lỗi đơn vị. Ô 1° ven băng có giá trị trộn 0,6–1,0 |
+| `soil_moisture` | 0 … 0.6 m³/m³ | ~20–40 → quên ÷ 100. Đúng 1,0 ở ô băng là giá trị cố định của GLDAS (K22), không phải lỗi đơn vị. Ô 1° ven băng có giá trị trộn 0,6–1,0. `load_cube` che các ô này (K22) |
 | `tair_land`, `t2m` | -70 … 50 °C | ~250–310 → quên đổi K. `t2m` tới −74 °C trên cao nguyên Nam Cực vào mùa đông là thật (13/11: 313 ô-tháng, đều ở nam 72°S) |
 | `evap_gldas` | 0 … 12 mm/ngày | ~10⁻⁵ → quên × 86400. Âm nhẹ (tới −0,3) là **ngưng tụ / đóng sương giá**, có thật: 13/11 thấy 3% ô-tháng âm, 99% ở vĩ độ > 50°, nhiều nhất vào mùa đông |
 
@@ -377,4 +377,4 @@ Mỗi mục là một **lựa chọn có tính khoa học** mà pipeline đang d
 | K19 | **Chọn rồi mới kiểm định:** điểm nóng được chọn **vì** significant, nên p_diff của cặp tăng × giảm gần như luôn nhỏ | Báo cáo kèm CI, độ ổn định hai nửa giai đoạn và baseline hoán vị (P2) (05, mục 2) | Tránh trình bày p_diff như bằng chứng độc lập |
 | K20 | **Định nghĩa điểm nóng:** ô có q < 0.05, cùng chiều, liền kề 8 hướng, ≥ 4 ô | `hotspot_regions(q=0.05, min_cells=4)` | Ngưỡng nhỏ thì nhiều điểm nóng nhiễu; lớn thì mất vùng nhỏ có thật |
 | K21 | `grid_trend` **không hiệu chỉnh giá trị trùng** (ties) trong phương sai MK | Bỏ, vì làm p lớn hơn (thận trọng hơn) | Ảnh hưởng ô sa mạc có nhiều tháng mưa = 0 |
-| K22 | **Ẩm đất GLDAS trên băng:** ô gốc phủ băng có giá trị cố định 100 kg/m² (= 1,0 m³/m³). Trên cube 1° (13/11): **563 ô = 1,0 suốt 24 năm (3,3% ô đất liền)**, thêm **391 ô ven băng** (63–82°N) có giá trị trộn ~0,77 | Giữ nguyên | Ô = 1,0: xu hướng = 0, thực chất là không có số liệu. Ô ven băng: xu hướng chỉ đến từ phần không phủ băng nên bị pha loãng (độ dốc nhỏ hơn thật). Có nên che các ô này khỏi heatmap và trung bình vùng không? |
+| K22 | **Ẩm đất GLDAS trên băng:** ô gốc phủ băng có giá trị cố định 100 kg/m² (= 1,0 m³/m³). Trên cube 1° (13/11): **563 ô = 1,0 suốt 24 năm (3,3% ô đất liền)**, thêm **391 ô ven băng** (63–82°N) có giá trị trộn ~0,77 | **Che (từ 15/11/2026)**: `load_cube` bỏ cả chuỗi của ô có lúc > 0,6 (`SANITY`), đúng 954 ô này | Ô = 1,0 thực chất là không có số liệu; ô ven băng bị pha loãng. Trước khi che, time-lapse/Values ghi Greenland "100 % water" và thang màu kéo tới 1,0. Xu hướng ẩm đất toàn cầu đổi −0,00378 → −0,00389 m³/m³/thập kỷ (vẫn giảm, có ý nghĩa) |

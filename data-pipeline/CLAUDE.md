@@ -30,5 +30,5 @@ Web app phân tích xu hướng môi trường cho **bất kỳ vùng nào trên
 - **File HOSS thật** (13/11/2026):
   - IMERG ghi `time` theo lịch julian (cftime), giống AppEEARS.
   - GLDAS chỉ có từ 60°S; `build_cube` reindex về lưới 180 × 360.
-  - Ẩm đất GLDAS = 1,0 m³/m³ cố định trên ô băng (docs/03 K22).
+  - Ẩm đất GLDAS = 1,0 m³/m³ cố định trên ô băng (docs/03 K22); `api.load_cube` che cả ô có lúc > 0,6 (954 ô trên cube 1°).
 - `pymannkendall` in `RuntimeWarning: invalid value encountered in sqrt` khi chạy `trend_map` / `find_contradictions` trên cube thật. Đây là các ô có chuỗi hằng (mưa = 0 ở sa mạc, ô băng): kết quả NaN, bị loại khỏi heatmap. Không phải lỗi.
