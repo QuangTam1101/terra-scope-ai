@@ -1,6 +1,7 @@
 // "How Terra-scope meets the challenge" on #guide: each official objective and main consideration of NASA's
 // "Be an Earth System Trend Detective", mapped to the screen that delivers it. Every row was checked against the code
-// it names (Explore.tsx, CaseStarter.tsx, ResultViews.tsx, Hunt.tsx, backend chat FAQ); keep it so when features change.
+// it names (Explore.tsx, CaseStarter.tsx, ResultViews.tsx, Hunt.tsx, OppositeTrends.tsx, chat/sources.ts, backend chat FAQ);
+// keep it so when features change.
 import type { MouseEvent, ReactNode } from "react";
 import { InfoButton } from "./InfoButton";
 import { useStore, type Page } from "./store";
@@ -21,20 +22,20 @@ export const CHALLENGE_ROWS: Row[] = [
       0.05 <InfoButton id="mann-kendall" />, plus a 95&nbsp;% interval (OLS on anomalies) <InfoButton id="confidence-interval" />.</> },
   { tag: "Consideration", need: "Simple definitions", where: "Explore, beside each choice", page: "explore",
     how: "Variables, datasets and tests have an \"i\" button like this one. Scientist mode shows the method behind each.", info: ["p-value"] },
-  { tag: "Consideration", need: "A short series of questions", where: "Explore setup", page: "explore",
-    how: "Four questions: what, which dataset, when, where. \"Not sure where to start?\" asks two: a kind of place and a curiosity." },
+  { tag: "Consideration", need: "A short series of questions", where: "Home, Start investigating", page: "home",
+    how: "Three questions (what you are curious about, what kind of place, which period) give a ranked list of variables, each with a reason; one click opens Explore with them filled in." },
   { tag: "Consideration", need: "Demo examples to watch", where: "Watch a case, above", page: "demos",
-    how: "Three step-by-step demos run the real test on live data, including one where the change could be chance." },
+    how: "Three step-by-step demos run the real test on live data, including one where the change could be chance, plus ready-made opposite-trend pairs." },
   { tag: "Consideration", need: "Remove the seasonal cycle", where: "Explore, Anomaly chart", page: "explore",
     how: "The chart opens on anomalies (each month minus its usual value), and the test compares only the same months.",
     info: ["anomaly"] },
   { tag: "Consideration", need: "Some trends need a longer record", where: "Explore, Would more years help?", page: "explore",
     how: "After a test, Terra repeats it for every start year and estimates how many years a clear answer may need.",
     info: ["not-significant"] },
-  { tag: "Consideration", need: "Opposite trends in different places", where: "Hunt, Discover", page: "hunt",
-    how: "Scans the trend map for places changing in opposite directions, then re-tests the best pairs with a difference test." },
-  { tag: "Consideration", need: "AI to suggest variables", where: "Ready cases and Detective chat", page: "detective", partly: true,
-    how: "Ready cases suggest a variable for your place and curiosity, and Terra's chat explains results. An AI model does not pick variables yet." },
+  { tag: "Consideration", need: "Opposite trends in different places", where: "Hunt, Same cause, opposite trends", page: "hunt",
+    how: "Pick a measurement: Terra finds a place where it rises and one where it falls, tests the gap between them, and gives a sourced explanation of how one process can do both. Explore's \"Where does it go the other way?\" opens it." },
+  { tag: "Consideration", need: "AI to suggest variables", where: "Start investigating and Detective chat", page: "detective", partly: true,
+    how: "The Start investigating questions suggest variables from a reviewed table, and Terra's chat explains results with team-checked background reading for some places. An AI model does not pick variables yet." },
 ];
 
 export function ChallengeMap() {

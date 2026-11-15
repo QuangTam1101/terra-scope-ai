@@ -124,7 +124,7 @@ test('challenge map: 4 objectives and the considerations, each linking to a real
   for (let i = 1; i <= 4; i++) assert.ok(sec.includes(`Objective ${i}`), `Objective ${i}`);
   const hrefs = [...sec.matchAll(/<a[^>]*href="([^"]*)"/g)].map((m) => m[1]);
   assert.equal(hrefs.length, CHALLENGE_ROWS.length);
-  const pages = ['guide', 'explore', 'forecast', 'hunt', 'detective', 'report'];
+  const pages = ['home', 'guide', 'explore', 'forecast', 'hunt', 'detective', 'report'];
   for (const h of hrefs) assert.ok(pages.includes(routes.pageFromHash(h)) && routes.pageFromHash(h) === h.slice(1), h);
   for (const r of CHALLENGE_ROWS) assert.ok(sec.includes(r.need), r.need);
   assert.ok(sec.includes('Partly') && sec.includes('does not pick variables yet'), 'AI row is honest');
