@@ -78,9 +78,14 @@ def prepare(req):
     explicit = next((v.id for v in catalog.VARIABLES.values() if re.search(r"\b" + re.escape(v.id) + r"\b", text)), None)
     family = ("precipitation" if re.search(r"precipitation|rainfall|lượng mưa", text) else
               "soil_moisture" if re.search(r"soil moisture|ẩm đất", text) else
-              "air_temperature" if re.search(r"temperature|nhiệt độ", text) else None)
+              "vegetation" if re.search(r"vegetation|greenness|ndvi|thảm thực vật", text) else
+              "land_surface_temperature" if re.search(r"(land )?surface temperature|\blst\b|nhiệt độ bề mặt", text) else
+              "air_temperature" if re.search(r"temperature|nhiệt độ", text) else
+              "potential_evapotranspiration" if re.search(r"potential evapo|\bpet\b", text) else
+              "evapotranspiration" if re.search(r"evapotranspiration|evaporation|bốc thoát hơi", text) else None)
     dataset_hint = ("M2IMNXASM" if re.search(r"merra[- ]?2|m2imnxasm", text) else
-                    "GLDAS_NOAH025_M" if "gldas" in text else "GPM_3IMERGM" if "imerg" in text else None)
+                    "GLDAS_NOAH025_M" if "gldas" in text else "GPM_3IMERGM" if "imerg" in text else
+                    "MOD13C2" if re.search(r"modis.*(ndvi|vegetation)|(ndvi|vegetation).*modis", text) else None)
     if dataset_hint and family is None:
         family = ctx.parameter or ("air_temperature" if dataset_hint == "M2IMNXASM" else None)
     candidates = [v for v in catalog.VARIABLES.values() if (not family or catalog.VARIABLE_PARAMETER[v.id][0] == family)

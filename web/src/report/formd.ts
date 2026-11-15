@@ -159,6 +159,8 @@ export function plainWords(parameter: string): { up: string; down: string; noun:
   if (p.includes("temperature")) return { up: "warmer", down: "cooler", noun: "temperature" };
   if (p.includes("precip") || p.includes("rain")) return { up: "wetter", down: "drier", noun: "rainfall" };
   if (p.includes("soil")) return { up: "wetter soil", down: "drier soil", noun: "soil moisture" };
+  if (p.includes("vegetation") || p.includes("ndvi")) return { up: "greener", down: "less green", noun: "vegetation greenness" };
+  if (p.includes("potential")) return { up: "higher evaporative demand", down: "lower evaporative demand", noun: "potential evapotranspiration (how much water the air could take)" };
   if (p.includes("evapo")) return { up: "more evaporation", down: "less evaporation", noun: "evaporation from land and plants" };
   return { up: "higher", down: "lower", noun: p };
 }
@@ -204,6 +206,7 @@ export function productKind(product: string): { kind: string; plain: string } {
   if (p.includes("IMERG") || p.startsWith("GPM")) return { kind: "Satellite-based estimate", plain: "rainfall estimated from a constellation of satellites and adjusted with rain-gauge data" };
   if (p.includes("GLDAS")) return { kind: "Land-surface model", plain: "a computer model of the land surface driven by observations; it is not a direct measurement" };
   if (p.includes("MERRA") || p.startsWith("M2")) return { kind: "Reanalysis", plain: "a reanalysis: a weather model that blends many past observations into a consistent record; it is not a direct satellite measurement" };
+  if (p.startsWith("MOD")) return { kind: "Satellite measurement", plain: "measured by the MODIS sensor on NASA's Terra satellite; clear-sky only, so cloudy months can be missing" };
   return { kind: "NASA Earth data product", plain: "a NASA Earth-system data product" };
 }
 

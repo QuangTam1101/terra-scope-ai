@@ -7,6 +7,7 @@ export const GIOVANNI_DATA: Record<string, string> = {
   gldas_soil_moisture_0_10cm: "GLDAS_NOAH025_M_2_1_SoilMoi0_10cm_inst",
   gldas_air_temperature: "GLDAS_NOAH025_M_2_1_Tair_f_inst",
   gldas_evapotranspiration: "GLDAS_NOAH025_M_2_1_Evap_tavg",
+  gldas_potential_evapotranspiration: "GLDAS_NOAH025_M_2_1_PotEvap_tavg",
   merra2_air_temperature_2m: "M2IMNXASM_5_12_4_T2M",
 };
 

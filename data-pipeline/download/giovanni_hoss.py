@@ -22,6 +22,7 @@ VARIABLES = {  # Giovanni variable ID → (collection trong CMR, tên biến tro
     "GLDAS_NOAH025_M_2_1_RootMoist_inst": (GLDAS, "RootMoist_inst"),
     "GLDAS_NOAH025_M_2_1_Tair_f_inst": (GLDAS, "Tair_f_inst"),
     "GLDAS_NOAH025_M_2_1_Evap_tavg": (GLDAS, "Evap_tavg"),
+    "GLDAS_NOAH025_M_2_1_PotEvap_tavg": (GLDAS, "PotEvap_tavg"),
     "M2IMNXASM_5_12_4_T2M": (MERRA2, "T2M"),
 }
 

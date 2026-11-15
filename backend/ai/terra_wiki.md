@@ -47,9 +47,13 @@ forecast the future.
 | Air temperature over land | **GLDAS Noah** v2.1 | Near-surface air temperature from the land model | °C | Land only, 60°S to 90°N |
 | Air temperature (2 m) | **MERRA-2** (`M2IMNXASM` v5.12.4), NASA GMAO / GES DISC | Air temperature about 2 m above the ground, from a **reanalysis** (a weather model that assimilates observations) | °C | Land and sea, whole globe |
 | Evapotranspiration | **GLDAS Noah** v2.1 | Water moving from land to air: evaporation from soil and water plus transpiration from plants | mm/month | Land only, 60°S to 90°N |
+| Potential evapotranspiration | **GLDAS Noah** v2.1 (`PotEvap_tavg`) | How much water the air could take from the land if water were unlimited (atmospheric demand), converted from W/m² to mm/month | mm/month | Land only, 60°S to 90°N |
+| Vegetation greenness (NDVI) | **MODIS Terra MOD13C2** v061, monthly 0.05° Climate Modeling Grid, NASA LP DAAC | Satellite index of how green and dense plants are, from about −0.2 (water, bare) to 1 (dense forest); only good and marginal pixels used | unitless | Land only; months with persistent cloud or snow can be missing |
+| Land surface temperature (day / night) | **MODIS Terra MOD11C3** v061, monthly 0.05° Climate Modeling Grid, NASA LP DAAC | Temperature of the ground surface itself (not the air) seen by the satellite at about 10:30 and 22:30 local time, clear-sky only | °C | Land only; cloudy months can be missing |
 
-Datasets marked "not available yet" in the app (MODIS vegetation greenness NDVI, MODIS land surface temperature,
-MODIS evapotranspiration) have **no data on the server**. Never describe results for them.
+MODIS evapotranspiration (marked "not available yet" in the app) has **no data on the server**. Never describe results
+for it. Land surface temperature is the skin of the ground and is usually hotter than the air by day; do not compare
+it with air temperature as if they were the same quantity.
 
 ### 2.3 How the data were prepared
 1. Downloaded from NASA GES DISC through the Harmony service (HOSS), global, without cutting regions.
@@ -57,6 +61,8 @@ MODIS evapotranspiration) have **no data on the server**. Never describe results
    0.95 m³/m³, which marks ice cells in GLDAS); units converted (IMERG mm/hour to mm/month, GLDAS soil water kg/m² to
    m³/m³, Kelvin to °C, evapotranspiration to mm/month).
 3. Re-gridded to 0.5°: a 0.5° cell keeps a value only if at least 50% of its area had valid data in the original grid.
+   MODIS (NDVI, land surface temperature) is downloaded from NASA LP DAAC as global monthly 0.05° files; a 0.5° cell
+   is the mean of its valid 0.05° pixels and needs at least 25 of its 100 pixels.
 4. Checked independently (data-pipeline `reports/03_verification.md`): recomputed from the raw files, compared with
    published values and with independent rain gauge products.
 
@@ -70,7 +76,12 @@ MODIS evapotranspiration) have **no data on the server**. Never describe results
   not match reality on the ground.
 - **GLDAS has no data over oceans or Antarctica.** A region that is mostly sea has low data coverage for GLDAS
   variables (see `quality.coverage_fraction` in FACTS).
-- **There is no salinity, river flow, groundwater, vegetation or air pollution data** in Terra-scope at the moment.
+- **MODIS is an optical satellite sensor**: it cannot see through clouds. Very cloudy months (monsoon seasons,
+  the humid tropics) and snow-covered months (for NDVI) can be missing, so coverage can be lower than for model data.
+- **Terra orbit drift:** since 2022 the Terra satellite crosses the equator earlier than 10:30 / 22:30 as it ends its
+  mission. Recent MODIS land surface temperatures can therefore read slightly cooler. When FACTS show a land surface
+  temperature trend, mention that checking a period ending in 2021 is a good robustness test.
+- **There is no salinity, river flow, groundwater or air pollution data** in Terra-scope at the moment.
   Questions about them cannot be answered from this data.
 
 ---

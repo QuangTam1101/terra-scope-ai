@@ -22,7 +22,7 @@ SETS = {  # tên → (glob trong data/raw, [biến, có thể kèm nhóm "nhóm/
     **{f"gldas_{v.removesuffix('_inst').removesuffix('_tavg').lower()}": (
         G.format(f"GLDAS_NOAH025_M_2_1_{v}"), [v], r"\.A(\d{6})\.", "MS")
        for v in ["SoilMoi0_10cm_inst", "SoilMoi10_40cm_inst", "SoilMoi40_100cm_inst", "SoilMoi100_200cm_inst",
-                 "RootMoist_inst", "Tair_f_inst", "Evap_tavg"]},
+                 "RootMoist_inst", "Tair_f_inst", "Evap_tavg", "PotEvap_tavg"]},
     "merra2_t2m": (G.format("M2IMNXASM_5_12_4_T2M"), ["T2M"], r"\.(\d{6})_T2M", "MS"),
     "smap": ("smap/*/*.nc4", ["Soil_Moisture_Retrieval_Data_AM/soil_moisture",
                               "Soil_Moisture_Retrieval_Data_AM/retrieval_qual_flag",

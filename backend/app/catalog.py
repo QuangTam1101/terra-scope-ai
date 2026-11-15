@@ -44,7 +44,11 @@ class Variable:
                 "citation": papi.VARIABLES[self.pipeline_id][2]}
 
 
-_MODIS_NOTE = "MODIS values on the 1° grid come from one sample pixel per cell, not a full cell average."
+_MODIS_NOTE = ("MODIS is an optical satellite sensor: it cannot see through cloud, so very cloudy months (and snow for "
+               "NDVI) can be missing. Each 0.5° cell is the mean of its clear 0.05° MODIS pixels.")
+_LST_NOTE = (_MODIS_NOTE + " Terra's overpass time has drifted earlier since 2022 as the satellite ends its mission, "
+             "which can make recent day and night surface temperatures read slightly cooler; check whether a trend "
+             "holds when the period ends in 2021.")
 _MODEL_NOTE = "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
 
 _VARS = [
@@ -74,30 +78,35 @@ _VARS = [
              "°C", 0.5, "M2IMNXASM", "5.12.4", "NASA GMAO / GES DISC",
              "https://disc.gsfc.nasa.gov/datasets/M2IMNXASM_5.12.4/summary", _MODEL_NOTE),
     Variable("modis_ndvi", "ndvi", "Vegetation greenness (NDVI)", "vegetation",
-             "How green and dense the plants are (from −1 to 1; higher means greener).",
-             "MODIS Terra MOD13A3 monthly NDVI.",
-             "NDVI", 0.01, "MOD13A3", "061", "NASA LP DAAC (AppEEARS)",
-             "https://lpdaac.usgs.gov/products/mod13a3v061/", _MODIS_NOTE),
+             "How green and dense the plants are (from −0.2 to 1; higher means greener).",
+             "MODIS Terra MOD13C2 v061 monthly NDVI (0.05° Climate Modeling Grid), good and marginal pixels only, "
+             "averaged to the common global grid.",
+             "NDVI", 0.05, "MOD13C2", "061", "NASA LP DAAC",
+             "https://lpdaac.usgs.gov/products/mod13c2v061/", _MODIS_NOTE),
     Variable("modis_lst_day", "lst_day", "Land surface temperature (day)", "temperature",
-             "How hot the ground surface is during the day.",
-             "MODIS Terra MOD11A2 daytime land surface temperature.",
-             "°C", 0.01, "MOD11A2", "061", "NASA LP DAAC (AppEEARS)",
-             "https://lpdaac.usgs.gov/products/mod11a2v061/", _MODIS_NOTE),
+             "How hot the ground surface is during the day (about 10:30 local time).",
+             "MODIS Terra MOD11C3 v061 monthly daytime land surface temperature (0.05° Climate Modeling Grid), "
+             "averaged to the common global grid.",
+             "°C", 0.05, "MOD11C3", "061", "NASA LP DAAC",
+             "https://lpdaac.usgs.gov/products/mod11c3v061/", _LST_NOTE),
     Variable("modis_lst_night", "lst_night", "Land surface temperature (night)", "temperature",
-             "How warm the ground surface stays at night.",
-             "MODIS Terra MOD11A2 night-time land surface temperature.",
-             "°C", 0.01, "MOD11A2", "061", "NASA LP DAAC (AppEEARS)",
-             "https://lpdaac.usgs.gov/products/mod11a2v061/", _MODIS_NOTE),
+             "How warm the ground surface stays at night (about 22:30 local time).",
+             "MODIS Terra MOD11C3 v061 monthly night-time land surface temperature (0.05° Climate Modeling Grid), "
+             "averaged to the common global grid.",
+             "°C", 0.05, "MOD11C3", "061", "NASA LP DAAC",
+             "https://lpdaac.usgs.gov/products/mod11c3v061/", _LST_NOTE),
     Variable("modis_et", "et", "Actual evapotranspiration (MODIS)", "water",
              "How much water the land actually gives to the air each month.",
              "MODIS Terra MOD16A2GF actual evapotranspiration.",
              "mm/month", 0.005, "MOD16A2GF", "061", "NASA LP DAAC (AppEEARS)",
              "https://lpdaac.usgs.gov/products/mod16a2gfv061/", _MODIS_NOTE),
-    Variable("modis_pet", "pet", "Potential evapotranspiration (MODIS)", "water",
+    Variable("gldas_potential_evapotranspiration", "pet", "Potential evapotranspiration (GLDAS)", "water",
              "How much water the air could take from the land if water were unlimited.",
-             "MODIS Terra MOD16A2GF potential evapotranspiration.",
-             "mm/month", 0.005, "MOD16A2GF", "061", "NASA LP DAAC (AppEEARS)",
-             "https://lpdaac.usgs.gov/products/mod16a2gfv061/", _MODIS_NOTE),
+             "GLDAS Noah potential evaporation (PotEvap_tavg, W/m², converted with 2.45 MJ/kg) as mm per month, "
+             "on a common global grid. Noah's potential evaporation runs higher than reference-crop PET, so read it "
+             "for trends rather than absolute amounts.",
+             "mm/month", 0.25, "GLDAS_NOAH025_M", "2.1", "NASA GES DISC",
+             "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary", _MODEL_NOTE),
 ]
 VARIABLES: dict[str, Variable] = {v.id: v for v in _VARS}
 
@@ -120,7 +129,7 @@ VARIABLE_PARAMETER = {
     "merra2_air_temperature_2m": ("air_temperature", "MERRA-2 (land and sea)"),
     "gldas_evapotranspiration": ("evapotranspiration", "GLDAS Noah (land model)"),
     "modis_et": ("evapotranspiration", "MODIS Terra (satellite)"),
-    "modis_pet": ("potential_evapotranspiration", "MODIS Terra (satellite)"),
+    "gldas_potential_evapotranspiration": ("potential_evapotranspiration", "GLDAS Noah (land model)"),
     "modis_ndvi": ("vegetation", "MODIS Terra (satellite)"),
     "modis_lst_day": ("land_surface_temperature", "MODIS Terra, daytime"),
     "modis_lst_night": ("land_surface_temperature", "MODIS Terra, night-time"),

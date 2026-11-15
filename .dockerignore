@@ -19,6 +19,10 @@
 !data-pipeline/processed_data/grid/cube_tair_land.nc
 !data-pipeline/processed_data/grid/cube_evap_gldas.nc
 !data-pipeline/processed_data/grid/cube_t2m.nc
+!data-pipeline/processed_data/grid/cube_ndvi.nc
+!data-pipeline/processed_data/grid/cube_lst_day.nc
+!data-pipeline/processed_data/grid/cube_lst_night.nc
+!data-pipeline/processed_data/grid/cube_pet.nc
 !data-pipeline/processed_data/indices/
 !data-pipeline/processed_data/indices/climate_indices.csv
 !data-pipeline/models/

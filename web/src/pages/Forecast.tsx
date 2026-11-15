@@ -88,6 +88,8 @@ const GLOSSARY: [string, string][] = [
   ["Seasonal outlook", "A statement about the odds for a whole month, not a weather forecast for a specific day."],
 ];
 
+const FORECASTABLE = new Set(["imerg_precip", "gldas_soil_moisture_0_10cm", "gldas_air_temperature", "gldas_evapotranspiration", "merra2_air_temperature_2m"]);
+
 export function Forecast() {
   const { variables, sel, setSel, variable, showError, ready, audience: appAudience, setAudience: setAppAudience } = useStore();
   // Uses the app-wide Experience (Explorer = Simple view, Scientist = Scientist view).
@@ -99,7 +101,9 @@ export function Forecast() {
   const [reality, setReality] = useState<RealityCheck | null>(null);
   const [loading, setLoading] = useState(false);
   const sci = audience === "scientist";
-  const avail = variables.filter((v) => v.available);
+  // Only variables with trained forecast models (data-pipeline/train_forecast.py); newer variables are trend-only.
+  const avail = variables.filter((v) => v.available && FORECASTABLE.has(v.id));
+  const canForecast = !!variable?.available && FORECASTABLE.has(variable.id);
   const today = nowMonth();
 
   const chooseAudience = (a: Audience) => setAppAudience(a === "scientist" ? "scientist" : "explorer");
@@ -107,7 +111,7 @@ export function Forecast() {
   useEffect(() => { setRes(null); }, [sel.variableId, sel.place, mode]);
   useEffect(() => { forecastApi.reality().then(setReality).catch(() => setReality(null)); }, []);
   useEffect(() => {
-    if (!variable?.available) return;
+    if (!canForecast || !variable) return;
     let live = true;
     forecastApi.status(variable.id, mode).then((s) => live && setStatus(s)).catch(() => live && setStatus(null));
     return () => { live = false; };
@@ -163,6 +167,7 @@ export function Forecast() {
               onClick={() => setSel({ parameter: v.parameter, variableId: v.id })}>{v.parameter_name} · {v.dataset_name}</button>
           ))}
         </div>
+        {variable && !FORECASTABLE.has(variable.id) && <p className="warn" style={{ margin: 0 }}>{variable.parameter_name} ({variable.dataset_name}) has trends in Explore but no forecast model yet. Pick one of the variables above.</p>}
         <span className="label">2 · Where?</span>
         <PlacePicker />
         <span className="label">3 · How far ahead?</span>
@@ -178,7 +183,7 @@ export function Forecast() {
               <button type="button" className={mode === "satellite" ? "on" : ""} aria-pressed={mode === "satellite"} onClick={() => setMode("satellite")} title="Uses the newest satellite data on the server">Satellite hindcast</button>
             </div>
           )}
-          <button type="button" className="btn" disabled={!ready || loading || !variable?.available} onClick={run}>{loading ? "Forecasting…" : "Run forecast"}</button>
+          <button type="button" className="btn" disabled={!ready || loading || !canForecast} onClick={run}>{loading ? "Forecasting…" : "Run forecast"}</button>
         </div>
         {status && (
           <div className="banner" role="note">
@@ -340,7 +345,7 @@ export function Forecast() {
       )}
 
       {/* ---------- map ---------- */}
-      {variable?.available && (
+      {canForecast && (
         <OutlookMap variableId={variable.id} mode={mode} months={mapMonths} unitsLabel={variable.parameter_name.toLowerCase()}
           onPick={(lat, lon) => { setSel({ place: cellPlace(lon, lat) }); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
       )}

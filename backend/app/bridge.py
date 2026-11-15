@@ -29,9 +29,11 @@ def set_cube_dir(path) -> None:
 
 # pipeline id (cube 1° cũ) → tên sản phẩm lưới 0,5° bản mới (preprocess/clean.py) và đơn vị của sản phẩm đó.
 V2_PRODUCT = {"precip": "precip_imerg", "soil_moisture": "sm_0_10cm_gldas", "tair_land": "tair_gldas",
-              "evap_gldas": "evap_gldas", "t2m": "t2m_merra2"}
+              "evap_gldas": "evap_gldas", "t2m": "t2m_merra2", "ndvi": "ndvi_modis", "lst_day": "lst_day_modis",
+              "lst_night": "lst_night_modis", "pet": "pet_gldas"}
 V2_UNITS = {"precip_imerg": "mm/month", "sm_0_10cm_gldas": "m3/m3", "tair_gldas": "degC",
-            "evap_gldas": "mm/month", "t2m_merra2": "degC"}
+            "evap_gldas": "mm/month", "t2m_merra2": "degC", "ndvi_modis": "1", "lst_day_modis": "degC",
+            "lst_night_modis": "degC", "pet_gldas": "mm/month"}
 
 
 def _v2_path(pipeline_id: str) -> Path | None:

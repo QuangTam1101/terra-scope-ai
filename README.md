@@ -28,7 +28,8 @@ Explorer and Scientist modes show the same numbers and verdicts; only the wordin
 
 ## NASA data
 
-All five products are downloaded for the whole globe through NASA Harmony (GES DISC) and regridded to a common
+GES DISC products are downloaded for the whole globe through NASA Harmony; MODIS climate-modeling-grid files come
+from NASA LP DAAC (each 0.5° cell is the mean of its valid 0.05° pixels). Everything is regridded to a common
 0.5 degree monthly grid, 2001-01 to 2025-12.
 
 | Product | Variable | Native grid |
@@ -36,6 +37,9 @@ All five products are downloaded for the whole globe through NASA Harmony (GES D
 | [GPM IMERG Final Monthly V07](https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07) | Precipitation (mm/month), data to 2025-09 | 0.1° |
 | [GLDAS Noah Monthly V2.1](https://doi.org/10.5067/SXAVCZFAQLNO) | Soil moisture 0 to 10 cm, air temperature, evapotranspiration (land only) | 0.25° |
 | [MERRA-2 instM_2d_asm_Nx V5.12.4](https://doi.org/10.5067/5ESKGQTZG7FO) | 2 m air temperature (land and sea) | 0.5° x 0.625° |
+| [MODIS Terra MOD13C2 V061](https://doi.org/10.5067/MODIS/MOD13C2.061) | Vegetation greenness (NDVI), good and marginal pixels only | 0.05° |
+| [MODIS Terra MOD11C3 V061](https://doi.org/10.5067/MODIS/MOD11C3.061) | Land surface temperature, day and night (clear sky) | 0.05° |
+| [GLDAS Noah Monthly V2.1](https://doi.org/10.5067/SXAVCZFAQLNO) `PotEvap_tavg` | Potential evapotranspiration (land only) | 0.25° |
 
 Regional series were validated against [Giovanni](https://giovanni.gsfc.nasa.gov/giovanni/) Time Series,
 Area-Averaged (r = 0.9996 over 293 months), and each Explore result links to the same query in Giovanni.

@@ -48,6 +48,11 @@ PRODUCTS = {  # tên → nguồn thô (SETS trong eda.py), biến, adapter, đ�
                        valid=(-90, 60), units="degC"),
     "evap_gldas": dict(set="gldas_evap", var="Evap_tavg", adapter="monthly_files", conv=lambda x, t: x * SECONDS(t),
                        valid=(None, None), units="mm/month", note="giá trị âm nhỏ = ngưng tụ/sương, giữ lại"),
+    # GLDAS PotEvap_tavg is an energy flux (W/m2): divide by the latent heat of vaporisation (2.45e6 J/kg) to get
+    # kg/m2/s = mm/s, then multiply by the seconds in the month
+    "pet_gldas": dict(set="gldas_potevap", var="PotEvap_tavg", adapter="monthly_files",
+                      conv=lambda x, t: x / 2.45e6 * SECONDS(t), valid=(None, None), units="mm/month",
+                      note="potential evaporation, Noah land model; small negatives (condensation) kept"),
     "t2m_merra2": dict(set="merra2_t2m", var="T2M", adapter="monthly_files", conv=lambda x, t: x - 273.15,
                        valid=(-90, 60), units="degC"),
     "chlor_a_seawifs": dict(set="seawifs_chlor_a", var="chlor_a", adapter="monthly_files", conv=None,

@@ -30,7 +30,8 @@ GRID_DIR = Path(__file__).resolve().parents[1] / "data-pipeline" / "data" / "pro
 PRODUCT = {  # API variable id -> processed 0.5 degree NetCDF product (preprocess/clean.py)
     "imerg_precip": "precip_imerg", "gldas_soil_moisture_0_10cm": "sm_0_10cm_gldas",
     "gldas_air_temperature": "tair_gldas", "gldas_evapotranspiration": "evap_gldas",
-    "merra2_air_temperature_2m": "t2m_merra2",
+    "merra2_air_temperature_2m": "t2m_merra2", "modis_ndvi": "ndvi_modis", "modis_lst_day": "lst_day_modis",
+    "modis_lst_night": "lst_night_modis", "gldas_potential_evapotranspiration": "pet_gldas",
 }
 _CUBES: dict[str, xr.DataArray] = {}
 

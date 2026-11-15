@@ -15,16 +15,16 @@ CUBE_DIR = Path("data/processed/grid")
 
 # id → (tên hiển thị, đơn vị chuẩn, nguồn NASA hiển thị trên web + báo cáo)
 VARIABLES = {
-    "precip": ("Lượng mưa", "mm/month", "GPM IMERG Final Monthly V07 (GPM_3IMERGM.07), NASA GES DISC qua Giovanni/Harmony"),
-    "soil_moisture": ("Độ ẩm đất 0–10 cm", "m3/m3", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) qua Giovanni/Harmony"),
-    "tair_land": ("Nhiệt độ không khí (đất liền)", "degC", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) qua Giovanni/Harmony"),
-    "evap_gldas": ("Bốc thoát hơi (GLDAS)", "mm/day", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) qua Giovanni/Harmony"),
-    "t2m": ("Nhiệt độ không khí 2 m", "degC", "MERRA-2 M2IMNXASM v5.12.4, NASA GMAO qua Giovanni/Harmony"),
-    "ndvi": ("Chỉ số thực vật NDVI", "1", "MODIS Terra MOD13A3 v061 qua NASA AppEEARS"),
-    "lst_day": ("Nhiệt độ bề mặt ban ngày", "degC", "MODIS Terra MOD11A2 v061 qua NASA AppEEARS"),
-    "lst_night": ("Nhiệt độ bề mặt ban đêm", "degC", "MODIS Terra MOD11A2 v061 qua NASA AppEEARS"),
-    "et": ("Bốc thoát hơi thực tế", "mm/month", "MODIS Terra MOD16A2GF v061 qua NASA AppEEARS"),
-    "pet": ("Bốc thoát hơi tiềm năng", "mm/month", "MODIS Terra MOD16A2GF v061 qua NASA AppEEARS"),
+    "precip": ("Lượng mưa", "mm/month", "GPM IMERG Final Monthly V07 (GPM_3IMERGM.07), NASA GES DISC, via Harmony"),
+    "soil_moisture": ("Độ ẩm đất 0–10 cm", "m3/m3", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1), NASA GES DISC, via Harmony"),
+    "tair_land": ("Nhiệt độ không khí (đất liền)", "degC", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1), NASA GES DISC, via Harmony"),
+    "evap_gldas": ("Bốc thoát hơi (GLDAS)", "mm/day", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1), NASA GES DISC, via Harmony"),
+    "t2m": ("Nhiệt độ không khí 2 m", "degC", "MERRA-2 M2IMNXASM v5.12.4, NASA GMAO / GES DISC, via Harmony"),
+    "ndvi": ("Chỉ số thực vật NDVI", "1", "MODIS Terra MOD13C2 v061 monthly 0.05° CMG NDVI, NASA LP DAAC"),
+    "lst_day": ("Nhiệt độ bề mặt ban ngày", "degC", "MODIS Terra MOD11C3 v061 monthly 0.05° CMG daytime LST, NASA LP DAAC"),
+    "lst_night": ("Nhiệt độ bề mặt ban đêm", "degC", "MODIS Terra MOD11C3 v061 monthly 0.05° CMG night-time LST, NASA LP DAAC"),
+    "et": ("Bốc thoát hơi thực tế", "mm/month", "MODIS Terra MOD16A2GF v061, NASA LP DAAC"),
+    "pet": ("Bốc thoát hơi tiềm năng", "mm/month", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) potential evaporation, NASA GES DISC, via Harmony"),
 }
 METHOD = ("Trung bình vùng trên lưới 1° (trọng số cos vĩ độ); Seasonal Mann-Kendall + Sen's slope theo mùa; "
           "Hamed-Rao MK trên anomaly (hiệu chỉnh tự tương quan); OLS trên anomaly ± CI 95%; FDR Benjamini–Hochberg cho bản đồ")
