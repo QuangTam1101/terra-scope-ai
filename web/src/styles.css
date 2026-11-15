@@ -986,6 +986,11 @@ select.select::-ms-expand { display: none; }
 .starter > section.card { box-shadow: none; padding: 0; background: none; }
 .starter #case-starter-title { display: none; }
 
+/* "What's changing here?" (PlaceCompare.tsx): on a phone the sparkline column goes and verdicts wrap, so the table fits */
+.pc-chip { white-space: nowrap; }
+.pc-rate-m { display: none; }
+@media (max-width: 560px) { .pc-table .pc-spark, .pc-table .pc-rate { display: none; } .pc-rate-m { display: block; margin-top: 4px; } .pc-table .pc-chip { white-space: normal; } .pc-table th, .pc-table td { padding: 6px 4px; } }
+
 /* Explore further: "see the pattern" views (Patterns.tsx) */
 .pat-stripes { height: 150px; cursor: crosshair; }
 .pat-grid { display: grid; grid-template-columns: 38px repeat(12, minmax(0, 1fr)); gap: 1px; font: 700 10.5px/1 var(--body); color: var(--muted); max-width: 560px; }

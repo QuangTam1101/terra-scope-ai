@@ -414,11 +414,11 @@ function MoreYears() {
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: 420 }} role="img"
         aria-label={`p-value for records from ${y0} to ${y1} years long, ending ${last.end}`}>
         <line x1={L} x2={W - 8} y1={y(0.05)} y2={y(0.05)} stroke="var(--coral)" strokeDasharray="4 3" />
-        <text x={W - 8} y={y(0.05) - 4} textAnchor="end" fontSize="10" fill="var(--coral)">0.05</text>
+        <text x={sci ? W - 8 : L + 2} y={y(0.05) - 4} textAnchor={sci ? "end" : "start"} fontSize="10" fill="var(--coral)">{sci ? res.alpha : "below this line: clear"}</text>
         <polyline fill="none" stroke="var(--ink)" strokeWidth="2" points={pts.map((p) => `${x(p.years)},${y(p.p_value!)}`).join(" ")} />
         {pts.map((p) => <circle key={p.start} cx={x(p.years)} cy={y(p.p_value!)} r="2.5" fill={p.significant ? "var(--coral)" : "var(--ink)"} />)}
-        <text x={L - 4} y={y(0) + 3} textAnchor="end" fontSize="10" fill="var(--muted)">0</text>
-        <text x={L - 4} y={y(top) + 8} textAnchor="end" fontSize="10" fill="var(--muted)">{top.toFixed(2)}</text>
+        {sci && <text x={L - 4} y={y(0) + 3} textAnchor="end" fontSize="10" fill="var(--muted)">0</text>}
+        {sci && <text x={L - 4} y={y(top) + 8} textAnchor="end" fontSize="10" fill="var(--muted)">{top.toFixed(2)}</text>}
         <text x={L} y={H - 4} fontSize="10" fill="var(--muted)">{y0} years</text>
         <text x={W - 8} y={H - 4} textAnchor="end" fontSize="10" fill="var(--muted)">{y1} years of data, ending {last.end.slice(0, 4)}</text>
       </svg>

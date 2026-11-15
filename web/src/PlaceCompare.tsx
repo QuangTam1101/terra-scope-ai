@@ -51,7 +51,7 @@ const years = (s: string, e: string) => s.slice(0, 4) === e.slice(0, 4) ? s.slic
 function Chip({ v }: { v: ReturnType<typeof rowVerdict> }) {
   const [solid, pale] = CHIP[v.tone];
   return (
-    <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 999, font: "800 12.5px var(--body)", whiteSpace: "nowrap",
+    <span className="pc-chip" style={{ display: "inline-block", padding: "3px 10px", borderRadius: 999, font: "800 12.5px var(--body)",
       color: v.tone === "none" ? "var(--ink)" : "#2b2540",   // pale and mid-tone fills keep dark ink in dark mode too
       background: v.chance ? `${STRIPES}, ${pale}` : solid, boxShadow: "inset 0 0 0 1px rgba(43,37,64,.12)" }}>
       {v.label}{v.chance && <span style={{ fontWeight: 700 }}> · could be chance</span>}
@@ -133,9 +133,9 @@ export function PlaceCompare({ place, start, end, variables, onOpen }: {
           <span className="small muted">{v.dataset_name}{p?.clamped ? ` · ${years(p.start, p.end)} only` : ""}</span>
         </td>
         {status ? <td colSpan={cols - 1}><span className="small muted">{status}</span></td> : t && s && verdict && <>
-          <td><Chip v={verdict} /></td>
-          <td className="num" style={{ whiteSpace: "nowrap" }}>{signed(t.slope_per_decade)} {units}</td>
-          <td><Spark series={s} tone={verdict.tone} /></td>
+          <td><Chip v={verdict} /><span className="pc-rate-m small num">{signed(t.slope_per_decade)} {units} {sci ? "per decade" : "every 10 years"}</span></td>
+          <td className="num pc-rate" style={{ whiteSpace: "nowrap" }}>{signed(t.slope_per_decade)} {units}</td>
+          <td className="pc-spark"><Spark series={s} tone={verdict.tone} /></td>
           {sci && <>
             <td className="num">{pval(t.p_value)}</td>
             <td className="num">{pval(t.p_value_autocorr_adjusted)}</td>
@@ -151,10 +151,10 @@ export function PlaceCompare({ place, start, end, variables, onOpen }: {
     <div className="col" style={{ gap: 8 }}>
       <p style={{ margin: 0, fontWeight: 700 }}>{sci ? "Same place, same years, every variable: which ones are changing?" : "Same place, same years: which measurements are changing?"}</p>
       <div style={{ overflowX: "auto" }}>
-        <table className="fc-table">
+        <table className="fc-table pc-table">
           <thead>
             <tr>
-              <th>{sci ? "Variable" : "Measurement"}</th><th>{sci ? "Verdict" : "What we found"}</th><th>{sci ? "Sen's slope per decade" : "Change every 10 years"}</th><th>{sci ? "Anomaly (seasons removed)" : "Year to year"}</th>
+              <th>{sci ? "Variable" : "Measurement"}</th><th>{sci ? "Verdict" : "What we found"}</th><th className="pc-rate">{sci ? "Sen's slope per decade" : "Change every 10 years"}</th><th className="pc-spark">{sci ? "Anomaly (seasons removed)" : "Year to year"}</th>
               {sci && <><th>Mann-Kendall p (raw)</th><th>p adjusted (Hamed-Rao)</th><th>Years</th><th title="Mean share of the area with data each month">Area with data</th></>}
             </tr>
           </thead>

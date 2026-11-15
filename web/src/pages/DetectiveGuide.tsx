@@ -23,7 +23,7 @@ const HOW: { art: ReactNode; text: string; sci: string }[] = [
   { art: <><path {...S} d="M3 10c3-6 5 6 8 0s5 6 8 0" opacity=".45" /><path {...S} d="M3 19h18" /></>,
     text: "Remove the seasons: compare each month with its usual value.", sci: "Anomaly = value minus that calendar month's mean." },
   { art: <><path {...S} d="M3 19L21 7" /><path {...S} d="M12 13h6v-4" opacity=".55" /></>,
-    text: "Measure the slope: how fast it changes per decade.", sci: "Seasonal Sen slope, scaled to one decade." },
+    text: "Measure the speed: how much it changes every 10 years.", sci: "Seasonal Sen slope, scaled to one decade." },
   { art: <><path {...S} d="M2 20c4 0 5-14 10-14s6 14 10 14" /><path {...S} d="M19 12v8" stroke="#e8735a" /></>,
     text: "Test it: how likely is a slope like this by pure chance?", sci: "Seasonal Mann-Kendall raw p compared with α = 0.05." },
 ];
