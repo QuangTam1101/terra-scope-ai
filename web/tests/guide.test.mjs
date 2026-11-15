@@ -30,7 +30,7 @@ const server = await createServer({ cacheDir: cache, server: { middlewareMode: t
 after(async () => { await server.close(); await rm(cache, { recursive: true, force: true }); });
 
 const routes = await server.ssrLoadModule('/src/pageRouting.ts');
-const { DEMOS, DetectiveGuide } = await server.ssrLoadModule('/src/pages/DetectiveGuide.tsx');
+const { DEMOS, DetectiveGuide, fitDemo } = await server.ssrLoadModule('/src/pages/DetectiveGuide.tsx');
 const { DemoPlayer, verdictParts, methodLine, pText } = await server.ssrLoadModule('/src/DemoPlayer.tsx');
 
 test('#guide routes to the guide; existing hashes still route', () => {
@@ -40,6 +40,14 @@ test('#guide routes to the guide; existing hashes still route', () => {
   assert.equal(routes.pageFromHash('#explore'), 'explore');
   assert.equal(routes.pageFromHash('#explore?v=imerg_precip&place=region:global&from=2001-01&to=2024-12&view=trend'), 'explore');
   assert.equal(routes.pageFromHash('#nope'), 'home');
+});
+
+test('fitDemo cuts a demo period to the server coverage (live cubes end 2024-12)', () => {
+  const d = DEMOS.find((x) => x.id === 'world-warming');
+  const fit = fitDemo(d, [{ id: d.variable_id, coverage: { start: '2001-01', end: '2024-12' } }]);
+  assert.equal(fit.end, '2024-12'); assert.equal(fit.start, d.start); assert.equal(d.end, '2025-12');
+  assert.equal(fitDemo(d, [{ id: d.variable_id, coverage: { start: '2001-01', end: '2025-12' } }]).end, '2025-12');
+  assert.equal(fitDemo(d, []), d);   // catalog not loaded yet: unchanged
 });
 
 test('DEMOS use only available variables, real periods and no Mekong case', () => {
