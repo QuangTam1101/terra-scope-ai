@@ -27,7 +27,7 @@ export function Timelapse({ variable, start, end, bbox, conv }: { variable: Vari
   // Load all frames once per dataset, period, area and kind; the animation itself makes no requests.
   useEffect(() => {
     const ctrl = new AbortController();
-    setRes(null); setFrames(null); setError(null); setPlaying(false); setT(0);
+    setRes(null); setFrames(null); setError(null); setPlaying(false); setT(0); setHover(null);
     if (start > end) { setError("The end of the period is before the start. Change the dates to play the time-lapse."); return; }
     api.valueFrames(variable.id, start, end, kind, bbox, ctrl.signal)
       .then((r) => { setRes(r); setFrames(decodeFrames(r)); })

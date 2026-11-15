@@ -81,3 +81,14 @@ def test_points_roundtrip(tmp_path):
     c = points_to_cube(obs, "ndvi")
     assert c.shape == (1, 180, 360) and c.sel(lat=11.5, lon=106.5).item() == 0.7
     assert np.isnan(c.sel(lat=10.5, lon=106.5).item())
+
+
+def test_soil_moisture_masks_ice_cells(cube_dir):
+    """K22: ô băng GLDAS (1,0 cố định) và ô ven băng (có lúc > 0,6) bị che cả chuỗi; ô thường giữ nguyên."""
+    v = np.full((len(TIME), 1, 3), 0.3)
+    v[:, 0, 1] = 1.0                       # băng
+    v[::12, 0, 2] = 0.77                   # ven băng, trộn
+    xr.DataArray(v, coords={"time": TIME, "lat": [70.5], "lon": [-40.5, -39.5, -38.5]}, dims=("time", "lat", "lon"),
+                 name="soil_moisture").to_netcdf(cube_dir / "cube_soil_moisture.nc")
+    sm = api.load_cube("soil_moisture")
+    assert np.allclose(sm[:, 0, 0], 0.3) and sm[:, 0, 1:].isnull().all()

@@ -105,11 +105,11 @@ export function AnswerCard({ response, fahrenheit, audience, variables, onAction
     <div className={`card bubble-ai answer ${llm ? "" : "template"}`}>
       <div className="answer-head">
         <Terra size={34} />
-        <span className="tag-ai">{llm ? "Gemini AI Mode" : "Template Mode: AI unavailable"}</span>
+        <span className="tag-ai">{llm ? "Gemini AI Mode" : response.clarification ? "Selection needed" : "Template Mode: AI unavailable"}</span>
       </div>
       <div className="answer-text">{paragraphs.map((p) => <p key={p}>{p}</p>)}</div>
       {fallback.map((w) => <span key={w.message} className="small muted" role="status">{w.message}</span>)}
-      {response.clarification && <span className="warn" role="status">Selection needed: {response.clarification}</span>}
+      {response.clarification && response.clarification !== response.answer && <span className="warn" role="status">Selection needed: {response.clarification}</span>}
       {response.evidence.length > 0 && (
         <div className={`ev-grid ${response.evidence.length > 1 ? "two" : ""}`}>
           {response.evidence.map((e) => <EvidenceCard key={e.trend.trend_id} evidence={e} fahrenheit={fahrenheit} audience={audience} variables={variables} />)}
