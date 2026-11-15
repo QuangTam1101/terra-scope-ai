@@ -88,6 +88,11 @@ function Shell() {
   }, [audience, tourOpen, openHuntTour]);
   const closeHuntTour = useCallback(() => { if (huntTour) markHuntTourDone(undefined, huntTour); setHuntTour(null); }, [huntTour]);
   const chrome = useMemo(() => ({ replayTutorial, toLanding }), [replayTutorial, toLanding]);
+  // Leaving the app for the landing page or the mode choice (also by browser Back or a link) ends any open tour;
+  // otherwise a tour left open would pull the user back to its own page when they follow a link to another feature.
+  useEffect(() => {
+    if (page === "landing" || page === "start") { setTourOpen(false); setHuntTour(null); }
+  }, [page]);
 
   if (page === "landing") return <Landing onStart={start} />;
   if (page === "start") return <ModeSelect last={lastAudience()} onChoose={choose} onBack={() => go("landing")} />;

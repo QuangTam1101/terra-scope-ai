@@ -66,7 +66,8 @@ export function areaPlace(bbox: BBox): Place {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [page, setPage] = useState<Page>(() => pageFromHash(location.hash));
   useEffect(() => {
-    const sync = () => setPage(pageFromHash(location.hash));
+    // a link to another page (for example a Landing feature card) opens that page at its top
+    const sync = () => setPage((prev) => { const next = pageFromHash(location.hash); if (next !== prev) window.scrollTo({ top: 0 }); return next; });
     window.addEventListener('hashchange', sync);
     return () => window.removeEventListener('hashchange', sync);
   }, []);

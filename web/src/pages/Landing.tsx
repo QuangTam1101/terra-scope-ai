@@ -9,12 +9,12 @@ import { Icon, Terra, VERDICT_TEXT } from "../ui";
 // static text about features that exist today, plus a small precomputed trend grid for the hero globe (real NASA data).
 
 const FEATURES = [
-  { icon: "globe", tag: "Map", tint: "#e3f1ea", title: "Explore Earth", text: "Real NASA data on a world map and 3D globe." },
-  { icon: "trend", tag: "Statistics", tint: "#fde9da", title: "Detect Trends", text: "See how fast a place is changing, and if it is real." },
-  { icon: "hunt", tag: "Compare", tint: "#e2ecf8", title: "Compare Regions", text: "Put two places side by side, tested fairly." },
-  { icon: "detective", tag: "AI", tint: "#ede6fb", title: "Ask the AI Detective", text: "Ask in plain words. Every answer shows its evidence." },
-  { icon: "science", tag: "Modes", tint: "#fff3cf", title: "Choose Your Level", text: "Explorer for plain words, Scientist for full statistics." },
-  { icon: "report", tag: "Share", tint: "#f6e4ee", title: "Create a Report", text: "Turn your findings into a shareable PDF." },
+  { icon: "globe", tag: "Map", tint: "#e3f1ea", title: "Explore Earth", href: "#explore", text: "Real NASA data on a world map and 3D globe." },
+  { icon: "trend", tag: "Statistics", tint: "#fde9da", title: "Detect Trends", href: "#explore", text: "See how fast a place is changing, and if it is real." },
+  { icon: "hunt", tag: "Compare", tint: "#e2ecf8", title: "Compare Regions", href: "#hunt", text: "Put two places side by side, tested fairly." },
+  { icon: "detective", tag: "AI", tint: "#ede6fb", title: "Ask the AI Detective", href: "#detective", text: "Ask in plain words. Every answer shows its evidence." },
+  { icon: "science", tag: "Modes", tint: "#fff3cf", title: "Choose Your Level", href: "#start", text: "Explorer for plain words, Scientist for full statistics." },
+  { icon: "report", tag: "Share", tint: "#f6e4ee", title: "Create a Report", href: null, text: "Turn your findings into a shareable PDF." },
 ] as const;
 
 /** Small schematic previews of each feature (drawings of the interface, not results). */
@@ -455,7 +455,7 @@ function HeroGlobe() {
         )}
       </div>
       <figcaption className="hero-globe-hint">
-        Drag to spin · point at a place to read its trend
+        Drag to spin
         <button type="button" className="hero-globe-reset" onClick={() => api.current?.reset()}>Reset</button>
       </figcaption>
       <div className="hero-mascot"><Terra size={120} label="Terra, the Earth detective" /></div>
@@ -566,8 +566,9 @@ export function Landing({ onStart }: { onStart: () => void }) {
         <div className="lp-feats">
           {FEATURES.map((f, i) => {
             const I = FEATURE_ICON[f.icon], Art = FEATURE_ART[f.icon];
+            const Card = f.href ? "a" : "article";   // cards 1 to 5 open their feature directly
             return (
-              <article key={f.title} className="lp-feat">
+              <Card key={f.title} className={f.href ? "lp-feat lp-feat-link" : "lp-feat"} {...(f.href ? { href: f.href } : {})}>
                 <div className="lp-feat-art" style={{ background: f.tint }}>
                   <span className="lp-feat-num" aria-hidden="true">{i + 1}</span>
                   <span className="lp-feat-tag">{f.tag}</span>
@@ -577,7 +578,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
                   <h3><span className="lp-feat-icon"><I /></span>{f.title}</h3>
                   <p>{f.text}</p>
                 </div>
-              </article>
+              </Card>
             );
           })}
         </div>
