@@ -2,7 +2,7 @@
 
 Date: 15 November 2026. Scope: the Explorer (non-scientist) edition of the report, as a printed PDF and as an interactive page in the app. The Scientist edition keeps its content; no statistic, threshold, dataset or method changed.
 
-Sample files and images: [docs/explorer-report/](docs/explorer-report/).
+Sample files and images: [docs/explorer-report/](explorer-report/).
 
 ## 1. What was wrong
 
@@ -10,8 +10,8 @@ The requested examples `last-non.pdf` and `last.pdf` are not in the workspace. T
 
 | Before | Problem |
 |---|---|
-| ![before, about the data](docs/explorer-report/before-about-data.png) | "About the data and methods" was a wall of text: four lists, a six-entry glossary and the full bibliography. It also said "the regular seasons are removed" before the test, which is not what Seasonal Mann-Kendall does, and described a grid cell as "about 55 km" everywhere. |
-| ![before, references](docs/explorer-report/before-references.png) | The bibliography overflowed onto a last page with no header that was mostly empty. |
+| ![before, about the data](explorer-report/before-about-data.png) | "About the data and methods" was a wall of text: four lists, a six-entry glossary and the full bibliography. It also said "the regular seasons are removed" before the test, which is not what Seasonal Mann-Kendall does, and described a grid cell as "about 55 km" everywhere. |
+| ![before, references](explorer-report/before-references.png) | The bibliography overflowed onto a last page with no header that was mostly empty. |
 
 The summary also turned the rate into a total ("adds up to roughly +8.23 mm/month") even when the trend was not significant, and without saying that it was a straight-line projection.
 
@@ -29,7 +29,7 @@ The summary also turned the rate into a total ("adds up to roughly +8.23 mm/mont
 
 A one-finding report is now 3 pages instead of 4, with no references-only page. Figures keep their captions (`break-inside: avoid`), and headings do not end a page.
 
-![after, discovery](docs/explorer-report/after-sig-p1.png) ![after, evidence](docs/explorer-report/after-sig-p2.png) ![after, behind the discovery](docs/explorer-report/after-sig-p3.png)
+![after, discovery](explorer-report/after-sig-p1.png) ![after, evidence](explorer-report/after-sig-p2.png) ![after, behind the discovery](explorer-report/after-sig-p3.png)
 
 ## 3. Scientific wording changes
 
@@ -60,7 +60,7 @@ On the Report page, step 3, with the Explorer edition selected, a panel "Explore
 
 PDF connection: no public deployment URL exists, so there is no QR code and no link to localhost. The PDF says "Explore this analysis in Terra-scope AI. Reopen the saved case file on the app's Report page to recompute these results from the same NASA data."
 
-![interactive report](docs/explorer-report/web-companion.png) ![explanations](docs/explorer-report/web-explanations.png) ![monthly view with highlight](docs/explorer-report/web-monthly-highlight.png) ![mobile](docs/explorer-report/web-mobile.png)
+![interactive report](explorer-report/web-companion.png) ![explanations](explorer-report/web-explanations.png) ![monthly view with highlight](explorer-report/web-monthly-highlight.png) ![mobile](explorer-report/web-mobile.png)
 
 ## 5. Accessibility
 

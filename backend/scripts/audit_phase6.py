@@ -17,7 +17,7 @@ from pipeline.grid import grid_trend
 
 
 def main():
-    output=ROOT/'backend'/'PHASE_6_AUDIT_RESULTS.json'
+    output=ROOT/'backend'/'notes'/'PHASE_6_AUDIT_RESULTS.json'
     if output.exists():
         raise SystemExit('Audit artifact already exists. Preserve it; choose a new explicitly named output for a later audit.')
     protected=['backend/app/service.py','backend/app/bridge.py','backend/app/catalog.py',

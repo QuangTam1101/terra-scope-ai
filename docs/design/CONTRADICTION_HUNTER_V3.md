@@ -1,6 +1,6 @@
 # Contradiction Hunter 3.0
 
-Date: 15 November 2026. Branch `integration/phase7` (on top of `36ad5b3`, not committed). Screenshots: [docs/hunt-v3/](docs/hunt-v3/).
+Date: 15 November 2026. Branch `integration/phase7` (on top of `36ad5b3`, not committed). Screenshots: [docs/hunt-v3/](hunt-v3/).
 
 ## 1. Goal
 
@@ -118,7 +118,7 @@ Full run on 15 November 2026 (`scripts/test-all.ps1`, backend on :8000 in Gemini
 
 The first full run had one browser failure: a missing `favicon.ico` (404) was counted as a page error in the Explorer report e2e; that filter now matches the other e2e files. A rerun had a Vite HMR WebSocket refusal while the dev server restarted; the next rerun passed 13/13. The Detective step sent a real chat request (Gemini mode); its answer content is checked by `app.e2e.mjs`.
 
-Screenshots: ![tour](docs/hunt-v3/01-tour-welcome.png) ![config step](docs/hunt-v3/02-tour-config.png) ![evidence](docs/hunt-v3/03-regions-evidence.png) ![panels](docs/hunt-v3/04-regions-panels.png) ![scientist](docs/hunt-v3/05-scientist-method.png) ![datasets](docs/hunt-v3/06-datasets.png) ![periods](docs/hunt-v3/07-periods.png) ![discover](docs/hunt-v3/08-discover.png) ![mobile](docs/hunt-v3/09-mobile.png) ![detective](docs/hunt-v3/10-detective.png)
+Screenshots: ![tour](hunt-v3/01-tour-welcome.png) ![config step](hunt-v3/02-tour-config.png) ![evidence](hunt-v3/03-regions-evidence.png) ![panels](hunt-v3/04-regions-panels.png) ![scientist](hunt-v3/05-scientist-method.png) ![datasets](hunt-v3/06-datasets.png) ![periods](hunt-v3/07-periods.png) ![discover](hunt-v3/08-discover.png) ![mobile](hunt-v3/09-mobile.png) ![detective](hunt-v3/10-detective.png)
 
 ## 15. Run locally
 

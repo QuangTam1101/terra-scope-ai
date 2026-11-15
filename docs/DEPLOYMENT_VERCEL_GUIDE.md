@@ -2,7 +2,7 @@
 
 Ngày audit: 15/11/2026. Baseline: `main`, commit `248e3e6323ecb89ffe330f7a34c1ae73d5bad793`.
 Các cấu hình dưới đây đang ở working tree; chưa commit/push, chưa tạo hosting hoặc deployment công khai.
-Review trước Linux validation: xem `PREDEPLOYMENT_REVIEW.md`. Workflow hiện chỉ cho phép `publish=false`, không còn bước login/push registry.
+Workflow hiện chỉ cho phép `publish=false`, không còn bước login/push registry.
 
 ## 1. Kiến trúc được đề xuất
 
@@ -293,6 +293,6 @@ Các file mới chưa tracked cần đọc trực tiếp hoặc mở trong VS Co
 | `scripts/smoke-forecast.py` | Smoke thật qua FastAPI endpoints, không gọi Gemini |
 | `scripts/tests/test_forecast_artifacts.py` | 6 integrity tests bằng byte fixtures |
 | `docs/FORECAST_DEPLOYMENT_VERIFICATION.json` | Kết quả định lượng smoke model thật |
-| `DEPLOYMENT_VERCEL_GUIDE.md` | Hướng dẫn và trạng thái kiểm chứng |
+| `docs/DEPLOYMENT_VERCEL_GUIDE.md` | Hướng dẫn và trạng thái kiểm chứng |
 
 File local ignored: 10 joblib + `SHA256SUMS.txt` trong `data-pipeline/models/`, gh portable và release staging trong `scripts/.local/`. Không có joblib nào được Git theo dõi. Scan giới hạn các tracked text file không tìm thấy bản sao key Gemini đang cấu hình; chưa chứng nhận toàn bộ Git history sạch secret. Cube và mã thuật toán trong `data-pipeline/pipeline` không có diff.

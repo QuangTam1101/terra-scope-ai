@@ -58,7 +58,7 @@ The Outlook uses NOAA climate indices and NASA GISS GISTEMP v4 as a reality chec
 
 An independent re-implementation in [`validation/`](validation) (no shared code) checked 25 regional cases,
 2 global maps and 15 synthetic series: 48 passed, 0 failed, 1 inconclusive. See
-[SCIENTIFIC_VALIDATION_RESULTS.md](SCIENTIFIC_VALIDATION_RESULTS.md).
+[validation/SCIENTIFIC_VALIDATION_RESULTS.md](validation/SCIENTIFIC_VALIDATION_RESULTS.md).
 
 ## Repository layout
 
@@ -67,8 +67,10 @@ An independent re-implementation in [`validation/`](validation) (no shared code)
 | `web/` | Frontend: React 19, TypeScript, Vite, d3-geo |
 | `backend/` | FastAPI service, trend engine bridge, Gemini Detective (`backend/ai/` holds the system prompt and knowledge base) |
 | `data-pipeline/` | NASA download (`download/`), cleaning to the 0.5° grid (`preprocess/`), statistics (`pipeline/`), forecast training |
-| `validation/` | Independent oracle and simulated-user test scenarios |
+| `validation/` | Independent oracle, its results and test plan, and simulated-user test scenarios |
 | `report/` | Technical report, with the scripts that rebuild its figures |
+| `presentation/` | Pitch deck (PPTX and PDF) and the scripts that build it |
+| `docs/` | Design notes with screenshots (`docs/design/`) and the deployment guide |
 
 ## Run it locally
 

@@ -12,9 +12,9 @@
 |---|---|---|
 | 3 | Mekong Delta air temperature +0.19 °C per decade (0.187), 2001 to 2025, p < 0.001, MERRA-2 | Explore result, Scientist panel, Detective answer (live app) |
 | 3 | 259,200 cells: 55% rising, 8% falling, 37% could be chance | Explore trend map caption |
-| 4 | Sahel −0.21 vs Wisconsin +0.21 °C per decade; gap p 0.022, bootstrap [−0.87, +0.12] | Hunt (live) + `SCIENTIFIC_VALIDATION_RESULTS.md` |
+| 4 | Sahel −0.21 vs Wisconsin +0.21 °C per decade; gap p 0.022, bootstrap [−0.87, +0.12] | Hunt (live) + `validation/SCIENTIFIC_VALIDATION_RESULTS.md` |
 | 5 | 64% above-normal Dec 2026, confidence low; Satellite ≤ 12 months, Outlook ≤ 18 months; skill 1/3/6/12 months | Forecast page (live), `data-pipeline/docs/05`, `models/metrics.json` |
-| 7 | 48 PASS, 1 inconclusive, 0 FAIL | `SCIENTIFIC_VALIDATION_RESULTS.md` |
+| 7 | 48 PASS, 1 inconclusive, 0 FAIL | `validation/SCIENTIFIC_VALIDATION_RESULTS.md` |
 | 7 | Correlation 0.9996 with Giovanni (soil moisture, 293 months) | WIKI.md, check on 14/11/2026 |
 
 ## Fonts

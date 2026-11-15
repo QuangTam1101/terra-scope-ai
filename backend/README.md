@@ -2,7 +2,7 @@
 
 Phase 3 adds optional backend-only Gemini enhancement to `/api/v1/chat`.
 Without a key, the deterministic Template Mode remains available.
-See [PHASE_3_GEMINI.md](PHASE_3_GEMINI.md) for configuration, grounding constraints,
+See [PHASE_3_GEMINI.md](notes/PHASE_3_GEMINI.md) for configuration, grounding constraints,
 Windows startup/test commands and limitations. `/api/v1/explain` remains unchanged.
 
 HTTP API cho frontend (nhánh `UI`), bọc các hàm phân tích của `data-pipeline/pipeline`.
@@ -133,15 +133,15 @@ Code trong `backend/` được viết với sự hỗ trợ của AI (Claude Cod
 
 ## Current Phase 4 contract
 
-Phase 6 audit and approval gate: [Scientific audit](PHASE_6_SCIENTIFIC_AUDIT.md),
-[pending correction proposal](PHASE_6_CORRECTION_PROPOSAL.md), and [partial QA/manual browser checklist](PHASE_6_QA.md).
+Phase 6 audit and approval gate: [Scientific audit](notes/PHASE_6_SCIENTIFIC_AUDIT.md),
+[pending correction proposal](notes/PHASE_6_CORRECTION_PROPOSAL.md), and [partial QA/manual browser checklist](notes/PHASE_6_QA.md).
 No production statistical correction is approved or active.
 
 Phase 5 adds a reference-only scientific method advisor, deterministic trust assessment and optional
-`scientific_advice` in chat evidence. See [PHASE_5.md](PHASE_5.md) for the actual method audit,
+`scientific_advice` in chat evidence. See [PHASE_5.md](notes/PHASE_5.md) for the actual method audit,
 known statistical limitations, validation record and current commands. Original numeric results and `/explain` are unchanged.
 
-See [PHASE_4.md](PHASE_4.md) for the current architecture, limits, validation record and Windows commands.
+See [PHASE_4.md](notes/PHASE_4.md) for the current architecture, limits, validation record and Windows commands.
 The Phase 2 section above describes the legacy path. Add `use_tools: true` to `/api/v1/chat`
 to use deterministic conversational selection, the six safe tools, and optional bounded Gemini
 function calling. The default remains `false` for existing clients. `/api/v1/explain` is unchanged.

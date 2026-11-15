@@ -20,7 +20,7 @@ Notes
 - Live tests skip themselves when the server is not running. Gemini checks run only with `-Gemini` / `TERRA_E2E_GEMINI=1` and are capped (at most 9 requests in the API suite, 1 or 2 in the browser suite).
 - A transient Gemini outage (provider error, network, deadline, or the app's 60 s pause after one) is retried once after the pause, as a user would. Verification (grounding) and logic failures are never retried by the tests.
 - The browser suite drives the installed Chrome or Edge through the DevTools protocol (`web/e2e/cdp.mjs`), no extra npm package. Set `CHROME_PATH` if Chrome is elsewhere. Output (PDF, phone screenshot, logs) goes to `web/e2e/out/` (git-ignored).
-- Reference values in `backend/tests_e2e` are for the 0.5° grid (see `backend/PHASE_7.md`). The historical 1° reference is checked by the unit suite and by `GRID_V2=0`.
+- Reference values in `backend/tests_e2e` are for the 0.5° grid (see `backend/notes/PHASE_7.md`). The historical 1° reference is checked by the unit suite and by `GRID_V2=0`.
 
 Results on 2026-11-14 (Gemini mode, real data): backend unit 243 passed; frontend unit 32 passed; typecheck and build pass; live API 18 passed; browser 10 passed.
 

@@ -5,7 +5,7 @@ Run (servers started with scripts/start-local.ps1):
 Gemini checks call the real model and may cost money: they run only when TERRA_E2E_GEMINI=1 and the server is in Gemini
 mode, and they are capped at GEMINI_BUDGET requests. Without the server every test is skipped, never failed.
 
-Data-dependent reference values come from backend/PHASE_7.md (0.5° grid). If the NASA files are re-processed these values
+Data-dependent reference values come from backend/notes/PHASE_7.md (0.5° grid). If the NASA files are re-processed these values
 change on purpose; update them only after scientific review.
 """
 import math

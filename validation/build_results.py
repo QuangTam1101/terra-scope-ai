@@ -1,4 +1,4 @@
-"""Merges every executed validation result into scientific_validation_results.json (repository root).
+"""Merges every executed validation result into scientific_validation_results.json (validation/).
 Only executed tests are included; nothing is filled in by hand."""
 import json
 import re
@@ -83,7 +83,7 @@ def main():
     for k in out["cases"]:
         counts[k["status"]] = counts.get(k["status"], 0) + 1
     out["summary"] = {"designed": len(out["cases"]), "executed": sum(1 for k in out["cases"] if k["status"] != "NOT RUN"), "by_status": counts}
-    (ROOT / "scientific_validation_results.json").write_text(json.dumps(out, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
+    (HERE / "scientific_validation_results.json").write_text(json.dumps(out, indent=1, ensure_ascii=False, default=str), encoding="utf-8")
     print(out["summary"])
 
 

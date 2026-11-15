@@ -1,7 +1,7 @@
 # Phase 8.5: scientific exploration, Contradiction Hunter 2.0 and professional reports
 
 Date: 2026-11-14. Branch: `integration/phase7` (local, not pushed). All Phase 8.5 work is **uncommitted** and sits on top of the
-uncommitted Phase 7 work. No Phase 8 document existed in the repository; this phase builds on Phase 7 (`backend/PHASE_7.md`).
+uncommitted Phase 7 work. No Phase 8 document existed in the repository; this phase builds on Phase 7 (`backend/notes/PHASE_7.md`).
 
 No NASA file, statistical algorithm, threshold or decision rule was changed. New analysis features reuse the production
 endpoints (`/series`, `/trends`, `/compare`, cached `/trends/grid`). Everything new that is not a production test is labelled
@@ -70,7 +70,7 @@ report row now names region, box, period, grid and method version.
 ### PDF verification
 
 Rendered with headless Chrome (`--print-to-pdf --no-pdf-header-footer`) from case links and inspected page by page:
-`backend/phase85_samples/report_single_region.pdf` (5 pages) and `report_multi_region.pdf` (9 pages, two analyses and one
+(Sample PDFs removed from the repository; regenerate them from the Report page.) `backend/phase85_samples/report_single_region.pdf` (5 pages) and `report_multi_region.pdf` (9 pages, two analyses and one
 comparison). Found and fixed during inspection: locator map showed the whole world (d3 ring winding), uneven axis labels,
 "analysises", and a **wrong sentence** "difference not significant (p = 0.022)": the backend rule is p < α **and** the bootstrap
 interval excluding zero, so the text now says the p-value passes but the interval includes zero and the result is inconclusive.
