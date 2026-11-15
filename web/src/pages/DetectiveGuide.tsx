@@ -4,6 +4,7 @@ import { useStore, type Page } from "../store";
 import { Terra } from "../ui";
 import { DemoPlayer, type Demo } from "../DemoPlayer";
 import { clampPeriod } from "../PlaceCompare";
+import { ChallengeMap } from "../ChallengeMap";
 
 // Demo cases: only ones where the raw Seasonal Mann-Kendall p and the Hamed-Rao adjusted p agree
 // (SCIENTIFIC_VALIDATION_RESULTS.md), so Explorer and Scientist never see contradicting verdicts.
@@ -104,6 +105,8 @@ export function DetectiveGuide() {
           </ul>
         </details></section>
       )}
+
+      <ChallengeMap />
 
       <section className="row" aria-label="Good to know" style={{ gap: 10 }}>
         {["Shows what changed, not why", "Past trends, not forecasts"].map((t) => <span key={t} className="guide-chip">{t}</span>)}
