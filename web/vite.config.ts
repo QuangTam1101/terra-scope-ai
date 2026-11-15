@@ -5,13 +5,14 @@ import { execSync } from "node:child_process";
 // Vite's dev proxy is unavailable on Vercel. Fail a misconfigured hosted build early.
 if (process.env.VERCEL === "1") {
   const origin = process.env.VITE_API_BASE_URL;
-  let valid = false;
+  // A reviewed root Services route sends /api to the backend on this same origin.
+  let valid = process.env.VITE_API_MODE === "same-origin" && !origin;
   try {
     const url = new URL(origin ?? "");
-    valid = url.protocol === "https:" && url.origin === origin &&
+    valid = valid || url.protocol === "https:" && url.origin === origin &&
       !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
   } catch { /* Report a configuration error without echoing the supplied value. */ }
-  if (!valid) throw new Error("Set VITE_API_BASE_URL to the public HTTPS backend origin (no path or trailing slash).");
+  if (!valid) throw new Error("Set a public HTTPS VITE_API_BASE_URL, or VITE_API_MODE=same-origin with the root Services API route.");
 }
 
 // Code revision printed in Scientist reports (reproducibility); "unknown" outside a git checkout.

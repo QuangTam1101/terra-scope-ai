@@ -14,6 +14,10 @@ COPY data-pipeline/processed_data /app/data-pipeline/processed_data
 COPY data-pipeline/models /app/data-pipeline/models
 COPY scripts/check-deployment.py /app/scripts/check-deployment.py
 COPY scripts/forecast_artifacts.py /app/scripts/forecast_artifacts.py
+COPY scripts/fetch-forecast-models.py /app/scripts/fetch-forecast-models.py
+# Git deployments omit ignored binaries. Fetch only the pinned public release at build time.
+RUN python scripts/fetch-forecast-models.py --public \
+    --manifest-sha256 def7b92323142bceeca5491622a311b631e1acbaf59bd49e35684113fe8b7985
 # A full-product image must contain the trusted model artifacts; never silently omit Forecast.
 RUN python scripts/check-deployment.py
 RUN useradd --create-home app && mkdir -p /app/backend/.cache/grids \

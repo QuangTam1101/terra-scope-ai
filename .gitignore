@@ -6,6 +6,7 @@
 .env.*
 !.env.example
 __pycache__/
+.vercel/
 
 # forecast model downloads and backups (large binary files)
 .release-staging/

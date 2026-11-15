@@ -2,6 +2,18 @@
 
 Updated: 15/11/2026 (Asia/Singapore). **Linux production container validated; public deployment blocked by account/billing decisions.** No public application or API URL has been created. Do not interpret this document as a successful public launch.
 
+### Current owner instruction: target Vercel workspace only
+
+The owner selected **`quang-tam-thieus-projects`** at https://vercel.com/quang-tam-thieus-projects. Do not create projects, link Git, set environment variables or deploy in the earlier Pro workspace. All future Vercel mutations must explicitly target the selected workspace after its access and billing plan are verified.
+
+After owner login, CLI user is **`quangtamthieu6-1893`**. Verified workspace: **Quang Tam Thieu's projects**, scope ID **`team_BVZgxczVQK25bk1mALKxaUtf`**, plan **Hobby**. Project `terra-scope-ai` (`prj_QQ1CRrcv0QBLW2HqUYM6NO5X2qg5`) was created in this scope, linked to the repository, with Node 22.x. No previous-workspace deployment was made. No paid plan has been approved.
+
+Current deployment candidate uses root `vercel.json` **Services**: Vite frontend in `web`, container API with `backend/Dockerfile`, same-origin `/api` routing. `VITE_API_MODE=same-origin`, `PORT=8000`, `GRID_CACHE_DIR=/tmp/terra-scope-grids`, `WARM_UP=0` and initial Template Mode are configured. The standalone `web/vercel.json` remains available for a separate-frontend deployment. Git-backed build avoids uploading the 148 MB cubes through the Hobby CLI's 100 MB source-upload cap. Model downloads occur over HTTPS at image build time with the pinned manifest verified before model bytes are installed; no GitHub credential is required for the public release.
+
+This candidate has not yet passed a Vercel deployment/runtime test. Hobby's 2 GB limit, beta eligibility, cold starts and the complete feature matrix must be verified before calling the public website ready. A platform or memory failure must not silently trigger an upgrade or scientific-engine change.
+
+Render's 135 USD/month proposal has **not** been approved. Evaluate a cheaper Vercel option first: Vercel now documents a beta Container Runtime for Docker-based HTTP services on all plans, subject to Functions limits/usage. The earlier standard Python bundle analysis is not sufficient to rule out Container Runtime. See [current cost options](docs/VERCEL_COST_OPTIONS.md). A supported runtime is not evidence this workload fits Hobby, or that the target workspace is free.
+
 ## Verified release and Linux container
 
 - Source commit: `f406100c293578f898a3a950a739b30727d7d1c3` on `main`.
