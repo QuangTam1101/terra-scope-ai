@@ -4,6 +4,8 @@ import { useStore, type Page } from "../store";
 import { Terra } from "../ui";
 import { DemoPlayer, type Demo } from "../DemoPlayer";
 import { clampPeriod } from "../PlaceCompare";
+import { ExamplePair } from "../OppositeTrends";
+import { OPPOSITE_EXAMPLES, oppositeHash } from "../opposite";
 
 // Demo cases: only ones where the raw Seasonal Mann-Kendall p and the Hamed-Rao adjusted p agree
 // (SCIENTIFIC_VALIDATION_RESULTS.md), so Explorer and Scientist never see contradicting verdicts.
@@ -42,6 +44,8 @@ export function DetectiveGuide() {
   const [open, setOpen] = useState<string | null>(null);
   const demos = useMemo(() => DEMOS.map((d) => fitDemo(d, variables)), [variables]);   // stable: DemoPlayer refetches on a new demo object
   const demo = demos.find((d) => d.id === open);
+  const [pair, setPair] = useState<string | null>(null);
+  const example = OPPOSITE_EXAMPLES.find((e) => e.id === pair);
   const link = (p: Page) => (e: MouseEvent) => { e.preventDefault(); go(p); };
 
   return (
@@ -66,6 +70,22 @@ export function DetectiveGuide() {
           ))}
         </div>
         {demo && <DemoPlayer key={demo.id} demo={demo} />}
+      </section>
+
+      <section className="col" aria-labelledby="guide-opposite">
+        <h2 id="guide-opposite" style={{ fontSize: 22 }}>Same cause, opposite trends</h2>
+        <p className="small muted" style={{ margin: 0 }}>One measurement can rise in one place and fall in another, even when one process drives both. Pick a case to see both places tested.</p>
+        <div className="guide-cards">
+          {OPPOSITE_EXAMPLES.map((e) => (
+            <button key={e.id} type="button" className={`card guide-card${pair === e.id ? " on" : ""}`} aria-pressed={pair === e.id} onClick={() => setPair(e.id)}>
+              <span className="guide-q">{e.question}</span>
+              <span className="small muted">{e.up.name} and {e.down.name}, {e.start.slice(0, 4)} to {e.end.slice(0, 4)}</span>
+              <span className="btn soft">See both places</span>
+            </button>
+          ))}
+        </div>
+        {example && <ExamplePair key={example.id} example={example} />}
+        <a className="small" href={oppositeHash(null)}>Find a pair for any measurement in Hunt</a>
       </section>
 
       <section className="card pad col" aria-labelledby="guide-how">

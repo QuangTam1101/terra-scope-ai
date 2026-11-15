@@ -20,6 +20,7 @@ import { APPEEARS_URL, giovanniUrl } from "../config/giovanni";
 import { globalCells, gridMessage, regionalSteps, type GridOp } from "../progress";
 import { ExploreFurther } from "../ExploreFurther";
 import { Timelapse } from "../Timelapse";
+import { oppositeHash } from "../opposite";
 
 // Maps already loaded, kept for the whole visit (leaving and reopening Explore does not download them again).
 const GRID_CACHE = new Map<string, TrendGrid | ValueGrid>();
@@ -447,6 +448,8 @@ function ResultBody({ share }: { share: ExploreState }) {
       <div className="row">
         <button type="button" className="btn soft" onClick={() => go("detective")}>Ask the Detective</button>
         <button type="button" className="btn soft" onClick={() => go("hunt")}>Compare with another place</button>
+        {/* Same variable and period: Hunt scans the world map for one place rising and one falling. */}
+        <button type="button" className="btn soft" onClick={() => { location.hash = oppositeHash({ variableId: v.id, start: t.start, end: t.end }); }}>Where does it go the other way?</button>
         <ShareButton state={share} />
         <button type="button" className="btn soft" title="The monthly numbers behind the chart, with the test result, as a spreadsheet file" onClick={() => {
           const a = document.createElement("a");

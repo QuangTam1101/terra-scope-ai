@@ -1003,3 +1003,8 @@ select.select::-ms-expand { display: none; }
 .param-select { width: 100%; min-height: 48px; font: 800 15px var(--body); }
 [data-theme="dark"] select.select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23eeeaf7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 [data-theme="dark"] select option { background: var(--surface); color: var(--ink); }
+
+/* Same cause, opposite trends (OppositeTrends.tsx): reuses the Hunt panels; only the headings are new. */
+.opp-head { justify-content: space-between; align-items: baseline; gap: 6px 12px; }
+.opp-head h3, .opp-mech h3 { font-size: 20px; overflow-wrap: anywhere; }
+.opp-mech { gap: 8px; }

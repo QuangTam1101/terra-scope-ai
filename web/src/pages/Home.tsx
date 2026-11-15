@@ -3,6 +3,7 @@ import { AppChrome } from "../chrome";
 import { useStore, WORLD } from "../store";
 import { Terra } from "../ui";
 import { GLOSSARY } from "../glossary";
+import { oppositeHash } from "../opposite";
 
 /** Glossary list: plain definition for Explorer, technical definition for Scientist, the other one in a second line. */
 function ScienceWords() {
@@ -296,7 +297,8 @@ export function Home() {
           ["Detective", "detective", "Ask Terra in plain words", "#ede6fb"],
           ["Report", "report", "Save your evidence", "#dff5ea"],
         ].map(([t, page, d, bg]) => (
-          <button key={t} type="button" className="card force-light" onClick={() => go(page as "explore" | "hunt" | "detective" | "report")} style={card({ background: bg })}>
+          <button key={t} type="button" className="card force-light" style={card({ background: bg })}
+            onClick={() => { if (page === "hunt") location.hash = oppositeHash(null); else go(page as "explore" | "detective" | "report"); }}>
             <span style={{ font: "700 20px var(--display)" }}>{t}</span>
             <span style={{ font: "700 14px var(--body)" }}>{d}</span>
           </button>

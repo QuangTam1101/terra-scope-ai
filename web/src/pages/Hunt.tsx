@@ -17,8 +17,10 @@ import {
 } from "../hunt/logic";
 import { PlaceField } from "../hunt/PlaceField";
 import { deleteInvestigation, INVESTIGATION_SCHEMA, listInvestigations, saveInvestigation, type Investigation } from "../hunt/investigations";
+import { OppositeFinder } from "../OppositeTrends";
+import { parseOpposite, type OppositeRequest } from "../opposite";
 
-type View = "landing" | HuntMode | "discover";
+type View = "landing" | HuntMode | "discover" | "opposite";
 type Opt = { id: string; name: string; ref: RegionRef };
 interface Config { variableId: string; variableIdB: string; a: string; b: string; startA: number; endA: number; startB: number; endB: number }
 interface Result {
@@ -61,12 +63,23 @@ export function Hunt() {
     huntDraft.view = "regions";
   }
   const [view, setViewState] = useState<View>(huntDraft.view);
-  const setView = (v: View) => { huntDraft.view = v; setViewState(v); };
+  const setView = (v: View) => {
+    if (v !== "opposite" && parseOpposite(location.hash)) history.replaceState(null, "", "#hunt");   // a reload keeps the view the user is on
+    huntDraft.view = v; setViewState(v);
+  };
+  // "#hunt?opposite=…" (Explore's "other way" button, the Home card, a shared link) opens the opposite-trends view.
+  const [opposite, setOpposite] = useState<OppositeRequest | null>(null);
+  useEffect(() => {
+    const read = () => { const r = parseOpposite(location.hash); if (r) { setOpposite(r === "open" ? null : r); setView("opposite"); } };
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [saved, setSaved] = useState<Investigation[]>(() => listInvestigations());
   const [reopen, setReopen] = useState<Investigation | null>(null);
   // The Hunt tutorial may ask for the Compare Regions view so its selectors exist (a view switch only, never a run).
   useEffect(() => {
-    const on = (e: Event) => { if ((e as CustomEvent).detail === "hunt:regions" && (huntDraft.view === "landing" || huntDraft.view === "discover")) setView("regions"); };
+    const on = (e: Event) => { if ((e as CustomEvent).detail === "hunt:regions" && (huntDraft.view === "landing" || huntDraft.view === "discover" || huntDraft.view === "opposite")) setView("regions"); };
     window.addEventListener("terra-tour-prepare", on);
     return () => window.removeEventListener("terra-tour-prepare", on);
   }, []);
@@ -105,6 +118,10 @@ export function Hunt() {
           <button type="button" className={`btn ${view === "discover" ? "" : "soft"}`} data-tour="hunt-discover" aria-pressed={view === "discover"} onClick={() => setView("discover")}>Discover Interesting Differences</button>
           <span className="small muted">{sci ? "Bounded scan of the precomputed trend map; top region pairs are re-tested with the regional difference test." : "Let the app scan a map for places that go opposite ways."}</span>
         </div>
+        <div className="row" style={{ alignItems: "center" }}>
+          <button type="button" className={`btn ${view === "opposite" ? "" : "soft"}`} aria-pressed={view === "opposite"} onClick={() => setView("opposite")}>Same cause, opposite trends</button>
+          <span className="small muted">One measurement, one place rising and one falling, with a known explanation of how that can happen.</span>
+        </div>
       </section>
 
       {view === "landing" && (
@@ -121,6 +138,7 @@ export function Hunt() {
       {(view === "regions" || view === "datasets" || view === "periods") &&
         <Workspace key={view} mode={view} reopen={reopen?.mode === view ? reopen : null} onReopened={() => setReopen(null)} onSaved={() => setSaved(listInvestigations())} />}
       {view === "discover" && <Discover onInspect={inspect} />}
+      {view === "opposite" && <OppositeFinder key={opposite ? `${opposite.variableId}|${opposite.start}|${opposite.end}` : "open"} request={opposite} />}
 
       {saved.length > 0 && (
         <section className="card pad col" aria-labelledby="inv-h">

@@ -180,8 +180,8 @@ export const api = {
   /** Is a map already computed? Cheap, no computation on the server. */
   gridStatus: (kind: "trend" | "values", variable_id: string, start: string, end: string, month?: number) =>
     call<{ kind: string; cached: boolean; available: boolean; cell_size_deg: number | null }>("/grids/status" + qs({ kind, variable_id, start, end, month }), undefined, 8000),
-  compare: (variable_id: string, region_a: RegionRef, region_b: RegionRef, start: string, end: string) =>
-    post<CompareResponse>("/compare", { variable_id, region_a, region_b, start, end, method: "seasonal_mk", alpha: 0.05 }),
+  compare: (variable_id: string, region_a: RegionRef, region_b: RegionRef, start: string, end: string, signal?: AbortSignal) =>
+    post<CompareResponse>("/compare", { variable_id, region_a, region_b, start, end, method: "seasonal_mk", alpha: 0.05 }, signal),
   explain: (question: string, context: Record<string, unknown>) => post<ExplainResponse>("/explain", { question, context }),
   chat: (request: ChatRequest) => post<ChatResponse>("/chat", request),
   discover: (body: { variable_id: string; variable_id_b?: string | null; start: string; end: string; extent: BBox; tile_deg: number; max_candidates: number }, signal?: AbortSignal) =>
