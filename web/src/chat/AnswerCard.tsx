@@ -7,6 +7,7 @@ import { signed, Terra, VerdictBadge } from "../ui";
 import { convAllText, convFor, type Conv } from "../units";
 import { XIcon } from "../report/EditionDoc";
 import { periodText } from "../period";
+import { readingFor } from "./sources";
 
 const CAVEAT = /causalit|forecast|not why|hypothes|not proof|do not establish|cannot establish/i;
 const pText = (p: number | null | undefined) => (p === null || p === undefined ? "n/a" : p < 0.001 ? "< 0.001" : p.toFixed(3));
@@ -101,6 +102,7 @@ export function AnswerCard({ response, fahrenheit, audience, variables, onAction
   const others = (response.tool_results ?? []).filter((r) => !(r.ok && r.tool === "compare_regions"));
   // Only a fallback notice stays visible (it changes how to read the answer); the general disclaimer is shown once at the top of the page.
   const fallback = response.warnings.filter((w, i, all) => w.code === "LLM_FALLBACK" && all.findIndex((x) => x.message === w.message) === i);
+  const reading = readingFor([...response.evidence.map((e) => e.trend), ...compares.flatMap((c) => [c.a, c.b])]);
   return (
     <div className={`card bubble-ai answer ${llm ? "" : "template"}`}>
       <div className="answer-head">
@@ -118,6 +120,19 @@ export function AnswerCard({ response, fahrenheit, audience, variables, onAction
       {compares.map((c) => <CompareCard key={c.compare_id} c={c} fahrenheit={fahrenheit} audience={audience} variables={variables} />)}
       {others.map((r, i) => <ToolDetails key={`${r.tool}-${i}`} result={r} fahrenheit={fahrenheit} />)}
       {caveats.length > 0 && <ul className="answer-caveats" aria-label="What this cannot tell us">{caveats.map((c) => <li key={c}>{c}</li>)}</ul>}
+      {reading.length > 0 && (
+        <section className="read-more" aria-label="Read more">
+          <b>Read more</b>
+          <span className="small muted">Background reading: researchers have discussed this place and topic. These sources were picked and checked by the Terra-scope team, not by the AI, and do not show what caused the trend above.</span>
+          <ul>{reading.map((r) => (
+            <li key={r.url}>
+              <a href={r.url} target="_blank" rel="noreferrer">{r.title}</a>
+              <span className="small muted">{r.publisher}, {r.year}</span>
+              <span className="small">{r.why}</span>
+            </li>
+          ))}</ul>
+        </section>
+      )}
       {response.actions.length > 0 && (
         <div className="answer-actions">{response.actions.map((a, k) => <button key={k} type="button" className="btn soft" onClick={() => onAction(a)}>{a.label}</button>)}</div>
       )}
