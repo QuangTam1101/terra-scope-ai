@@ -39,6 +39,7 @@
 !scripts/
 !scripts/check-deployment.py
 !scripts/forecast_artifacts.py
+!scripts/fetch-forecast-models.py
 # Apply secret/cache exclusions after all exceptions above.
 **/.env
 **/.env.*
