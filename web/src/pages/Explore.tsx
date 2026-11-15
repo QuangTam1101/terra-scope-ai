@@ -5,7 +5,6 @@ import { clampPeriod, PlaceCompare } from "../PlaceCompare";
 import { ShareButton } from "../ShareButton";
 import { exploreHash, linkPlace, parseExplore, type ExploreState } from "../urlState";
 import { CaseStarter } from "../CaseStarter";
-import type { StarterCase } from "../starterCases";
 import { InfoButton } from "../InfoButton";
 import { Term } from "../Term";
 import { seriesCsv } from "../report/model";
@@ -146,15 +145,6 @@ export function Explore() {
     if (v) void runAnalysis({ parameter: v.parameter, variableId: v.id, place, ...fitPeriod(v, start, end) });
   };
 
-  /** "Not sure where to start?" (F5): open a curated case. */
-  const pickCase = (c: StarterCase) => {
-    const r = c.place.type === "preset" ? regions.find((x) => x.id === (c.place as { id: string }).id) : undefined;
-    const place: Place = c.place.type === "bbox" ? { ref: c.place, label: c.placeName, bbox: c.place.bbox }
-      : { ref: c.place, label: r?.name ?? c.placeName, bbox: r?.bbox ?? WORLD.bbox };
-    setTimelapse(false);
-    openVariable(c.variable_id, place, c.start, c.end);
-  };
-
   // Shareable link (F4): restore variable, place, period and view from "#explore?..." once, then keep the address current.
   const restored = useRef(false);
   const restore = (hash: string) => {
@@ -260,8 +250,8 @@ export function Explore() {
       </section>
 
       <details className="card pad starter">
-        <summary>Not sure where to start? Pick a ready case</summary>
-        <CaseStarter onPick={pickCase} />
+        <summary>Not sure where to start? Answer three questions</summary>
+        <CaseStarter />
       </details>
 
       {/* ---------- map ---------- */}

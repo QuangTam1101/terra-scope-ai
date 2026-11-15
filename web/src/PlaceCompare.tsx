@@ -6,14 +6,10 @@ import { InfoButton } from "./InfoButton";
 import { useStore, type Place } from "./store";
 import { pval, signed, verdictOf } from "./ui";
 import { convFor, convSeries, convTrend } from "./units";
+import { clampPeriod } from "./period";
 
-/** Clamp the chosen period to a variable's coverage. null: no overlap. short: under 10 calendar years (the backend's test needs 10 years with data). */
-export function clampPeriod(start: string, end: string, coverage: Variable["coverage"]) {
-  if (!coverage) return null;
-  const s = start > coverage.start ? start : coverage.start, e = end < coverage.end ? end : coverage.end;
-  if (s > e) return null;
-  return { start: s, end: e, clamped: s !== start || e !== end, short: Number(e.slice(0, 4)) - Number(s.slice(0, 4)) + 1 < 10 };
-}
+export { clampPeriod };   // moved to period.ts (pure) so the start wizard can use it without React
+
 
 export type Tone = "up" | "down" | "flat" | "none";
 /** Chip for one API result. Direction from the Sen slope sign; "could be chance" whenever the backend says not significant. */

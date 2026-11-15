@@ -4,6 +4,7 @@ import { useStore, WORLD } from "../store";
 import { Terra } from "../ui";
 import { GLOSSARY } from "../glossary";
 import { oppositeHash } from "../opposite";
+import { CaseStarter } from "../CaseStarter";
 
 /** Glossary list: plain definition for Explorer, technical definition for Scientist, the other one in a second line. */
 function ScienceWords() {
@@ -181,6 +182,9 @@ export function Home() {
           </div>
         </div>
       </section>
+
+      {/* front door: three questions → variables to open in Explore */}
+      <CaseStarter />
 
       {/* steps */}
       <section className="card pad col" aria-labelledby="steps" style={{ gap: 16 }}>

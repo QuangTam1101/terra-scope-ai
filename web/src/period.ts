@@ -14,3 +14,11 @@ export function periodText(start: string, end: string): string {
   const f = (ym: string) => `${MON[Number(ym.slice(5, 7)) - 1] ?? ""} ${ym.slice(0, 4)}`.trim();
   return `${f(start)} to ${f(end)}`;
 }
+
+/** Clamp the chosen period to a variable's coverage. null: no overlap. short: under 10 calendar years (the backend's test needs 10 years with data). */
+export function clampPeriod(start: string, end: string, coverage: { start: string; end: string } | null) {
+  if (!coverage) return null;
+  const s = start > coverage.start ? start : coverage.start, e = end < coverage.end ? end : coverage.end;
+  if (s > e) return null;
+  return { start: s, end: e, clamped: s !== start || e !== end, short: Number(e.slice(0, 4)) - Number(s.slice(0, 4)) + 1 < 10 };
+}
