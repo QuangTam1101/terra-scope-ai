@@ -5,9 +5,8 @@
 NASA Space Apps Challenge 2026 · Challenge: *Be An Earth System Trend Detective!*
 
 - **Live app:** https://terra-scope-ai-zeta.vercel.app
-- **30-second demo:** *(YouTube link)*
 - **Technical report:** [report/Terra-scope_AI_Technical_Report.pdf](report/Terra-scope_AI_Technical_Report.pdf)
-- **Pitch deck (7 slides):** [presentation/Terra-scope-AI_pitch-deck.pdf](presentation/Terra-scope-AI_pitch-deck.pdf)
+- **Pitch deck:** https://www.canva.com/design/DAHa8U-ibRg/uep93YIb23vUrkqF0aZ1kw/view
 
 Terra-scope AI is not an official NASA product and is not endorsed by NASA.
 
@@ -65,7 +64,7 @@ An independent re-implementation in [`validation/`](validation) (no shared code)
 | `backend/` | FastAPI service, trend engine bridge, Gemini Detective (`backend/ai/` holds the system prompt and knowledge base) |
 | `data-pipeline/` | NASA download (`download/`), cleaning to the 0.5° grid (`preprocess/`), statistics (`pipeline/`), forecast training |
 | `validation/` | Independent oracle and simulated-user test scenarios |
-| `report/`, `presentation/` | Technical report and pitch deck, with the scripts that rebuild their figures |
+| `report/` | Technical report, with the scripts that rebuild its figures |
 
 ## Run it locally
 
@@ -98,20 +97,6 @@ and `scripts/test-all.ps1` runs every test suite.
 Backend unit tests (`pytest backend/tests`), frontend unit tests (`npm test` in `web/`), live API tests on real data
 (`backend/tests_e2e`), headless-browser end-to-end tests (`npm run e2e`) and simulated user mistakes
 (`validation/user_scenarios/run_api.py`). See [TESTING.md](TESTING.md).
-
-## Use of AI
-
-The team chose the problem, the product idea, the variables, the statistical method and every scientific decision.
-AI was used to build faster:
-
-- **Code and documents:** much of the code in this repository (frontend, backend, data scripts, tests), the
-  documentation, the technical report and the video editing scripts were written with the help of Anthropic Claude
-  (Claude Code) and reviewed by the team.
-- **Inside the app:** the AI Detective uses the Google Gemini API to explain results in plain language. It may only
-  cite numbers from the statistics engine, which the backend verifies.
-- **Design:** early UI mockups were AI-assisted and labelled as such.
-
-No AI-generated images or footage are used for data; every map and chart is drawn from NASA data.
 
 ## References
 
