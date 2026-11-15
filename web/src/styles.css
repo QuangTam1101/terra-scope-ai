@@ -264,6 +264,9 @@ body.no-scroll { overflow: hidden; }
 .lp-header a:focus-visible, .landing .btn:focus-visible, .lp-footer a:focus-visible, .lp-src-link:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 .landing .btn.lp-cta:hover, .lp-header .btn:hover { filter: brightness(1.15); }
 .landing .btn.soft.lp-cta:hover { filter: brightness(.97); }
+.landing .btn.lp-paper { background: #fff; color: var(--ink); border: 2px solid var(--ink); text-decoration: none; }
+.landing .btn.lp-paper:hover { filter: none; background: var(--lavender); }
+.landing .btn.lp-paper:focus-visible { outline: 3px solid #6b4fd8; outline-offset: 3px; }
 
 .lp-steps { list-style: none; margin: 0 0 22px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
 .lp-steps li { position: relative; background: #fff; border: 2px solid var(--line); border-radius: 22px; padding: 0 0 16px; display: flex; flex-direction: column; gap: 6px; }

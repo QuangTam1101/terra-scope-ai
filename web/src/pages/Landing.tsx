@@ -5,6 +5,9 @@ import { land } from "../WorldMap";
 import { DEMO_VIDEO, hasPlayableVideo, youtubeEmbedUrl } from "../config/demo";
 import { Icon, Terra, VERDICT_TEXT } from "../ui";
 
+/** The team research paper (PDF in web/public/paper), opened from the hero. */
+const RESEARCH_PAPER = "/paper/terra-scope-research-paper.pdf";
+
 // Public landing page shown before the application. It loads no map or analysis data: everything here is
 // static text about features that exist today, plus a small precomputed trend grid for the hero globe (real NASA data).
 
@@ -555,6 +558,13 @@ export function Landing({ onStart }: { onStart: () => void }) {
           <div className="row" style={{ gap: 12 }}>
             <button type="button" className="btn lp-cta" onClick={onStart}>Get Started</button>
             <button type="button" className="btn soft lp-cta" onClick={watchDemo}>Watch Demo</button>
+            <a className="btn lp-cta lp-paper" href={RESEARCH_PAPER} target="_blank" rel="noreferrer"
+              aria-label="Read the research paper (PDF, opens in a new tab)">
+              <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h6M9 9h2" />
+              </svg>
+              Read Research Paper
+            </a>
           </div>
         </div>
         <HeroGlobe />
