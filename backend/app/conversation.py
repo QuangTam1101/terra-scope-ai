@@ -2,7 +2,7 @@
 import re
 from pydantic import ValidationError
 
-from . import agent, catalog, config, service
+from . import agent, bridge, catalog, config, service
 from .errors import ApiError
 from .schemas import (ChatContext, ChatResponse, ChatWarning, ChatAction, ChatActionParams,
                       PresetRegion, TrendResponse, ToolResult)
@@ -66,7 +66,7 @@ def prepare(req):
         return ctx, None, "Past trend tools cannot infer a cause or forecast. Ask about an observed trend or method."
     if concept:
         return ctx, "concept", None
-    if re.search(r"chlorophyll|wind speed|ocean colou?r", text):
+    if re.search(r"wind speed", text):
         return ctx, None, "That variable is not supported by the current catalog. Ask for available variables."
     if re.search(r"list.*variables|available datasets", text):
         return ctx, "list_available_variables", None
@@ -77,6 +77,8 @@ def prepare(req):
         raise ApiError(404, "NOT_FOUND", "Unknown variable. Inspect the available-variable catalog.")
     explicit = next((v.id for v in catalog.VARIABLES.values() if re.search(r"\b" + re.escape(v.id) + r"\b", text)), None)
     family = ("precipitation" if re.search(r"precipitation|rainfall|lượng mưa", text) else
+              "root_zone_water" if re.search(r"root[- ]zone", text) else
+              "ocean_chlorophyll" if re.search(r"chlorophyll|algae|ocean colou?r", text) else
               "soil_moisture" if re.search(r"soil moisture|ẩm đất", text) else
               "vegetation" if re.search(r"vegetation|greenness|ndvi|thảm thực vật", text) else
               "land_surface_temperature" if re.search(r"(land )?surface temperature|\blst\b|nhiệt độ bề mặt", text) else
@@ -85,11 +87,23 @@ def prepare(req):
               "evapotranspiration" if re.search(r"evapotranspiration|evaporation|bốc thoát hơi", text) else None)
     dataset_hint = ("M2IMNXASM" if re.search(r"merra[- ]?2|m2imnxasm", text) else
                     "GLDAS_NOAH025_M" if "gldas" in text else "GPM_3IMERGM" if "imerg" in text else
-                    "MOD13C2" if re.search(r"modis.*(ndvi|vegetation)|(ndvi|vegetation).*modis", text) else None)
+                    "MOD13C2" if re.search(r"modis.*(ndvi|vegetation)|(ndvi|vegetation).*modis", text) else
+                    "SPL3SMP" if "smap" in text else "GPCC Full Data Monthly" if re.search(r"gpcc|rain gauge", text) else
+                    "CRU TS" if re.search(r"\bcru\b", text) else None)
     if dataset_hint and family is None:
-        family = ctx.parameter or ("air_temperature" if dataset_hint == "M2IMNXASM" else None)
+        family = ({"SPL3SMP": "soil_moisture", "GPCC Full Data Monthly": "precipitation", "CRU TS": "precipitation"}
+                  .get(dataset_hint) or ctx.parameter or ("air_temperature" if dataset_hint == "M2IMNXASM" else None))
     candidates = [v for v in catalog.VARIABLES.values() if (not family or catalog.VARIABLE_PARAMETER[v.id][0] == family)
                   and (not dataset_hint or v.product == dataset_hint)]
+    depth = re.search(r"\b(\d+)\s*(?:-|–|to)\s*(\d+)\s*cm\b", text)
+    if depth:
+        candidates = [v for v in candidates if v.id.endswith(f"_{depth[1]}_{depth[2]}cm")] or candidates
+    # Several datasets left, no depth named, current selection not among them: the default keeps the old answer
+    # ("soil moisture" / "GLDAS soil moisture" → 0–10 cm, "precipitation" → IMERG).
+    default = catalog.DEFAULT_VARIABLE.get(family)
+    if len(candidates) > 1 and not depth and any(v.id == default for v in candidates) \
+            and not any(v.id == ctx.variable_id for v in candidates):
+        candidates = [catalog.VARIABLES[default]]
     pending_clarification = None
     if explicit:
         if dataset_hint and catalog.VARIABLES[explicit].product != dataset_hint:
@@ -150,6 +164,11 @@ def prepare(req):
             raise ApiError(422, "UNSUPPORTED_DATASET", "Dataset and variable do not match.")
         ctx.dataset_id = v.product
         ctx.parameter = catalog.VARIABLE_PARAMETER[v.id][0]
+        cov = bridge.coverage(v.pipeline_id)
+        if cov and ctx.start and ctx.end and not (months or years):   # period carried over from the page: fit this dataset
+            ctx.start, ctx.end = max(ctx.start, cov[0]), min(ctx.end, cov[1])
+            if ctx.start > ctx.end:
+                return ctx, None, f"This dataset covers {cov[0]} to {cov[1]}. Choose a period inside it."
     for region in [ctx.region, ctx.region_b]:
         if region:
             service.resolve_region(region)

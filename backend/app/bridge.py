@@ -28,12 +28,19 @@ def set_cube_dir(path) -> None:
 
 
 # pipeline id (cube 1° cũ) → tên sản phẩm lưới 0,5° bản mới (preprocess/clean.py) và đơn vị của sản phẩm đó.
+# ponytail: coverage đọc từ trục time; file GRID_V2_DIR chưa cắt thì GPCC/SMAP/SeaWiFS báo 2001–2025 (trục rỗng),
+# cần bản cắt như data/web_cubes (cube_<id>.nc) nếu bật GRID_V2_DIR có các sản phẩm này.
 V2_PRODUCT = {"precip": "precip_imerg", "soil_moisture": "sm_0_10cm_gldas", "tair_land": "tair_gldas",
               "evap_gldas": "evap_gldas", "t2m": "t2m_merra2", "ndvi": "ndvi_modis", "lst_day": "lst_day_modis",
-              "lst_night": "lst_night_modis", "pet": "pet_gldas"}
+              "lst_night": "lst_night_modis", "pet": "pet_gldas",
+              **{p: p for p in ("precip_gpcc", "precip_cru", "sm_surface_smap", "sm_10_40cm_gldas", "sm_40_100cm_gldas",
+                                "sm_100_200cm_gldas", "rootmoist_gldas", "chlor_a_seawifs")}}
 V2_UNITS = {"precip_imerg": "mm/month", "sm_0_10cm_gldas": "m3/m3", "tair_gldas": "degC",
             "evap_gldas": "mm/month", "t2m_merra2": "degC", "ndvi_modis": "1", "lst_day_modis": "degC",
-            "lst_night_modis": "degC", "pet_gldas": "mm/month"}
+            "lst_night_modis": "degC", "pet_gldas": "mm/month",
+            "precip_gpcc": "mm/month", "precip_cru": "mm/month", "sm_surface_smap": "m3/m3", "sm_10_40cm_gldas": "m3/m3",
+            "sm_40_100cm_gldas": "m3/m3", "sm_100_200cm_gldas": "m3/m3", "rootmoist_gldas": "kg/m2",
+            "chlor_a_seawifs": "mg/m3"}
 
 
 def _v2_path(pipeline_id: str) -> Path | None:

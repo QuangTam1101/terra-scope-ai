@@ -1,6 +1,14 @@
 /** Science glossary shared by both audiences. Plain text for Explorer, technical text for Scientist.
  * Wording follows the methods actually used by the backend (see backend/ai/terra_wiki.md). Pure data, unit tested. */
+import { DEFINITIONS } from "./definitions";
+
 export interface GlossaryEntry { term: string; plain: string; technical: string; example: string; related?: string[] }
+
+/** Terms written once in definitions.ts (the InfoButton text), so the "?" and the "i" never drift apart. */
+const def = (id: string, example: string, related?: string[]): GlossaryEntry => {
+  const d = DEFINITIONS[id];
+  return { term: d.title, plain: d.simple, technical: d.science, example, related };
+};
 
 export const GLOSSARY: Record<string, GlossaryEntry> = {
   trend: { term: "Trend",
@@ -88,6 +96,14 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     technical: "Sen slopes and trend lines summarise the analysis period only; they are not extrapolated. The separate Forecast page uses different, backtested models and labels its skill.",
     example: "A rising rainfall trend since 2001 does not say next year will be wetter.",
     related: ["trend"] },
+  rate_per_decade: def("rate-per-decade", "+0.3 °C per decade means about 0.3 °C warmer every ten years over the years studied.", ["sen_slope"]),
+  not_significant: def("not-significant", "A small rise in rainfall over only 12 years may not be significant yet.", ["significance", "p_value"]),
+  seasonal_cycle: def("seasonal-cycle", "In southern Vietnam, months from May to November are wet and the rest are dry.", ["anomaly", "seasonal_mk"]),
+  grid_cell: def("grid-cell", "A city and its suburbs may share a single square.", ["spatial_resolution"]),
+  root_zone: def("root-zone", "Maize takes most of its water from about the top metre of soil."),
+  chlorophyll: def("chlorophyll", "Sea water near a river mouth turns green when a flood brings nutrients."),
+  rain_gauge: def("rain-gauge", "A tube in a schoolyard that holds 12 mm of water after a storm.", ["model_vs_satellite"]),
+  model_vs_satellite: def("model-vs-satellite", "The land model and the soil satellite can disagree on whether a region is drying.", ["reanalysis"]),
 };
 
 export type GlossaryId = keyof typeof GLOSSARY;

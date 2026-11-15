@@ -8,7 +8,7 @@ import type { ReportComparison } from "./report/model";
 import { CASE_SCHEMA, type CaseItem, type SavedCase } from "./cases";
 import { initialAudience, saveAudience, type Audience } from "./audience";
 
-export type Page = "landing" | "start" | "home" | "explore" | "forecast" | "hunt" | "detective" | "report";
+export type Page = "landing" | "start" | "home" | "guide" | "explore" | "forecast" | "hunt" | "detective" | "report";
 
 export interface Place { ref: RegionRef; label: string; bbox: BBox }
 import { periodEnd, periodStart } from "./period";

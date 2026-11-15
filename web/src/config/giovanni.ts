@@ -9,6 +9,11 @@ export const GIOVANNI_DATA: Record<string, string> = {
   gldas_evapotranspiration: "GLDAS_NOAH025_M_2_1_Evap_tavg",
   gldas_potential_evapotranspiration: "GLDAS_NOAH025_M_2_1_PotEvap_tavg",
   merra2_air_temperature_2m: "M2IMNXASM_5_12_4_T2M",
+  // Checked in Giovanni's /configured-variables/ list on 2026-11-15. SMAP, SeaWiFS, GPCC and CRU are not there.
+  gldas_soil_moisture_10_40cm: "GLDAS_NOAH025_M_2_1_SoilMoi10_40cm_inst",
+  gldas_soil_moisture_40_100cm: "GLDAS_NOAH025_M_2_1_SoilMoi40_100cm_inst",
+  gldas_soil_moisture_100_200cm: "GLDAS_NOAH025_M_2_1_SoilMoi100_200cm_inst",
+  gldas_root_zone_moisture: "GLDAS_NOAH025_M_2_1_RootMoist_inst",
 };
 
 /** Last month Giovanni can serve, when it ends before our files do (Giovanni "Valid Range", checked 2026-11-14).

@@ -13,11 +13,11 @@ export function Term({ id, children }: { id: GlossaryId; children?: ReactNode })
   const popId = useId();
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); btn.current?.focus(); } };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); setOpen(false); btn.current?.focus(); } };   // handled: the map keeps its selection
     const onDown = (e: PointerEvent) => { if (wrap.current && !wrap.current.contains(e.target as Node)) setOpen(false); };
-    window.addEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);   // capture: runs before the map's Escape (clear selection)
     window.addEventListener("pointerdown", onDown);
-    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("pointerdown", onDown); };
+    return () => { window.removeEventListener("keydown", onKey, true); window.removeEventListener("pointerdown", onDown); };
   }, [open]);
   if (!g) return <>{children}</>;
   const sci = audience === "scientist";

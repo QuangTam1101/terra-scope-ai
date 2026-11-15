@@ -169,6 +169,7 @@ export function Home() {
       <section className="card pad row" style={{ gap: 22, alignItems: "center" }}>
         <Terra size={130} label="Terra, a round Earth detective with a hat and a magnifying glass" />
         <div className="col" style={{ flex: 1, minWidth: 260 }}>
+          <a className="prelim" href="#guide" style={{ alignSelf: "flex-start" }}>Numbers checked · not peer reviewed</a>
           <h1 style={{ fontSize: 38, lineHeight: 1.1 }}>Is it really changing?</h1>
           <p style={{ font: "700 17px/1.45 var(--body)", margin: 0 }}>Pick a clue and a place. Terra checks 25 years of NASA data (2001 to 2025) and tells you if the change is real.</p>
           <div className="row">
@@ -304,12 +305,18 @@ export function Home() {
 
       {/* examples */}
       <section className="col" aria-labelledby="examples" style={{ gap: 10 }}>
-        <h2 id="examples" style={{ fontSize: 22 }}>Try one</h2>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
+          <h2 id="examples" style={{ fontSize: 22 }}>Try one</h2>
+          <a href="#guide" style={{ font: "800 14px var(--body)" }}>Watch how it works →</a>
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
           {[
             ["Is the world warming?", "merra2_air_temperature_2m", "global"],
-            ["Mekong Delta: hotter?", "merra2_air_temperature_2m", "mekong_delta"],
-            ["Mekong Delta: wetter?", "imerg_precip", "mekong_delta"],
+            ["Europe: warming fast?", "merra2_air_temperature_2m", "europe"],
+            ["Central Chile: less rain?", "imerg_precip", "central_chile"],
+            ["Southern Amazon: hotter?", "merra2_air_temperature_2m", "southern_amazon"],
+            ["Southern Amazon: drier soil?", "gldas_soil_moisture_0_10cm", "southern_amazon"],
+            ["Mediterranean: drier?", "imerg_precip", "mediterranean"],
           ].map(([q, v, r]) => (
             <button key={q} type="button" className="card" onClick={() => runCase(v, r)} style={card()}>
               <span style={{ font: "700 18px/1.25 var(--display)" }}>{q}</span>
@@ -327,7 +334,7 @@ export function Home() {
           <span key={t} style={{ background: "var(--surface)", borderRadius: 999, padding: "8px 14px", font: "800 13px var(--body)", boxShadow: "var(--shadow)" }}>{t}</span>
         ))}
       </section>
-      <span className="footer">Data: NASA GPM IMERG, GLDAS Noah, MERRA-2 via NASA GES DISC.</span>
+      <span className="footer">Data: NASA GPM IMERG, GLDAS Noah, MERRA-2 (GES DISC), SMAP (NSIDC), SeaWiFS (OB.DAAC). Ground references, not NASA: GPCC (Deutscher Wetterdienst), CRU TS (University of East Anglia).</span>
     </div>
   );
 }

@@ -1,30 +1,32 @@
 // Phase 8.5D1 (Seasonal Trend Explorer) and D3 (Time Window Explorer), shown under the Explore chart.
 // D1 is descriptive: yearly means of the chosen months and a Theil-Sen slope, with no significance test, because no
 // season-specific test is approved yet. D3 reuses the production /trends test for each window and caps the number
-// of windows, and says clearly that many windows mean many tests.
+// of windows, and says clearly that many windows mean many tests. Stripes, Month by year and Each year live in Patterns.tsx.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type TrendResponse } from "./api";
 import { useStore } from "./store";
+import { EachYear, MonthGrid, Stripes } from "./Patterns";
 import { MAX_WINDOWS, SEASONS, seasonalYears, senPerDecade } from "./explore";
 import { pval, signed, VerdictBadge } from "./ui";
 import { trendF } from "./units";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const TABS = [["stripes", "Stripes"], ["grid", "Month by year"], ["years", "Each year"], ["season", "Seasons"], ["window", "Time window"]] as const;
+type Tab = (typeof TABS)[number][0];
 
 export function ExploreFurther() {
   const { run } = useStore();
-  const [tab, setTab] = useState<"season" | "window">("season");
+  const [tab, setTab] = useState<Tab>("stripes");
   if (!run) return null;
   return (
     <section className="card pad col chartcard" aria-labelledby="further">
       <div className="row" style={{ justifyContent: "space-between" }}>
         <h2 id="further" style={{ fontSize: 20 }}>Explore further · {run.place.label}</h2>
         <div className="seg" role="tablist" aria-label="Exploration view">
-          <button type="button" role="tab" aria-selected={tab === "season"} className={tab === "season" ? "on" : ""} onClick={() => setTab("season")}>Seasons</button>
-          <button type="button" role="tab" aria-selected={tab === "window"} className={tab === "window" ? "on" : ""} onClick={() => setTab("window")}>Time window</button>
+          {TABS.map(([id, name]) => <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? "on" : ""} onClick={() => setTab(id)}>{name}</button>)}
         </div>
       </div>
-      {tab === "season" ? <Seasons /> : <Windows />}
+      {tab === "stripes" ? <Stripes /> : tab === "grid" ? <MonthGrid /> : tab === "years" ? <EachYear /> : tab === "season" ? <Seasons /> : <Windows />}
     </section>
   );
 }

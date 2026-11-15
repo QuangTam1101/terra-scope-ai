@@ -36,7 +36,7 @@ class Variable:
     @property
     def display_units(self) -> str:
         u = self.units
-        return {"degC": "°C", "m3/m3": "m³/m³"}.get(u, self.display_units_base if u == "1" else u)
+        return {"degC": "°C", "m3/m3": "m³/m³", "kg/m2": "kg/m²", "mg/m3": "mg/m³"}.get(u, self.display_units_base if u == "1" else u)
 
     @property
     def source(self) -> dict:
@@ -107,6 +107,60 @@ _VARS = [
              "for trends rather than absolute amounts.",
              "mm/month", 0.25, "GLDAS_NOAH025_M", "2.1", "NASA GES DISC",
              "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary", _MODEL_NOTE),
+    # Lưới 0,5° bản mới (preprocess/clean.py), nối thêm 15/11/2026 (F11).
+    Variable("gpcc_precip", "precip_gpcc", "Precipitation (rain gauges)", "water",
+             "How much rain falls each month, measured by rain gauges on the ground.",
+             "GPCC Full Data Monthly v2022 (0.25°), gridded from rain-gauge records, land only, on a common global grid.",
+             "mm/month", 0.25, "GPCC Full Data Monthly", "v2022", "Deutscher Wetterdienst (DWD)",
+             "https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/",
+             "Not NASA data: an independent rain-gauge reference from the German Weather Service, used to cross-check "
+             "NASA satellite rain. Ends in 2020."),
+    Variable("smap_soil_moisture_surface", "sm_surface_smap", "Soil moisture (SMAP satellite)", "water",
+             "How wet the top few centimetres of soil are, measured from space.",
+             "SMAP L3 radiometer 36 km daily surface (~0–5 cm) soil moisture (SPL3SMP v009), AM and PM passes; "
+             "retrievals with quality bit 0 set are removed, then averaged by month on a common global grid.",
+             "m³/m³", 0.33, "SPL3SMP", "009", "NASA NSIDC DAAC", "https://nsidc.org/data/spl3smp/versions/9",
+             "Satellite measurement of the top ~5 cm since April 2015, a short record. Low-quality retrievals are "
+             "removed, so dense rain forests (Amazon, Congo) have no data."),
+    Variable("gldas_root_zone_moisture", "rootmoist_gldas", "Root-zone soil water", "water",
+             "How much water the soil holds where plant roots drink.",
+             "GLDAS Noah RootMoist_inst, total water in the root zone (depth depends on the vegetation class), "
+             "on a common global grid.",
+             "kg/m²", 0.25, "GLDAS_NOAH025_M", "2.1", "NASA GES DISC",
+             "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
+             _MODEL_NOTE + " Root depth changes with the type of plants, so compare places by their trend, "
+             "not their amounts."),
+    Variable("seawifs_chlorophyll", "chlor_a_seawifs", "Ocean chlorophyll", "ocean",
+             "How much green algae floats near the sea surface; more algae makes the water greener.",
+             "SeaWiFS Level-3 mapped monthly chlorophyll-a (9 km, reprocessing 2022.0), ocean only, "
+             "on a common global grid.",
+             "mg/m³", 0.083, "SeaWiFS_L3m_CHL", "2022.0", "NASA OB.DAAC",
+             "https://doi.org/10.5067/ORBVIEW-2/SeaWiFS/L3M/CHL/2022.0",
+             "Ocean only. The satellite stopped in December 2010, so this covers 2001–2010. Values are very uneven: "
+             "a regional average is dominated by coastal blooms."),
+    Variable("cru_precip", "precip_cru", "Precipitation (station grid)", "water",
+             "Monthly rain from weather stations, spread onto a map grid.",
+             "CRU TS 4.10 monthly precipitation (0.5°), interpolated from weather stations, land only; "
+             "cells with no station within range (stn = 0) are removed.",
+             "mm/month", 0.5, "CRU TS", "4.10", "University of East Anglia (CRU)",
+             "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/",
+             "Not NASA data: built from weather stations by the University of East Anglia. Cells with no nearby "
+             "station are left empty."),
+    Variable("gldas_soil_moisture_10_40cm", "sm_10_40cm_gldas", "Soil moisture (10–40 cm)", "water",
+             "How wet the soil is just below the surface, 10 to 40 cm down.",
+             "GLDAS Noah land surface model, volumetric soil moisture 10–40 cm, on a common global grid.",
+             "m³/m³", 0.25, "GLDAS_NOAH025_M", "2.1", "NASA GES DISC",
+             "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary", _MODEL_NOTE),
+    Variable("gldas_soil_moisture_40_100cm", "sm_40_100cm_gldas", "Soil moisture (40–100 cm)", "water",
+             "How wet the soil is deeper down, from 40 cm to 1 metre.",
+             "GLDAS Noah land surface model, volumetric soil moisture 40–100 cm, on a common global grid.",
+             "m³/m³", 0.25, "GLDAS_NOAH025_M", "2.1", "NASA GES DISC",
+             "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary", _MODEL_NOTE),
+    Variable("gldas_soil_moisture_100_200cm", "sm_100_200cm_gldas", "Soil moisture (100–200 cm)", "water",
+             "How wet the deep soil is, 1 to 2 metres down. It changes slowly and remembers droughts.",
+             "GLDAS Noah land surface model, volumetric soil moisture 100–200 cm, on a common global grid.",
+             "m³/m³", 0.25, "GLDAS_NOAH025_M", "2.1", "NASA GES DISC",
+             "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary", _MODEL_NOTE),
 ]
 VARIABLES: dict[str, Variable] = {v.id: v for v in _VARS}
 
@@ -120,11 +174,13 @@ PARAMETERS = {
     "potential_evapotranspiration": "Potential evapotranspiration",
     "vegetation": "Vegetation greenness",
     "land_surface_temperature": "Land surface temperature",
+    "root_zone_water": "Root-zone soil water",
+    "ocean_chlorophyll": "Ocean chlorophyll (algae)",
 }
 # variable id → (parameter, tên dataset ngắn để hiển thị)
 VARIABLE_PARAMETER = {
     "imerg_precip": ("precipitation", "GPM IMERG (satellite)"),
-    "gldas_soil_moisture_0_10cm": ("soil_moisture", "GLDAS Noah (land model)"),
+    "gldas_soil_moisture_0_10cm": ("soil_moisture", "GLDAS Noah 0–10 cm (land model)"),
     "gldas_air_temperature": ("air_temperature", "GLDAS Noah (land only)"),
     "merra2_air_temperature_2m": ("air_temperature", "MERRA-2 (land and sea)"),
     "gldas_evapotranspiration": ("evapotranspiration", "GLDAS Noah (land model)"),
@@ -133,7 +189,17 @@ VARIABLE_PARAMETER = {
     "modis_ndvi": ("vegetation", "MODIS Terra (satellite)"),
     "modis_lst_day": ("land_surface_temperature", "MODIS Terra, daytime"),
     "modis_lst_night": ("land_surface_temperature", "MODIS Terra, night-time"),
+    "gpcc_precip": ("precipitation", "GPCC (rain gauges, not NASA)"),
+    "cru_precip": ("precipitation", "CRU TS (weather stations, not NASA)"),
+    "smap_soil_moisture_surface": ("soil_moisture", "SMAP (satellite, top ~5 cm)"),
+    "gldas_soil_moisture_10_40cm": ("soil_moisture", "GLDAS Noah 10–40 cm (land model)"),
+    "gldas_soil_moisture_40_100cm": ("soil_moisture", "GLDAS Noah 40–100 cm (land model)"),
+    "gldas_soil_moisture_100_200cm": ("soil_moisture", "GLDAS Noah 100–200 cm (land model)"),
+    "gldas_root_zone_moisture": ("root_zone_water", "GLDAS Noah (land model)"),
+    "seawifs_chlorophyll": ("ocean_chlorophyll", "SeaWiFS (satellite, ocean only)"),
 }
+# Chat: câu hỏi chung chung ("precipitation", "soil moisture") không nêu dataset/độ sâu thì chọn biến mặc định này.
+DEFAULT_VARIABLE = {"precipitation": "imerg_precip", "soil_moisture": "gldas_soil_moisture_0_10cm"}
 assert set(VARIABLE_PARAMETER) == set(VARIABLES)
 assert {v.pipeline_id for v in _VARS} <= set(papi.VARIABLES), "catalog lệch với pipeline.api.VARIABLES"
 
@@ -169,6 +235,11 @@ def _load_regions() -> dict[str, Region]:
                                   (min(lons), min(lats), max(lons), max(lats)))
     regions.setdefault("mekong_delta", Region("mekong_delta", _REGION_NAMES["mekong_delta"], (104.4, 8.5, 106.9, 11.1)))
     regions["northern_vietnam"] = Region("northern_vietnam", "Northern Vietnam", (104.5, 20.1, 107.25, 22.25))
+    # Vùng của các ví dụ "Try one" ở Home (đã kiểm Seasonal MK ngày 15/11/2026, xem reports/trend_candidates_tested.csv).
+    regions["central_chile"] = Region("central_chile", "Central Chile", (-73.0, -38.0, -70.0, -30.0))
+    regions["southern_amazon"] = Region("southern_amazon", "Southern Amazon", (-65.0, -15.0, -45.0, -5.0))
+    regions["europe"] = Region("europe", "Europe", (-10.0, 36.0, 40.0, 70.0))
+    regions["mediterranean"] = Region("mediterranean", "Mediterranean", (-10.0, 30.0, 40.0, 45.0))
     return regions
 
 

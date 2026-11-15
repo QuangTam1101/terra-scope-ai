@@ -38,7 +38,7 @@ export function VerdictBadge({ t }: { t: Pick<TrendResponse, "quality" | "signif
   return <span className={`badge ${v}`}>{v === "sig" ? "✓ " : ""}{VERDICT_TEXT[v]}</span>;
 }
 
-export function Stat({ value, label, title }: { value: ReactNode; label: string; title?: string }) {
+export function Stat({ value, label, title }: { value: ReactNode; label: ReactNode; title?: string }) {
   return <div className="stat" title={title}><b>{value}</b><small>{label}</small></div>;
 }
 

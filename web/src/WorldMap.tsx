@@ -110,7 +110,7 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
   const cellDeg = (layer === "trend" ? trend?.cell_size_deg : values?.cell_size_deg) ?? gridCell();
   useEffect(() => {
     if (!selected) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !(e.target instanceof HTMLInputElement)) onClear(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !e.defaultPrevented && !(e.target instanceof HTMLInputElement)) onClear(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [selected, onClear]);
