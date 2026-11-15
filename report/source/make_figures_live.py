@@ -1,4 +1,5 @@
 """Figures 1-3 redrawn from the LIVE app API (1° grid, 2001-2024). Based on report/source/make_figures.py.
+Inputs: report/source/live_api_2026-11-15 (saved by fetch_live.py). Usage: python make_figures_live.py <inputs dir> <output dir>
 Figures for the formal technical report. Data come from the running Terra-scope backend
 (/series, /trends, /compare, /trends/grid), saved as JSON by fetch scripts. Nothing here changes a statistic:
 slopes and p-values are copied from the API; only the drawing is done here."""
@@ -43,7 +44,8 @@ axes[1].lines[-1].set_linestyle("--")
 axes[1].set_title("(b) Precipitation, GPM IMERG, 2001 to 2024", loc="left")
 fig.tight_layout(); fig.savefig(out + "/fig1_mekong_delta.png"); plt.close(fig)
 
-g = json.load(open(src + "/grid.json"))
+import gzip, os
+g = json.load(gzip.open(src + "/grid.json.gz", "rt") if os.path.exists(src + "/grid.json.gz") else open(src + "/grid.json"))
 cells = pd.DataFrame(g["cells"]); cells = cells[cells["valid"]]
 lons = np.arange(-179.5, 180, 1.0); lats = np.arange(-89.5, 90, 1.0)
 Z = np.full((lats.size, lons.size), np.nan); S = np.zeros_like(Z, dtype=bool)

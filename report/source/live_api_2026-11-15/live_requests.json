@@ -1,0 +1,1510 @@
+{
+ "api": "https://terra-scope-nasa.vercel.app/api/v1",
+ "started_utc": "2026-11-15T17:58:27Z",
+ "requests": [
+  {
+   "utc": "2026-11-15T17:58:27Z",
+   "attempts": 1,
+   "method": "GET",
+   "path": "/health",
+   "body": null,
+   "params": null,
+   "status": 200,
+   "response": {
+    "status": "ok",
+    "version": "0.2.0",
+    "available_variables": [
+     "imerg_precip",
+     "gldas_soil_moisture_0_10cm",
+     "gldas_air_temperature",
+     "gldas_evapotranspiration",
+     "merra2_air_temperature_2m",
+     "modis_ndvi",
+     "modis_lst_day",
+     "modis_lst_night",
+     "gldas_potential_evapotranspiration"
+    ]
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:27Z",
+   "attempts": 1,
+   "method": "GET",
+   "path": "/variables",
+   "body": null,
+   "params": null,
+   "status": 200,
+   "response": [
+    {
+     "id": "imerg_precip",
+     "spatial_resolution_deg": 1.0,
+     "coverage": {
+      "start": "2001-01",
+      "end": "2024-12"
+     },
+     "source": {
+      "product": "GPM_3IMERGM",
+      "version": "07",
+      "provider": "NASA GES DISC",
+      "url": "https://disc.gsfc.nasa.gov/datasets/GPM_3IMERGM_07/summary",
+      "citation": "GPM IMERG Final Monthly V07 (GPM_3IMERGM.07), NASA GES DISC, via Harmony"
+     },
+     "available": true
+    },
+    {
+     "id": "gldas_soil_moisture_0_10cm",
+     "spatial_resolution_deg": 1.0,
+     "coverage": {
+      "start": "2001-01",
+      "end": "2024-12"
+     },
+     "source": {
+      "product": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "provider": "NASA GES DISC",
+      "url": "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
+      "citation": "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1), NASA GES DISC, via Harmony"
+     },
+     "available": true
+    },
+    {
+     "id": "gldas_air_temperature",
+     "spatial_resolution_deg": 1.0,
+     "coverage": {
+      "start": "2001-01",
+      "end": "2024-12"
+     },
+     "source": {
+      "product": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "provider": "NASA GES DISC",
+      "url": "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
+      "citation": "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1), NASA GES DISC, via Harmony"
+     },
+     "available": true
+    },
+    {
+     "id": "gldas_evapotranspiration",
+     "spatial_resolution_deg": 1.0,
+     "coverage": {
+      "start": "2001-01",
+      "end": "2024-12"
+     },
+     "source": {
+      "product": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "provider": "NASA GES DISC",
+      "url": "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
+      "citation": "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1), NASA GES DISC, via Harmony"
+     },
+     "available": true
+    },
+    {
+     "id": "merra2_air_temperature_2m",
+     "spatial_resolution_deg": 1.0,
+     "coverage": {
+      "start": "2001-01",
+      "end": "2024-12"
+     },
+     "source": {
+      "product": "M2IMNXASM",
+      "version": "5.12.4",
+      "provider": "NASA GMAO / GES DISC",
+      "url": "https://disc.gsfc.nasa.gov/datasets/M2IMNXASM_5.12.4/summary",
+      "citation": "MERRA-2 M2IMNXASM v5.12.4, NASA GMAO / GES DISC, via Harmony"
+     },
+     "available": true
+    },
+    {
+     "id": "modis_ndvi",
+     "spatial_resolution_deg": 1.0,
+     "coverage": {
+      "start": "2001-01",
+      "end": "2025-12"
+     },
+     "source": {
+      "product": "MOD13C2",
+      "version": "061",
+      "provider": "NASA LP DAAC",
+      "url": "https://lpdaac.usgs.gov/products/mod13c2v061/",
+      "citation": "MODIS Terra MOD13C2 v061 monthly 0.05° CMG NDVI, NASA LP DAAC"
+     },
+     "available": true
+    },
+    {
+     "id": "modis_lst_day",
+     "spatial_resolution_deg": 1.0,
+     "coverage": {
+      "start": "2001-01",
+      "end": "2025-12"
+     },
+     "source": {
+      "product": "MOD11C3",
+      "version": "061",
+      "provider": "NASA LP DAAC",
+      "url": "https://lpdaac.usgs.gov/products/mod11c3v061/",
+      "citation": "MODIS Terra MOD11C3 v061 monthly 0.05° CMG daytime LST, NASA LP DAAC"
+     },
+     "available": true
+    },
+    {
+     "id": "modis_lst_night",
+     "spatial_resolution_deg": 1.0,
+     "coverage": {
+      "start": "2001-01",
+      "end": "2025-12"
+     },
+     "source": {
+      "product": "MOD11C3",
+      "version": "061",
+      "provider": "NASA LP DAAC",
+      "url": "https://lpdaac.usgs.gov/products/mod11c3v061/",
+      "citation": "MODIS Terra MOD11C3 v061 monthly 0.05° CMG night-time LST, NASA LP DAAC"
+     },
+     "available": true
+    },
+    {
+     "id": "modis_et",
+     "spatial_resolution_deg": 1.0,
+     "coverage": null,
+     "source": {
+      "product": "MOD16A2GF",
+      "version": "061",
+      "provider": "NASA LP DAAC (AppEEARS)",
+      "url": "https://lpdaac.usgs.gov/products/mod16a2gfv061/",
+      "citation": "MODIS Terra MOD16A2GF v061, NASA LP DAAC"
+     },
+     "available": false
+    },
+    {
+     "id": "gldas_potential_evapotranspiration",
+     "spatial_resolution_deg": 1.0,
+     "coverage": {
+      "start": "2001-01",
+      "end": "2025-12"
+     },
+     "source": {
+      "product": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "provider": "NASA GES DISC",
+      "url": "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
+      "citation": "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) potential evaporation, NASA GES DISC, via Harmony"
+     },
+     "available": true
+    },
+    {
+     "id": "gpcc_precip",
+     "spatial_resolution_deg": 1.0,
+     "coverage": null,
+     "source": {
+      "product": "GPCC Full Data Monthly",
+      "version": "v2022",
+      "provider": "Deutscher Wetterdienst (DWD)",
+      "url": "https://opendata.dwd.de/climate_environment/GPCC/full_data_monthly_v2022/",
+      "citation": "GPCC Full Data Monthly v2022 0.25°, Deutscher Wetterdienst (không phải NASA; đối chiếu bằng trạm đo)"
+     },
+     "available": false
+    },
+    {
+     "id": "smap_soil_moisture_surface",
+     "spatial_resolution_deg": 1.0,
+     "coverage": null,
+     "source": {
+      "product": "SPL3SMP",
+      "version": "009",
+      "provider": "NASA NSIDC DAAC",
+      "url": "https://nsidc.org/data/spl3smp/versions/9",
+      "citation": "SMAP L3 Radiometer Global Daily 36 km EASE-Grid Soil Moisture v009 (SPL3SMP.009), NASA NSIDC DAAC qua Harmony"
+     },
+     "available": false
+    },
+    {
+     "id": "gldas_root_zone_moisture",
+     "spatial_resolution_deg": 1.0,
+     "coverage": null,
+     "source": {
+      "product": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "provider": "NASA GES DISC",
+      "url": "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
+      "citation": "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) RootMoist_inst qua Giovanni/Harmony"
+     },
+     "available": false
+    },
+    {
+     "id": "seawifs_chlorophyll",
+     "spatial_resolution_deg": 1.0,
+     "coverage": null,
+     "source": {
+      "product": "SeaWiFS_L3m_CHL",
+      "version": "2022.0",
+      "provider": "NASA OB.DAAC",
+      "url": "https://doi.org/10.5067/ORBVIEW-2/SeaWiFS/L3M/CHL/2022.0",
+      "citation": "SeaWiFS Level-3 mapped monthly CHL 9 km, bản 2022.0 (SeaWiFS_L3m_CHL), NASA OB.DAAC"
+     },
+     "available": false
+    },
+    {
+     "id": "cru_precip",
+     "spatial_resolution_deg": 1.0,
+     "coverage": null,
+     "source": {
+      "product": "CRU TS",
+      "version": "4.10",
+      "provider": "University of East Anglia (CRU)",
+      "url": "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/",
+      "citation": "CRU TS 4.10, University of East Anglia (không phải NASA; đối chiếu bằng trạm đo)"
+     },
+     "available": false
+    },
+    {
+     "id": "gldas_soil_moisture_10_40cm",
+     "spatial_resolution_deg": 1.0,
+     "coverage": null,
+     "source": {
+      "product": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "provider": "NASA GES DISC",
+      "url": "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
+      "citation": "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) SoilMoi10_40cm_inst qua Giovanni/Harmony"
+     },
+     "available": false
+    },
+    {
+     "id": "gldas_soil_moisture_40_100cm",
+     "spatial_resolution_deg": 1.0,
+     "coverage": null,
+     "source": {
+      "product": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "provider": "NASA GES DISC",
+      "url": "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
+      "citation": "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) SoilMoi40_100cm_inst qua Giovanni/Harmony"
+     },
+     "available": false
+    },
+    {
+     "id": "gldas_soil_moisture_100_200cm",
+     "spatial_resolution_deg": 1.0,
+     "coverage": null,
+     "source": {
+      "product": "GLDAS_NOAH025_M",
+      "version": "2.1",
+      "provider": "NASA GES DISC",
+      "url": "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
+      "citation": "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) SoilMoi100_200cm_inst qua Giovanni/Harmony"
+     },
+     "available": false
+    }
+   ]
+  },
+  {
+   "utc": "2026-11-15T17:58:27Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/trends",
+   "body": {
+    "variable_id": "imerg_precip",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      104.4,
+      8.5,
+      106.9,
+      11.1
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12"
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "trend_id": "tr_390763c607",
+    "variable_id": "imerg_precip",
+    "region": {
+     "type": "bbox",
+     "id": null,
+     "name": null,
+     "bbox": [
+      104.4,
+      8.5,
+      106.9,
+      11.1
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12",
+    "slope_per_decade": 3.163604736328125,
+    "p_value": 0.11031644898805326,
+    "p_value_autocorr_adjusted": 0.4504139636836846,
+    "significant": false,
+    "quality": {
+     "n_months": 288,
+     "missing_months": 0,
+     "coverage_fraction": 1.0,
+     "sufficient": true
+    }
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:27Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/trends",
+   "body": {
+    "variable_id": "merra2_air_temperature_2m",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      105.3,
+      20.5,
+      106.1,
+      21.4
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12"
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "trend_id": "tr_652708e79e",
+    "variable_id": "merra2_air_temperature_2m",
+    "region": {
+     "type": "bbox",
+     "id": null,
+     "name": null,
+     "bbox": [
+      105.3,
+      20.5,
+      106.1,
+      21.4
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12",
+    "slope_per_decade": 0.27617021040483114,
+    "p_value": 0.00019104258527824491,
+    "p_value_autocorr_adjusted": 0.05218531994054265,
+    "significant": true,
+    "quality": {
+     "n_months": 288,
+     "missing_months": 0,
+     "coverage_fraction": 1.0,
+     "sufficient": true
+    }
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:27Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/trends",
+   "body": {
+    "variable_id": "imerg_precip",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      -75,
+      -15,
+      -50,
+      5
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12"
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "trend_id": "tr_e41dd03e0e",
+    "variable_id": "imerg_precip",
+    "region": {
+     "type": "bbox",
+     "id": null,
+     "name": null,
+     "bbox": [
+      -75.0,
+      -15.0,
+      -50.0,
+      5.0
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12",
+    "slope_per_decade": -7.119916280110676,
+    "p_value": 8.97519782121492e-05,
+    "p_value_autocorr_adjusted": 0.032563046054796096,
+    "significant": true,
+    "quality": {
+     "n_months": 288,
+     "missing_months": 0,
+     "coverage_fraction": 1.0,
+     "sufficient": true
+    }
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:28Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/trends",
+   "body": {
+    "variable_id": "gldas_soil_moisture_0_10cm",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      -124.5,
+      32.5,
+      -114,
+      42
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12"
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "trend_id": "tr_09ab951a4f",
+    "variable_id": "gldas_soil_moisture_0_10cm",
+    "region": {
+     "type": "bbox",
+     "id": null,
+     "name": null,
+     "bbox": [
+      -124.5,
+      32.5,
+      -114.0,
+      42.0
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12",
+    "slope_per_decade": 0.00235869882597119,
+    "p_value": 0.0870185441742457,
+    "p_value_autocorr_adjusted": 0.30242392211907254,
+    "significant": false,
+    "quality": {
+     "n_months": 288,
+     "missing_months": 0,
+     "coverage_fraction": 0.755,
+     "sufficient": true
+    }
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:28Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/trends",
+   "body": {
+    "variable_id": "merra2_air_temperature_2m",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      -17,
+      10,
+      30,
+      18
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12"
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "trend_id": "tr_2a923d008c",
+    "variable_id": "merra2_air_temperature_2m",
+    "region": {
+     "type": "bbox",
+     "id": null,
+     "name": null,
+     "bbox": [
+      -17.0,
+      10.0,
+      30.0,
+      18.0
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12",
+    "slope_per_decade": -0.300255494878261,
+    "p_value": 1.0054796009129063e-06,
+    "p_value_autocorr_adjusted": 0.0001875553755135151,
+    "significant": true,
+    "quality": {
+     "n_months": 288,
+     "missing_months": 0,
+     "coverage_fraction": 1.0,
+     "sufficient": true
+    }
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:28Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/trends",
+   "body": {
+    "variable_id": "merra2_air_temperature_2m",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      -92.9,
+      42.5,
+      -86.8,
+      47.1
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12"
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "trend_id": "tr_67bc263fbf",
+    "variable_id": "merra2_air_temperature_2m",
+    "region": {
+     "type": "bbox",
+     "id": null,
+     "name": null,
+     "bbox": [
+      -92.9,
+      42.5,
+      -86.8,
+      47.1
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12",
+    "slope_per_decade": 0.21648215889920566,
+    "p_value": 0.1999429311294043,
+    "p_value_autocorr_adjusted": 0.3927309990549819,
+    "significant": false,
+    "quality": {
+     "n_months": 288,
+     "missing_months": 0,
+     "coverage_fraction": 1.0,
+     "sufficient": true
+    }
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:28Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/trends",
+   "body": {
+    "variable_id": "gldas_air_temperature",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      -17,
+      10,
+      30,
+      18
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12"
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "trend_id": "tr_9060aac63b",
+    "variable_id": "gldas_air_temperature",
+    "region": {
+     "type": "bbox",
+     "id": null,
+     "name": null,
+     "bbox": [
+      -17.0,
+      10.0,
+      30.0,
+      18.0
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12",
+    "slope_per_decade": 0.8516804214805439,
+    "p_value": 0.0,
+    "p_value_autocorr_adjusted": 0.0002766159221161413,
+    "significant": true,
+    "quality": {
+     "n_months": 288,
+     "missing_months": 0,
+     "coverage_fraction": 0.995,
+     "sufficient": true
+    }
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:28Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/trends",
+   "body": {
+    "variable_id": "merra2_air_temperature_2m",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      -180,
+      -90,
+      180,
+      90
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12"
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "trend_id": "tr_58701c9bca",
+    "variable_id": "merra2_air_temperature_2m",
+    "region": {
+     "type": "bbox",
+     "id": null,
+     "name": null,
+     "bbox": [
+      -180.0,
+      -90.0,
+      180.0,
+      90.0
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12",
+    "slope_per_decade": 0.14382661551268083,
+    "p_value": 0.0,
+    "p_value_autocorr_adjusted": 0.014538648170872692,
+    "significant": true,
+    "quality": {
+     "n_months": 288,
+     "missing_months": 0,
+     "coverage_fraction": 1.0,
+     "sufficient": true
+    }
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:29Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/trends",
+   "body": {
+    "variable_id": "merra2_air_temperature_2m",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      -180,
+      66.5,
+      180,
+      90
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12"
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "trend_id": "tr_8e568c5cb2",
+    "variable_id": "merra2_air_temperature_2m",
+    "region": {
+     "type": "bbox",
+     "id": null,
+     "name": null,
+     "bbox": [
+      -180.0,
+      66.5,
+      180.0,
+      90.0
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12",
+    "slope_per_decade": 0.29624904590268597,
+    "p_value": 2.867809700823898e-08,
+    "p_value_autocorr_adjusted": 1.8109036823421576e-05,
+    "significant": true,
+    "quality": {
+     "n_months": 288,
+     "missing_months": 0,
+     "coverage_fraction": 1.0,
+     "sufficient": true
+    }
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:29Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/trends",
+   "body": {
+    "variable_id": "merra2_air_temperature_2m",
+    "region": {
+     "type": "preset",
+     "id": "mekong_delta"
+    },
+    "start": "2001-01",
+    "end": "2024-12"
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "trend_id": "tr_23d2942f5e",
+    "variable_id": "merra2_air_temperature_2m",
+    "region": {
+     "type": "preset",
+     "id": "mekong_delta",
+     "name": "Mekong Delta, Vietnam",
+     "bbox": [
+      104.4,
+      8.5,
+      106.9,
+      11.1
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12",
+    "slope_per_decade": 0.27652013512882156,
+    "p_value": 7.993605777301127e-15,
+    "p_value_autocorr_adjusted": 7.651933753294315e-09,
+    "significant": true,
+    "quality": {
+     "n_months": 288,
+     "missing_months": 0,
+     "coverage_fraction": 1.0,
+     "sufficient": true
+    }
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:29Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/trends",
+   "body": {
+    "variable_id": "imerg_precip",
+    "region": {
+     "type": "preset",
+     "id": "mekong_delta"
+    },
+    "start": "2001-01",
+    "end": "2024-12"
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "trend_id": "tr_390763c607",
+    "variable_id": "imerg_precip",
+    "region": {
+     "type": "preset",
+     "id": "mekong_delta",
+     "name": "Mekong Delta, Vietnam",
+     "bbox": [
+      104.4,
+      8.5,
+      106.9,
+      11.1
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12",
+    "slope_per_decade": 3.163604736328125,
+    "p_value": 0.11031644898805326,
+    "p_value_autocorr_adjusted": 0.4504139636836846,
+    "significant": false,
+    "quality": {
+     "n_months": 288,
+     "missing_months": 0,
+     "coverage_fraction": 1.0,
+     "sufficient": true
+    }
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:29Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/compare",
+   "body": {
+    "variable_id": "merra2_air_temperature_2m",
+    "region_a": {
+     "type": "bbox",
+     "bbox": [
+      -17,
+      10,
+      30,
+      18
+     ]
+    },
+    "region_b": {
+     "type": "bbox",
+     "bbox": [
+      -92.9,
+      42.5,
+      -86.8,
+      47.1
+     ]
+    },
+    "start": "2001-01",
+    "end": "2024-12"
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "compare_id": "cp_4670c61926",
+    "difference": {
+     "slope_diff_per_decade": -0.5098855717216815,
+     "ci": [
+      -1.0297638573016104,
+      -0.01714115059908694
+     ],
+     "p_value": 0.007492525586596743,
+     "significant": true,
+     "stable_halves": true,
+     "test": "mk_sen_on_anomaly_difference_block_bootstrap_ci"
+    },
+    "verdict": "opposite_significant"
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:33Z",
+   "attempts": 1,
+   "method": "GET",
+   "path": "/trends/grid",
+   "body": null,
+   "params": {
+    "variable_id": "merra2_air_temperature_2m",
+    "start": "2001-01",
+    "end": "2024-12"
+   },
+   "status": 200,
+   "response": {
+    "cell_size_deg": 1.0,
+    "cells": 64800,
+    "valid": 64800,
+    "significant_fdr": 39668,
+    "significant_up": 33443,
+    "significant_down": 6225
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:33Z",
+   "attempts": 1,
+   "method": "GET",
+   "path": "/trends/grid",
+   "body": null,
+   "params": {
+    "variable_id": "imerg_precip",
+    "start": "2001-01",
+    "end": "2024-12"
+   },
+   "status": 200,
+   "response": {
+    "cell_size_deg": 1.0,
+    "cells": 64800,
+    "valid": 64800,
+    "significant_fdr": 19229,
+    "significant_up": 12031,
+    "significant_down": 6087
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:33Z",
+   "attempts": 2,
+   "method": "POST",
+   "path": "/forecast",
+   "body": {
+    "variable_id": "merra2_air_temperature_2m",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      104.4,
+      8.5,
+      106.9,
+      11.1
+     ]
+    },
+    "mode": "satellite",
+    "months": 3
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "origin": "2024-12",
+    "backtest": [
+     {
+      "lead_months": 1,
+      "skill_vs_climatology": 0.365,
+      "skill_vs_persistence": 0.015,
+      "rpss": 0.197,
+      "tercile_accuracy": 0.51,
+      "coverage_80": 0.77
+     },
+     {
+      "lead_months": 3,
+      "skill_vs_climatology": 0.184,
+      "skill_vs_persistence": 0.042,
+      "rpss": 0.082,
+      "tercile_accuracy": 0.426,
+      "coverage_80": 0.783
+     },
+     {
+      "lead_months": 6,
+      "skill_vs_climatology": 0.028,
+      "skill_vs_persistence": -0.024,
+      "rpss": 0.004,
+      "tercile_accuracy": 0.326,
+      "coverage_80": 0.764
+     },
+     {
+      "lead_months": 12,
+      "skill_vs_climatology": -0.021,
+      "skill_vs_persistence": -0.009,
+      "rpss": -0.005,
+      "tercile_accuracy": 0.281,
+      "coverage_80": 0.751
+     }
+    ]
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:50Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/forecast",
+   "body": {
+    "variable_id": "merra2_air_temperature_2m",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      104.4,
+      8.5,
+      106.9,
+      11.1
+     ]
+    },
+    "mode": "outlook",
+    "months": 3
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "origin": "2026-06",
+    "backtest": [
+     {
+      "lead_months": 3,
+      "skill_vs_climatology": -0.027,
+      "skill_vs_persistence": null,
+      "rpss": 0.009,
+      "tercile_accuracy": 0.37,
+      "coverage_80": 0.753
+     },
+     {
+      "lead_months": 6,
+      "skill_vs_climatology": -0.034,
+      "skill_vs_persistence": null,
+      "rpss": 0.009,
+      "tercile_accuracy": 0.363,
+      "coverage_80": 0.738
+     },
+     {
+      "lead_months": 12,
+      "skill_vs_climatology": -0.038,
+      "skill_vs_persistence": null,
+      "rpss": 0.006,
+      "tercile_accuracy": 0.361,
+      "coverage_80": 0.723
+     },
+     {
+      "lead_months": 18,
+      "skill_vs_climatology": -0.049,
+      "skill_vs_persistence": null,
+      "rpss": -0.001,
+      "tercile_accuracy": 0.35,
+      "coverage_80": 0.732
+     }
+    ]
+   }
+  },
+  {
+   "utc": "2026-11-15T17:58:56Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/forecast",
+   "body": {
+    "variable_id": "gldas_air_temperature",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      104.4,
+      8.5,
+      106.9,
+      11.1
+     ]
+    },
+    "mode": "satellite",
+    "months": 3
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "origin": "2024-12",
+    "backtest": [
+     {
+      "lead_months": 1,
+      "skill_vs_climatology": 0.331,
+      "skill_vs_persistence": 0.044,
+      "rpss": 0.198,
+      "tercile_accuracy": 0.509,
+      "coverage_80": 0.811
+     },
+     {
+      "lead_months": 3,
+      "skill_vs_climatology": 0.222,
+      "skill_vs_persistence": 0.087,
+      "rpss": 0.126,
+      "tercile_accuracy": 0.456,
+      "coverage_80": 0.807
+     },
+     {
+      "lead_months": 6,
+      "skill_vs_climatology": 0.085,
+      "skill_vs_persistence": -0.019,
+      "rpss": 0.025,
+      "tercile_accuracy": 0.382,
+      "coverage_80": 0.784
+     },
+     {
+      "lead_months": 12,
+      "skill_vs_climatology": 0.053,
+      "skill_vs_persistence": -0.086,
+      "rpss": 0.008,
+      "tercile_accuracy": 0.376,
+      "coverage_80": 0.779
+     }
+    ]
+   }
+  },
+  {
+   "utc": "2026-11-15T17:59:04Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/forecast",
+   "body": {
+    "variable_id": "gldas_air_temperature",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      104.4,
+      8.5,
+      106.9,
+      11.1
+     ]
+    },
+    "mode": "outlook",
+    "months": 3
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "origin": "2026-06",
+    "backtest": [
+     {
+      "lead_months": 3,
+      "skill_vs_climatology": 0.068,
+      "skill_vs_persistence": null,
+      "rpss": 0.043,
+      "tercile_accuracy": 0.44,
+      "coverage_80": 0.773
+     },
+     {
+      "lead_months": 6,
+      "skill_vs_climatology": 0.062,
+      "skill_vs_persistence": null,
+      "rpss": 0.043,
+      "tercile_accuracy": 0.453,
+      "coverage_80": 0.748
+     },
+     {
+      "lead_months": 12,
+      "skill_vs_climatology": 0.037,
+      "skill_vs_persistence": null,
+      "rpss": 0.05,
+      "tercile_accuracy": 0.448,
+      "coverage_80": 0.745
+     },
+     {
+      "lead_months": 18,
+      "skill_vs_climatology": 0.039,
+      "skill_vs_persistence": null,
+      "rpss": 0.05,
+      "tercile_accuracy": 0.453,
+      "coverage_80": 0.752
+     }
+    ]
+   }
+  },
+  {
+   "utc": "2026-11-15T17:59:11Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/forecast",
+   "body": {
+    "variable_id": "gldas_soil_moisture_0_10cm",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      104.4,
+      8.5,
+      106.9,
+      11.1
+     ]
+    },
+    "mode": "satellite",
+    "months": 3
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "origin": "2024-12",
+    "backtest": [
+     {
+      "lead_months": 1,
+      "skill_vs_climatology": 0.385,
+      "skill_vs_persistence": -0.013,
+      "rpss": 0.293,
+      "tercile_accuracy": 0.594,
+      "coverage_80": 0.787
+     },
+     {
+      "lead_months": 3,
+      "skill_vs_climatology": 0.128,
+      "skill_vs_persistence": 0.0,
+      "rpss": 0.121,
+      "tercile_accuracy": 0.474,
+      "coverage_80": 0.78
+     },
+     {
+      "lead_months": 6,
+      "skill_vs_climatology": 0.011,
+      "skill_vs_persistence": -0.035,
+      "rpss": 0.032,
+      "tercile_accuracy": 0.378,
+      "coverage_80": 0.756
+     },
+     {
+      "lead_months": 12,
+      "skill_vs_climatology": -0.014,
+      "skill_vs_persistence": -0.017,
+      "rpss": 0.011,
+      "tercile_accuracy": 0.334,
+      "coverage_80": 0.768
+     }
+    ]
+   }
+  },
+  {
+   "utc": "2026-11-15T17:59:17Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/forecast",
+   "body": {
+    "variable_id": "gldas_soil_moisture_0_10cm",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      104.4,
+      8.5,
+      106.9,
+      11.1
+     ]
+    },
+    "mode": "outlook",
+    "months": 3
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "origin": "2026-06",
+    "backtest": [
+     {
+      "lead_months": 3,
+      "skill_vs_climatology": 0.015,
+      "skill_vs_persistence": null,
+      "rpss": 0.028,
+      "tercile_accuracy": 0.429,
+      "coverage_80": 0.773
+     },
+     {
+      "lead_months": 6,
+      "skill_vs_climatology": 0.014,
+      "skill_vs_persistence": null,
+      "rpss": 0.03,
+      "tercile_accuracy": 0.43,
+      "coverage_80": 0.765
+     },
+     {
+      "lead_months": 12,
+      "skill_vs_climatology": 0.011,
+      "skill_vs_persistence": null,
+      "rpss": 0.027,
+      "tercile_accuracy": 0.425,
+      "coverage_80": 0.773
+     },
+     {
+      "lead_months": 18,
+      "skill_vs_climatology": 0.008,
+      "skill_vs_persistence": null,
+      "rpss": 0.027,
+      "tercile_accuracy": 0.428,
+      "coverage_80": 0.756
+     }
+    ]
+   }
+  },
+  {
+   "utc": "2026-11-15T17:59:23Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/forecast",
+   "body": {
+    "variable_id": "gldas_evapotranspiration",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      104.4,
+      8.5,
+      106.9,
+      11.1
+     ]
+    },
+    "mode": "satellite",
+    "months": 3
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "origin": "2024-12",
+    "backtest": [
+     {
+      "lead_months": 1,
+      "skill_vs_climatology": 0.318,
+      "skill_vs_persistence": 0.043,
+      "rpss": 0.211,
+      "tercile_accuracy": 0.536,
+      "coverage_80": 0.787
+     },
+     {
+      "lead_months": 3,
+      "skill_vs_climatology": 0.127,
+      "skill_vs_persistence": 0.081,
+      "rpss": 0.086,
+      "tercile_accuracy": 0.439,
+      "coverage_80": 0.788
+     },
+     {
+      "lead_months": 6,
+      "skill_vs_climatology": 0.079,
+      "skill_vs_persistence": 0.09,
+      "rpss": 0.059,
+      "tercile_accuracy": 0.399,
+      "coverage_80": 0.777
+     },
+     {
+      "lead_months": 12,
+      "skill_vs_climatology": 0.054,
+      "skill_vs_persistence": -0.055,
+      "rpss": 0.033,
+      "tercile_accuracy": 0.372,
+      "coverage_80": 0.776
+     }
+    ]
+   }
+  },
+  {
+   "utc": "2026-11-15T17:59:29Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/forecast",
+   "body": {
+    "variable_id": "gldas_evapotranspiration",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      104.4,
+      8.5,
+      106.9,
+      11.1
+     ]
+    },
+    "mode": "outlook",
+    "months": 3
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "origin": "2026-06",
+    "backtest": [
+     {
+      "lead_months": 3,
+      "skill_vs_climatology": 0.094,
+      "skill_vs_persistence": null,
+      "rpss": 0.003,
+      "tercile_accuracy": 0.374,
+      "coverage_80": 0.754
+     },
+     {
+      "lead_months": 6,
+      "skill_vs_climatology": 0.098,
+      "skill_vs_persistence": null,
+      "rpss": 0.003,
+      "tercile_accuracy": 0.375,
+      "coverage_80": 0.752
+     },
+     {
+      "lead_months": 12,
+      "skill_vs_climatology": 0.098,
+      "skill_vs_persistence": null,
+      "rpss": -0.001,
+      "tercile_accuracy": 0.37,
+      "coverage_80": 0.767
+     },
+     {
+      "lead_months": 18,
+      "skill_vs_climatology": 0.096,
+      "skill_vs_persistence": null,
+      "rpss": -0.001,
+      "tercile_accuracy": 0.369,
+      "coverage_80": 0.737
+     }
+    ]
+   }
+  },
+  {
+   "utc": "2026-11-15T17:59:36Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/forecast",
+   "body": {
+    "variable_id": "imerg_precip",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      104.4,
+      8.5,
+      106.9,
+      11.1
+     ]
+    },
+    "mode": "satellite",
+    "months": 3
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "origin": "2024-12",
+    "backtest": [
+     {
+      "lead_months": 1,
+      "skill_vs_climatology": 0.003,
+      "skill_vs_persistence": -0.026,
+      "rpss": 0.053,
+      "tercile_accuracy": 0.393,
+      "coverage_80": 0.805
+     },
+     {
+      "lead_months": 3,
+      "skill_vs_climatology": 0.001,
+      "skill_vs_persistence": -0.013,
+      "rpss": 0.041,
+      "tercile_accuracy": 0.364,
+      "coverage_80": 0.787
+     },
+     {
+      "lead_months": 6,
+      "skill_vs_climatology": 0.0,
+      "skill_vs_persistence": -0.002,
+      "rpss": 0.038,
+      "tercile_accuracy": 0.353,
+      "coverage_80": 0.803
+     },
+     {
+      "lead_months": 12,
+      "skill_vs_climatology": -0.0,
+      "skill_vs_persistence": 0.006,
+      "rpss": 0.033,
+      "tercile_accuracy": 0.344,
+      "coverage_80": 0.78
+     }
+    ]
+   }
+  },
+  {
+   "utc": "2026-11-15T17:59:42Z",
+   "attempts": 1,
+   "method": "POST",
+   "path": "/forecast",
+   "body": {
+    "variable_id": "imerg_precip",
+    "region": {
+     "type": "bbox",
+     "bbox": [
+      104.4,
+      8.5,
+      106.9,
+      11.1
+     ]
+    },
+    "mode": "outlook",
+    "months": 3
+   },
+   "params": null,
+   "status": 200,
+   "response": {
+    "origin": "2026-06",
+    "backtest": [
+     {
+      "lead_months": 3,
+      "skill_vs_climatology": 0.016,
+      "skill_vs_persistence": null,
+      "rpss": 0.037,
+      "tercile_accuracy": 0.395,
+      "coverage_80": 0.783
+     },
+     {
+      "lead_months": 6,
+      "skill_vs_climatology": 0.015,
+      "skill_vs_persistence": null,
+      "rpss": 0.037,
+      "tercile_accuracy": 0.392,
+      "coverage_80": 0.787
+     },
+     {
+      "lead_months": 12,
+      "skill_vs_climatology": 0.016,
+      "skill_vs_persistence": null,
+      "rpss": 0.037,
+      "tercile_accuracy": 0.389,
+      "coverage_80": 0.768
+     },
+     {
+      "lead_months": 18,
+      "skill_vs_climatology": 0.016,
+      "skill_vs_persistence": null,
+      "rpss": 0.038,
+      "tercile_accuracy": 0.389,
+      "coverage_80": 0.774
+     }
+    ]
+   }
+  }
+ ],
+ "finished_utc": "2026-11-15T17:59:48Z"
+}
