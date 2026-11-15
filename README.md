@@ -19,7 +19,7 @@ time series, removes the seasonal cycle, tests the trend and tells you in plain 
 | Tool | What you can do |
 | --- | --- |
 | **Explore** | Choose a variable, a region (preset, country, city, point, or a box drawn on the map or 3D globe) and a month range. See a global trend or value map, the monthly series with its Sen trend line, and a result card: change per decade, p-value, data coverage. Play a month-by-month time-lapse. |
-| **Contradiction Hunter** | Compare two regions, two NASA datasets or two periods. Two regions count as truly different only when a test on the difference series passes. |
+| **Contradiction Hunter** | Compare two regions, two NASA datasets or two periods. Two regions count as truly different only when a test on the difference series passes. "Same cause, opposite trends" (also one click from an Explore result) finds a rising and a falling place for one variable, tests both and the gap, and shows one source-checked explanation without testing the cause. |
 | **AI Detective** | Ask in everyday language. Gemini explains the result using only numbers computed by the statistics engine; the backend checks every number and falls back to a fixed template if a check fails. |
 | **Outlook (experimental)** | Short-range outlook from climate indices, shown with its backtested skill ("No skill" where there is none). |
 | **Report** | Export PDF, Markdown or JSON in an Explorer edition (plain language) or a Scientist edition (methods, tables, reproduction details). |
