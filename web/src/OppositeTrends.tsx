@@ -89,7 +89,7 @@ export function OppositePair({ variableId, start, end, a, b, title, picked }: {
                 </div>
                 <div className="row" style={{ gap: 8, alignItems: "center" }}><b>{rv.label}</b><VerdictBadge t={t} /></div>
                 <span className="num hunt-slope">{signed(t.slope_per_decade)} <small>{u} per decade</small> <InfoButton id="sens-slope" /></span>
-                <span className="small num">95% range: {ci(t.slope_ci)} {u} per decade <InfoButton id="confidence-interval" /></span>
+                <span className="small num">{sci ? "95% least-squares interval on anomalies (not for the Sen slope)" : "95% range (a different method from the slope)"}: {ci(t.slope_ci)} {u} per decade <InfoButton id="confidence-interval" /></span>
                 <span className="small num">{sci ? "Hamed-Rao adjusted p" : "p-value, allowing for linked months"}: {pval(adj)} <InfoButton id="autocorrelation" /></span>
                 {sci && <span className="small muted">Seasonal Mann-Kendall raw p {pval(t.p_value)} (decides the verdict); {t.n} months; {Math.round(t.quality.coverage_fraction * 100)}% of the box has data.</span>}
                 {t.significant && adj !== null && adj >= 0.05 && <span className="warn small">Careful: the check that allows for linked months does not confirm this trend.</span>}
