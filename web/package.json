@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/chatNavigation.test.mjs tests/pages.test.mjs tests/phase7.test.mjs tests/phase85.test.mjs tests/audience.test.mjs tests/formd.test.mjs tests/explorer.test.mjs tests/timelapse.test.mjs tests/hunt.test.mjs tests/definitions.test.mjs tests/guide.test.mjs tests/urlState.test.mjs tests/placeCompare.test.mjs tests/starterCases.test.mjs tests/patterns.test.mjs tests/opposite.test.mjs tests/wizard.test.mjs",
+    "test": "node --test tests/chatNavigation.test.mjs tests/pages.test.mjs tests/phase7.test.mjs tests/phase85.test.mjs tests/audience.test.mjs tests/formd.test.mjs tests/explorer.test.mjs tests/timelapse.test.mjs tests/hunt.test.mjs tests/definitions.test.mjs tests/guide.test.mjs tests/urlState.test.mjs tests/placeCompare.test.mjs tests/starterCases.test.mjs tests/patterns.test.mjs tests/opposite.test.mjs tests/wizard.test.mjs tests/chatSources.test.mjs",
     "preview": "vite preview",
     "e2e": "node --test --test-timeout=900000 --test-concurrency=1 e2e/app.e2e.mjs e2e/explorer-report.e2e.mjs e2e/hunt.e2e.mjs"
   },

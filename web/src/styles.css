@@ -811,6 +811,10 @@ select.select::-ms-expand { display: none; }
 .ev-more .card { margin-top: 8px; box-shadow: none; border: 1px solid var(--line); }
 .answer-caveats { margin: 0; padding: 10px 14px 10px 30px; border-radius: 16px; background: #fff8e3; font: 600 13.5px/1.5 var(--body); color: #5a4100; }
 .answer-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.read-more { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--lavender-2); color: var(--ink); }
+.read-more ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
+.read-more li { display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }
+.read-more a { font: 700 14px/1.4 var(--body); color: var(--ink); }
 @media (max-width: 860px) { .ev-grid.two { grid-template-columns: 1fr; } .bubble-ai.answer { padding: 14px; } }
 
 .place-field .place-current { font: 600 13px/1.35 var(--body); color: #3d3850; overflow-wrap: anywhere; }
