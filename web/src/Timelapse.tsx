@@ -27,6 +27,7 @@ export function Timelapse({ variable, start, end, bbox, toF }: { variable: Varia
   useEffect(() => {
     const ctrl = new AbortController();
     setRes(null); setFrames(null); setError(null); setPlaying(false); setT(0);
+    if (start > end) { setError("The end of the period is before the start. Change the dates to play the time-lapse."); return; }
     api.valueFrames(variable.id, start, end, kind, bbox, ctrl.signal)
       .then((r) => { setRes(r); setFrames(decodeFrames(r)); })
       .catch((e) => { if (!ctrl.signal.aborted) setError(e?.message ?? "Could not load the time-lapse."); });

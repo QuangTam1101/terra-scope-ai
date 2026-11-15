@@ -220,8 +220,8 @@ const TRUST_ICON: Record<string, () => JSX.Element> = {
 
 // Each limit comes with a real example from the app (backend /trends, MERRA-2, GLDAS and IMERG, checked 2026-11-15).
 const LIMITS = [
-  { title: "It describes the past, it does not forecast.",
-    text: "Mekong Delta air temperature rose about +0.19 °C per decade from 2001 to 2025. That is how fast it changed, not a prediction for next year." },
+  { title: "A trend describes the past, not the future.",
+    text: "Mekong Delta air temperature rose about +0.19 °C per decade from 2001 to 2025. That is how fast it changed, not a prediction. The separate Outlook page is experimental and shows how much skill it has." },
   { title: "It shows what changed, not why.",
     text: "A warming trend could come from many causes. Terra-scope measures the change; it does not test the cause." },
   { title: "\"Not proven yet\" does not mean \"no change\".",

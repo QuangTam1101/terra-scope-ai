@@ -139,7 +139,7 @@ export function ScientistResult({ run, actions }: { run: Run; actions: ReactNode
         </div>
       </Section>
       <Section title="Significance and uncertainty">
-        <p style={{ margin: 0, font: "600 14.5px/1.5 var(--body)" }}>{dir} seasonal Sen slope; raw Seasonal MK p = {pval(t.p_value)}, α = {alpha}; the reported significance {decided}</p>
+        <p style={{ margin: 0, font: "600 14.5px/1.5 var(--body)" }}>{dir} seasonal Sen slope; raw Seasonal MK p {pval(t.p_value).startsWith("<") ? "" : "= "}{pval(t.p_value)}, α = {alpha}; the reported significance {decided}</p>
         <span className="small muted">The adjusted p does not change the verdict. The interval targets the OLS slope of anomalies with no HAC adjustment, a different estimator from Sen.{" "}
           <Term id="autocorrelation">Autocorrelation</Term> can make raw p-values optimistic.</span>
       </Section>

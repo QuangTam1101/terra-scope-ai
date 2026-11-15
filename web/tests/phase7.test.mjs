@@ -89,7 +89,7 @@ try {
     const html = renderToStaticMarkup(createElement(Landing, { onStart: () => {} }));
     for (const s of ["Discover Earth", "Get Started", "Watch Demo", "GPM IMERG", "GLDAS Noah", "MERRA-2",
       "Compare Regions", "Ask the AI Detective", "not an official NASA product", "Not affiliated with or endorsed by NASA",
-      "does not forecast", "real NASA data: MERRA-2 air temperature trend"]) assert.ok(html.includes(s), s);
+      "describes the past, not the future", "real NASA data: MERRA-2 air temperature trend"]) assert.ok(html.includes(s), s);
     assert.ok(html.includes('<video') && html.includes('/demo/terra-scope-ai-pitch.mp4'), 'the configured pitch video is rendered');
     assert.ok(!html.includes('Product Demo: Coming Soon'), 'no placeholder once a video is configured');
     assert.ok(!html.includes('<iframe'), 'no embed for a local file');

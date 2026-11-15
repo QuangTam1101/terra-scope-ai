@@ -76,6 +76,11 @@ def _geometry_to_bbox(geom: dict) -> tuple[tuple, str]:
         if not pts:
             raise ApiError(422, "VALIDATION_ERROR", "Point geometry has no coordinates.")
         lon, lat = pts[0]
+        if not (-180 <= lon <= 180 and -90 <= lat <= 90):
+            # Checked before snapping to a cell: clamping would silently turn lat 106.7 into the 89-90° cell.
+            raise ApiError(422, "VALIDATION_ERROR",
+                           "Point coordinates must be [longitude, latitude] with longitude in ±180 and latitude in ±90.",
+                           {"coordinates": [lon, lat]})
         w = min(math.floor(lon), 179)
         s = min(math.floor(lat), 89)
         return (float(w), float(s), float(w + 1), float(s + 1)), \

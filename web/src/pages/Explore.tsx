@@ -80,6 +80,9 @@ export function Explore() {
   // server whether this map is already computed so the message says what is really happening (Phase 8.5A).
   useEffect(() => {
     if (!variable?.available || timelapse) return;
+    // An impossible period (end before start) is already explained under the date pickers; asking the server would
+    // only add a second, technical error toast ("start must not be after end").
+    if (periodMonths(sel) < 1) return;
     const start = periodStart(sel), end = periodEnd(sel);
     const key = `${layer}|${variable.id}|${start}|${end}|${layer === "values" ? month ?? "" : ""}`;
     const hit = GRID_CACHE.get(key);

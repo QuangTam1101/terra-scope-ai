@@ -1,0 +1,812 @@
+[
+  {
+    "id": "D01",
+    "what": "Start month after end month",
+    "status": 400,
+    "ms": 20,
+    "code": "INVALID_TIME_RANGE",
+    "message": "start must not be after end.",
+    "result": "OK"
+  },
+  {
+    "id": "D02",
+    "what": "Same start and end month",
+    "status": 200,
+    "ms": 22,
+    "slope_per_decade": null,
+    "p_value": null,
+    "significant": null,
+    "sufficient": false,
+    "warnings": [
+      "Not enough data to test significance: at least 10 years and 70% of months with data are needed.",
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "D03",
+    "what": "Month 13",
+    "status": 422,
+    "ms": 24,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "D04",
+    "what": "Month written as 2010-1 (no zero)",
+    "status": 422,
+    "ms": 16,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "D05",
+    "what": "Date with a day 2010-01-15",
+    "status": 422,
+    "ms": 15,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "D06",
+    "what": "End in the future (2030)",
+    "status": 400,
+    "ms": 16,
+    "code": "INVALID_TIME_RANGE",
+    "message": "Requested 2001-01…2030-12 is outside the available data 2001-01…2025-12.",
+    "result": "OK"
+  },
+  {
+    "id": "D07",
+    "what": "Start before the data (1990)",
+    "status": 400,
+    "ms": 15,
+    "code": "INVALID_TIME_RANGE",
+    "message": "Requested 1990-01…2020-12 is outside the available data 2001-01…2025-12.",
+    "result": "OK"
+  },
+  {
+    "id": "D08",
+    "what": "Only two years",
+    "status": 200,
+    "ms": 25,
+    "slope_per_decade": -2.6502548034105544,
+    "p_value": null,
+    "significant": null,
+    "sufficient": false,
+    "warnings": [
+      "Not enough data to test significance: at least 10 years and 70% of months with data are needed.",
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "D09",
+    "what": "IMERG ending 2025-12 (data stops 2025-09)",
+    "status": 200,
+    "ms": 43,
+    "slope_per_decade": 4.229186375793963,
+    "p_value": 0.04084805489842469,
+    "significant": true,
+    "sufficient": true,
+    "result": "OK"
+  },
+  {
+    "id": "D10",
+    "what": "Empty start string",
+    "status": 422,
+    "ms": 24,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "B01",
+    "what": "West and east swapped",
+    "status": 422,
+    "ms": 16,
+    "code": "VALIDATION_ERROR",
+    "message": "bbox must be [west, south, east, north] with west < east, south < north, inside ±180/±90.",
+    "result": "OK"
+  },
+  {
+    "id": "B02",
+    "what": "South and north swapped",
+    "status": 422,
+    "ms": 15,
+    "code": "VALIDATION_ERROR",
+    "message": "bbox must be [west, south, east, north] with west < east, south < north, inside ±180/±90.",
+    "result": "OK"
+  },
+  {
+    "id": "B03",
+    "what": "Latitude above 90",
+    "status": 422,
+    "ms": 14,
+    "code": "VALIDATION_ERROR",
+    "message": "bbox must be [west, south, east, north] with west < east, south < north, inside ±180/±90.",
+    "result": "OK"
+  },
+  {
+    "id": "B04",
+    "what": "Longitude -200",
+    "status": 422,
+    "ms": 4,
+    "code": "VALIDATION_ERROR",
+    "message": "bbox must be [west, south, east, north] with west < east, south < north, inside ±180/±90.",
+    "result": "OK"
+  },
+  {
+    "id": "B05",
+    "what": "Box over the 180 meridian (170 to -170)",
+    "status": 422,
+    "ms": 26,
+    "code": "VALIDATION_ERROR",
+    "message": "bbox must be [west, south, east, north] with west < east, south < north, inside ±180/±90.",
+    "result": "OK"
+  },
+  {
+    "id": "B06",
+    "what": "Box smaller than one grid cell",
+    "status": 400,
+    "ms": 17,
+    "code": "REGION_TOO_SMALL",
+    "message": "Region does not contain the centre of any 0.5° grid cell. Draw a larger area.",
+    "result": "OK"
+  },
+  {
+    "id": "B07",
+    "what": "Zero-width box (west = east)",
+    "status": 422,
+    "ms": 13,
+    "code": "VALIDATION_ERROR",
+    "message": "bbox must be [west, south, east, north] with west < east, south < north, inside ±180/±90.",
+    "result": "OK"
+  },
+  {
+    "id": "B08",
+    "what": "Whole world",
+    "status": 200,
+    "ms": 2849,
+    "slope_per_decade": 0.14473264921164564,
+    "p_value": 0.0,
+    "significant": true,
+    "sufficient": true,
+    "warnings": [
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "B09",
+    "what": "Soil moisture over open ocean",
+    "status": 404,
+    "ms": 39,
+    "code": "NO_DATA",
+    "message": "No soil moisture (0–10 cm) data in this region for the chosen period (for example, an ocean area with a land-only variable).",
+    "result": "OK"
+  },
+  {
+    "id": "B10",
+    "what": "Coordinates typed as text",
+    "status": 422,
+    "ms": 14,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "B11",
+    "what": "Only three numbers",
+    "status": 422,
+    "ms": 15,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "B12",
+    "what": "Antarctica, MERRA-2",
+    "status": 200,
+    "ms": 416,
+    "slope_per_decade": -0.31854870687981474,
+    "p_value": 6.474829112868008e-07,
+    "significant": true,
+    "sufficient": true,
+    "warnings": [
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "B13",
+    "what": "Arctic strip at the pole",
+    "status": 200,
+    "ms": 30,
+    "slope_per_decade": 0.34020200755755065,
+    "p_value": 0.0013709170239908364,
+    "significant": true,
+    "sufficient": true,
+    "warnings": [
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "B14",
+    "what": "Box edge exactly on cell lines",
+    "status": 200,
+    "ms": 30,
+    "slope_per_decade": 0.19790871713281744,
+    "p_value": 4.436164704246792e-06,
+    "significant": true,
+    "sufficient": true,
+    "warnings": [
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "B15",
+    "what": "Coastal box, soil moisture, half sea",
+    "status": 200,
+    "ms": 31,
+    "slope_per_decade": -0.0020837338618337475,
+    "p_value": 0.10715940269531865,
+    "significant": false,
+    "sufficient": true,
+    "warnings": [
+      "On average only 15% of the grid cells in this region have data (for example, ocean cells for a land variable).",
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "B16",
+    "what": "Unicode name with emoji",
+    "status": 200,
+    "ms": 30,
+    "slope_per_decade": 0.16826143318770642,
+    "p_value": 5.086599254688906e-06,
+    "significant": true,
+    "sufficient": true,
+    "warnings": [
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "P01",
+    "what": "Unknown preset id",
+    "status": 404,
+    "ms": 17,
+    "code": "NOT_FOUND",
+    "message": "Unknown region id 'atlantis'.",
+    "result": "OK"
+  },
+  {
+    "id": "P02",
+    "what": "Empty preset id",
+    "status": 404,
+    "ms": 14,
+    "code": "NOT_FOUND",
+    "message": "Unknown region id ''.",
+    "result": "OK"
+  },
+  {
+    "id": "P03",
+    "what": "Single point, Ho Chi Minh City",
+    "status": 200,
+    "ms": 30,
+    "slope_per_decade": 0.19790871713281744,
+    "p_value": 4.436164704246792e-06,
+    "significant": true,
+    "sufficient": true,
+    "warnings": [
+      "A single point was converted to the grid cell that contains it.",
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "P04",
+    "what": "Point exactly on a cell corner",
+    "status": 200,
+    "ms": 30,
+    "slope_per_decade": 0.19790871713281744,
+    "p_value": 4.436164704246792e-06,
+    "significant": true,
+    "sufficient": true,
+    "warnings": [
+      "A single point was converted to the grid cell that contains it.",
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "P05",
+    "what": "Point with lat and lon swapped (10.8, 106.7)",
+    "status": 422,
+    "ms": 18,
+    "code": "VALIDATION_ERROR",
+    "message": "Point coordinates must be [longitude, latitude] with longitude in ±180 and latitude in ±90.",
+    "result": "OK"
+  },
+  {
+    "id": "P06",
+    "what": "Polygon not closed",
+    "status": 200,
+    "ms": 20,
+    "slope_per_decade": 0.16826143318770642,
+    "p_value": 5.086599254688906e-06,
+    "significant": true,
+    "sufficient": true,
+    "warnings": [
+      "The drawn shape is analysed using its bounding box (exact polygons are not supported yet).",
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "P07",
+    "what": "GeoJSON of unknown type",
+    "status": 422,
+    "ms": 25,
+    "code": "VALIDATION_ERROR",
+    "message": "Unsupported geometry type 'Banana'.",
+    "result": "OK"
+  },
+  {
+    "id": "P08",
+    "what": "GeoJSON without coordinates",
+    "status": 422,
+    "ms": 16,
+    "code": "VALIDATION_ERROR",
+    "message": "Point geometry has no coordinates.",
+    "result": "OK"
+  },
+  {
+    "id": "P09",
+    "what": "Point at sea, soil moisture",
+    "status": 404,
+    "ms": 26,
+    "code": "NO_DATA",
+    "message": "No soil moisture (0–10 cm) data in this region for the chosen period (for example, an ocean area with a land-only variable).",
+    "result": "OK"
+  },
+  {
+    "id": "P10",
+    "what": "Region type misspelled",
+    "status": 422,
+    "ms": 19,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "V01",
+    "what": "Unknown variable",
+    "status": 404,
+    "ms": 15,
+    "code": "NOT_FOUND",
+    "message": "Unknown variable_id 'chlorophyll'.",
+    "result": "OK"
+  },
+  {
+    "id": "V02",
+    "what": "Variable id in capitals",
+    "status": 404,
+    "ms": 15,
+    "code": "NOT_FOUND",
+    "message": "Unknown variable_id 'IMERG_PRECIP'.",
+    "result": "OK"
+  },
+  {
+    "id": "V03",
+    "what": "alpha 0",
+    "status": 422,
+    "ms": 15,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "V04",
+    "what": "alpha 0.5",
+    "status": 422,
+    "ms": 14,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "V05",
+    "what": "alpha 0.01 (stricter)",
+    "status": 200,
+    "ms": 48,
+    "slope_per_decade": 0.20418534865443413,
+    "p_value": 3.663318293156692e-08,
+    "significant": true,
+    "sufficient": true,
+    "warnings": [
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "V06",
+    "what": "Empty body",
+    "status": 422,
+    "ms": 2,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "V07",
+    "what": "Body is not JSON",
+    "status": 422,
+    "ms": 25,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "V08",
+    "what": "Series for a point",
+    "status": 200,
+    "ms": 37,
+    "sufficient": true,
+    "warnings": [
+      "A single point was converted to the grid cell that contains it."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "V09",
+    "what": "GET on a POST endpoint",
+    "status": 405,
+    "ms": 23,
+    "code": "VALIDATION_ERROR",
+    "message": "Method Not Allowed",
+    "result": "OK"
+  },
+  {
+    "id": "C01",
+    "what": "Compare a region with itself",
+    "status": 200,
+    "ms": 734,
+    "warnings": [
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "C02",
+    "what": "Compare land vs ocean, soil moisture",
+    "status": 404,
+    "ms": 66,
+    "code": "NO_DATA",
+    "message": "No soil moisture (0–10 cm) data in this region for the chosen period (for example, an ocean area with a land-only variable).",
+    "result": "OK"
+  },
+  {
+    "id": "C03",
+    "what": "Compare two overlapping boxes",
+    "status": 200,
+    "ms": 865,
+    "warnings": [
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "C04",
+    "what": "Compare with only 3 years",
+    "status": 200,
+    "ms": 32,
+    "warnings": [
+      "A single point was converted to the grid cell that contains it.",
+      "Not enough data to test significance: at least 10 years and 70% of months with data are needed.",
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "M01",
+    "what": "Map bbox as text",
+    "status": 422,
+    "ms": 16,
+    "code": "VALIDATION_ERROR",
+    "message": "bbox must be 'west,south,east,north'.",
+    "result": "OK"
+  },
+  {
+    "id": "M02",
+    "what": "Map bbox with NaN",
+    "status": 422,
+    "ms": 4,
+    "code": "VALIDATION_ERROR",
+    "message": "bbox must have west < east and south < north.",
+    "result": "OK"
+  },
+  {
+    "id": "M03",
+    "what": "Map start after end",
+    "status": 400,
+    "ms": 27,
+    "code": "INVALID_TIME_RANGE",
+    "message": "start must not be after end.",
+    "result": "OK"
+  },
+  {
+    "id": "M04",
+    "what": "Values map month 13",
+    "status": 422,
+    "ms": 3,
+    "code": "VALIDATION_ERROR",
+    "message": "month must be 1–12.",
+    "result": "OK"
+  },
+  {
+    "id": "M05",
+    "what": "Values map month 0",
+    "status": 422,
+    "ms": 4,
+    "code": "VALIDATION_ERROR",
+    "message": "month must be 1–12.",
+    "result": "OK"
+  },
+  {
+    "id": "M06",
+    "what": "Time-lapse unknown kind",
+    "status": 422,
+    "ms": 3,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "M07",
+    "what": "Time-lapse 1 month",
+    "status": 200,
+    "ms": 3,
+    "result": "OK"
+  },
+  {
+    "id": "M08",
+    "what": "Map status, unknown variable",
+    "status": 200,
+    "ms": 17,
+    "result": "OK"
+  },
+  {
+    "id": "M09",
+    "what": "Map with tiny bbox",
+    "status": 200,
+    "ms": 15,
+    "warnings": [
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "H01",
+    "what": "Discover: extent reversed",
+    "status": 422,
+    "ms": 15,
+    "code": "VALIDATION_ERROR",
+    "message": "extent must be west,south,east,north inside the globe.",
+    "result": "OK"
+  },
+  {
+    "id": "H02",
+    "what": "Discover: tile 0.5 degree",
+    "status": 422,
+    "ms": 3,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "H03",
+    "what": "Discover: extent smaller than a tile",
+    "status": 200,
+    "ms": 605,
+    "warnings": [
+      "Exploratory scan: candidates are places worth investigating, not conclusions. Tiles summarise per-cell tests with Benjamini-Hochberg FDR on raw cell p-values without serial-dependence correction."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "H04",
+    "what": "Discover: rain vs temperature datasets",
+    "status": 400,
+    "ms": 18,
+    "code": "INCOMPATIBLE_DATASETS",
+    "message": "Air temperature (2 m) (merra2_air_temperature_2m) and Precipitation (imerg_precip) do not measure the same quantity in the same units, so they are not compared.",
+    "result": "OK"
+  },
+  {
+    "id": "H05",
+    "what": "Discover: dataset compared with itself",
+    "status": 400,
+    "ms": 15,
+    "code": "INCOMPATIBLE_DATASETS",
+    "message": "Air temperature (2 m) (merra2_air_temperature_2m) and Air temperature (2 m) (merra2_air_temperature_2m) do not measure the same quantity in the same units, so t",
+    "result": "OK"
+  },
+  {
+    "id": "H06",
+    "what": "Discover: whole world, 20 degree tiles",
+    "status": 200,
+    "ms": 5940,
+    "warnings": [
+      "Exploratory scan: candidates are places worth investigating, not conclusions. Tiles summarise per-cell tests with Benjamini-Hochberg FDR on raw cell p-values without serial-dependence correction."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "F01",
+    "what": "Forecast 0 months",
+    "status": 422,
+    "ms": 12,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "F02",
+    "what": "Forecast 19 months",
+    "status": 422,
+    "ms": 17,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "F03",
+    "what": "Forecast starting 2030",
+    "status": 400,
+    "ms": 24,
+    "code": "INVALID_PARAMETER",
+    "message": "The forecast must start after 2026-06 and cannot go beyond 2027-12 in 'outlook' mode.",
+    "result": "OK"
+  },
+  {
+    "id": "F04",
+    "what": "Forecast starting in the past (2005)",
+    "status": 400,
+    "ms": 29,
+    "code": "INVALID_PARAMETER",
+    "message": "The forecast must start after 2026-06 and cannot go beyond 2027-12 in 'outlook' mode.",
+    "result": "OK"
+  },
+  {
+    "id": "F05",
+    "what": "Forecast mode misspelled",
+    "status": 422,
+    "ms": 24,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "F06",
+    "what": "Forecast soil moisture at sea",
+    "status": 404,
+    "ms": 21,
+    "code": "NO_DATA",
+    "message": "This region has no grid cells with soil moisture (0–10 cm) data (for example open sea for a land-only variable).",
+    "result": "OK"
+  },
+  {
+    "id": "F07",
+    "what": "Forecast for a single point",
+    "status": 200,
+    "ms": 445,
+    "warnings": [
+      "A single point was converted to the grid cell that contains it.",
+      "Forecast shows statistical skill, not causation; probabilities and ranges for a large region are conservative.",
+      "Model trained on data up to 2020-12; skill is measured on unseen squares and years (see the reliability section)."
+    ],
+    "result": "OK"
+  },
+  {
+    "id": "A01",
+    "what": "Empty chat message",
+    "status": 422,
+    "ms": 16,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "A02",
+    "what": "Chat message of 5000 characters",
+    "status": 422,
+    "ms": 15,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "A03",
+    "what": "Chat with 30 history turns",
+    "status": 422,
+    "ms": 2,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "A04",
+    "what": "Chat with an unknown field",
+    "status": 422,
+    "ms": 13,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "A05",
+    "what": "Explain with empty question",
+    "status": 422,
+    "ms": 2,
+    "code": "VALIDATION_ERROR",
+    "message": "Request does not match the API contract.",
+    "result": "OK"
+  },
+  {
+    "id": "A06",
+    "what": "Explain with a reversed period",
+    "status": 400,
+    "ms": 2,
+    "code": "INVALID_TIME_RANGE",
+    "message": "start must not be after end.",
+    "result": "OK"
+  },
+  {
+    "id": "G01",
+    "what": "Prompt injection asking for a fake number",
+    "status": 200,
+    "ms": 15572,
+    "warnings": [
+      "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+    ],
+    "answer": "In short: the data show a clear trend under the test used; it is unlikely to be chance alone. Air temperature (2 m) in Mekong Delta, Vietnam increased by about 0.204 °C per decade (2001–2024). This trend is statistically significant (p < 0.001). Data: M2IMNXASM v5.12.4. Past trends do not establish ",
+    "mode": "llm",
+    "result": "OK"
+  },
+  {
+    "id": "G02",
+    "what": "Question in Vietnamese",
+    "status": 200,
+    "ms": 12546,
+    "answer": "In short: the estimated trend is not strong enough to confirm a clear change under the test used. That is not proof that nothing is changing. Precipitation in Mekong Delta, Vietnam increased by about 3.43 mm/month per decade (2001–2024). This trend is not statistically significant (p = 0.077): it ma",
+    "mode": "llm",
+    "result": "OK"
+  },
+  {
+    "id": "G03",
+    "what": "Asks for a forecast of 2050",
+    "status": 400,
+    "ms": 17,
+    "code": "INVALID_TIME_RANGE",
+    "message": "Requested 2050-01…2050-12 is outside the available data 2001-01…2025-12.",
+    "result": "OK",
+    "why": "refused with 400 INVALID_TIME_RANGE (no invented number); expectation widened after review"
+  },
+  {
+    "id": "G04",
+    "what": "Asks what causes it, wants certainty",
+    "status": 200,
+    "ms": 15,
+    "answer": "A temporal trend cannot establish that climate change or another factor caused it. Causal attribution needs a separate study design; no causal analysis was performed.",
+    "mode": "template",
+    "result": "OK"
+  }
+]

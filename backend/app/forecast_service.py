@@ -220,8 +220,10 @@ def forecast(req: ForecastRequest) -> dict:
     targets = _targets(req.mode, origin, req.start, req.months, model["hmax"])
     try:
         f = _fc_region(v.pipeline_id, bbox, targets, variant)
-    except ValueError as e:
-        raise ApiError(422, "REGION_NO_DATA", str(e), {"bbox": list(bbox)})
+    except ValueError:
+        # Same code and status as /trends for an empty region; the pipeline message is not user-facing (Vietnamese).
+        raise ApiError(404, "NO_DATA", f"This region has no grid cells with {v.name.lower()} data "
+                       "(for example open sea for a land-only variable).", {"bbox": list(bbox)})
     metrics = _fc_metrics(v.pipeline_id, variant)
     pts = []
     for i, t in enumerate(f["time"]):

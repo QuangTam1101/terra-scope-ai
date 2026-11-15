@@ -79,6 +79,17 @@ def test_frontend_geojson_point_and_polygon(client):
     assert poly.status_code == 200 and poly.json()["region"]["bbox"] == [104, 9, 107, 12]
 
 
+def test_geojson_point_out_of_range_is_rejected(client):
+    # User typed (lat, lon) instead of (lon, lat): latitude 106.7 must not be clamped into the 89-90° cell.
+    for coords in ([10.8, 106.7], [200, 10], [-181, 0], [0, -91]):
+        r = client.post("/api/v1/trends", json={"variable_id": "imerg_precip", **PERIOD, "region": {
+            "type": "geojson", "geometry": {"type": "Point", "coordinates": coords}}})
+        assert r.status_code == 422 and r.json()["error"]["code"] == "VALIDATION_ERROR", (coords, r.text)
+    edge = client.post("/api/v1/trends", json={"variable_id": "imerg_precip", **PERIOD, "region": {
+        "type": "geojson", "geometry": {"type": "Point", "coordinates": [180, 90]}}})
+    assert edge.status_code != 422 or "Point coordinates" not in edge.text
+
+
 def test_global_region_and_area_limit(client, monkeypatch):
     # Cả thế giới là vùng hợp lệ; phần ngoài cube giả chỉ sinh cảnh báo
     r = client.post("/api/v1/series", json={"variable_id": "imerg_precip", **PERIOD,

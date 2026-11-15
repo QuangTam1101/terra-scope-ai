@@ -79,7 +79,8 @@ export function Hunt() {
     <div className="page hunt">
       <section className="card pad col hunt-head" data-tour="hunt">
         <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div className="col" style={{ gap: 6, minWidth: 0, flex: 1 }}>
+          {/* flex-basis lets the Replay button wrap below the title on phones instead of covering it */}
+          <div className="col" style={{ gap: 6, minWidth: 0, flex: "1 1 260px" }}>
             <h1 style={{ fontSize: 30 }}>Contradiction Hunter</h1>
             <p className="muted" style={{ margin: 0, font: "600 16px/1.5 var(--body)" }}>
               {sci ? "Investigate differences in environmental trends across regions, datasets and periods."
