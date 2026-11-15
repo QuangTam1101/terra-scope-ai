@@ -61,6 +61,25 @@ Ghi chú:
 - **`evap_gldas` có đơn vị mm/ngày.** Muốn đổi ra mm/tháng thì nhân với số ngày của tháng: `cube * cube.time.dt.days_in_month`.
 - Bản trong folder được **nén zlib, không mất dữ liệu**. Đọc lại giống hệt bản gốc (đã kiểm tra bằng `xr.testing.assert_identical`), và xarray tự giải nén khi đọc.
 
+### 3.1b Tám cube 1° thêm ngày 15/11/2026 (cho web)
+
+Làm từ sản phẩm 0,5° đã làm sạch của `preprocess/clean.py` (repo data pipeline riêng): trung bình khối 2 × 2 ô (bỏ NaN), cùng lưới và
+quy ước toạ độ như trên. Ẩm đất: ô có lúc > 0,6 m³/m³ (ven băng) bị bỏ **trước** khi gộp. Trục thời gian chỉ gồm các tháng có dữ liệu,
+vì backend đọc khoảng thời gian từ trục `time`, nên số tháng khác nhau.
+
+| File | Nội dung | Thời gian | Đơn vị | Dung lượng |
+|---|---|---|---|---|
+| `grid/cube_precip_gpcc.nc` | Mưa, trạm đo GPCC Full Data v2022 (không phải NASA) | 2001-01 → 2020-12 | mm/tháng | 17 MB |
+| `grid/cube_precip_cru.nc` | Mưa, trạm đo CRU TS 4.10 (không phải NASA) | 2001-01 → 2025-12 | mm/tháng | 13 MB |
+| `grid/cube_sm_surface_smap.nc` | Ẩm đất lớp mặt SMAP SPL3SMP (chỉ ô chất lượng tốt) | 2015-04 → 2025-12 | m³/m³ | 4 MB |
+| `grid/cube_sm_10_40cm_gldas.nc` | Ẩm đất GLDAS 10–40 cm | 2001-01 → 2025-12 | m³/m³ | 15 MB |
+| `grid/cube_sm_40_100cm_gldas.nc` | Ẩm đất GLDAS 40–100 cm | 2001-01 → 2025-12 | m³/m³ | 15 MB |
+| `grid/cube_sm_100_200cm_gldas.nc` | Ẩm đất GLDAS 100–200 cm | 2001-01 → 2025-12 | m³/m³ | 14 MB |
+| `grid/cube_rootmoist_gldas.nc` | Nước trong đất vùng rễ GLDAS (độ sâu đổi theo lớp thực vật, không chia cho độ dày cố định) | 2001-01 → 2025-12 | kg/m² | 16 MB |
+| `grid/cube_chlor_a_seawifs.nc` | Chlorophyll-a mặt biển SeaWiFS (vệ tinh ngừng cuối 2010) | 2001-01 → 2010-12 | mg/m³ | 12 MB |
+
+Muốn file vào container backend thì phải thêm tên file vào `.dockerignore` (danh sách cho phép từng file).
+
 ### 3.2 Đã xử lý thế nào
 
 1. **Tải** qua NASA Harmony (dịch vụ HOSS của GES DISC). Mỗi biến gồm 288 file tháng NetCDF-4, toàn cầu, ở lưới gốc.
@@ -173,7 +192,7 @@ LST là nhiệt độ của **mặt đất**, không phải của không khí. B
 2. **Ẩm đất trên ô băng:**
    - 563 ô (3,3% đất liền: Greenland, đảo Bắc Cực…) có `soil_moisture` = 1,0 cố định suốt 24 năm. Xu hướng ra 0, nhưng thực chất là không có số liệu.
    - Thêm 391 ô ven băng (63–82°N) có giá trị trộn khoảng 0,77.
-   - Nên loại các ô này khi phân tích ẩm đất, ví dụ `sm.where(sm.std("time") > 0)`.
+   - Từ 15/11/2026 `pipeline.api.load_cube` tự che cả ô có lúc > 0,6 m³/m³ (khoảng `SANITY`) ở mọi biến m³/m³, đúng 954 ô này trên `soil_moisture`. Đọc file trực tiếp bằng xarray thì vẫn thấy chúng: tự che bằng `sm.where(sm.max("time") <= 0.6)`.
 3. **`evap_gldas` âm là có thật:** đó là ngưng tụ hoặc đọng sương giá. Chiếm khoảng 3% ô-tháng, 99% số đó nằm ở vĩ độ trên 50°.
 4. **`t2m` dưới −70 °C ở Nam Cực là có thật:** 313 ô-tháng, đều ở phía nam 72,5°S.
 5. **Chuỗi hằng số**, ví dụ mưa = 0 quanh năm ở sa mạc, làm kiểm định xu hướng trả về NaN. Thư viện `pymannkendall` sẽ in `RuntimeWarning: invalid value encountered in sqrt`; cảnh báo này là bình thường.

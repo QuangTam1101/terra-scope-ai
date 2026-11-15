@@ -1,7 +1,9 @@
-import { useState, type MouseEvent, type ReactNode } from "react";
+import { useMemo, useState, type MouseEvent, type ReactNode } from "react";
+import type { Variable } from "../api";
 import { useStore, type Page } from "../store";
 import { Terra } from "../ui";
 import { DemoPlayer, type Demo } from "../DemoPlayer";
+import { clampPeriod } from "../PlaceCompare";
 
 // Demo cases: only ones where the raw Seasonal Mann-Kendall p and the Hamed-Rao adjusted p agree
 // (SCIENTIFIC_VALIDATION_RESULTS.md), so Explorer and Scientist never see contradicting verdicts.
@@ -28,11 +30,18 @@ const HOW: { art: ReactNode; text: string; sci: string }[] = [
     text: "Test it: how likely is a slope like this by pure chance?", sci: "Seasonal Mann-Kendall raw p compared with α = 0.05." },
 ];
 
+/** A demo's period cut to what the server holds for its variable (the live site's cubes end earlier than local ones). */
+export function fitDemo(d: Demo, variables: Variable[]): Demo {
+  const p = clampPeriod(d.start, d.end, variables.find((v) => v.id === d.variable_id)?.coverage ?? null);
+  return p ? { ...d, start: p.start, end: p.end } : d;
+}
+
 export function DetectiveGuide() {
-  const { audience, go } = useStore();
+  const { audience, go, variables } = useStore();
   const sci = audience === "scientist";
   const [open, setOpen] = useState<string | null>(null);
-  const demo = DEMOS.find((d) => d.id === open);
+  const demos = useMemo(() => DEMOS.map((d) => fitDemo(d, variables)), [variables]);   // stable: DemoPlayer refetches on a new demo object
+  const demo = demos.find((d) => d.id === open);
   const link = (p: Page) => (e: MouseEvent) => { e.preventDefault(); go(p); };
 
   return (
@@ -48,7 +57,7 @@ export function DetectiveGuide() {
       <section className="col" aria-labelledby="guide-cases">
         <h2 id="guide-cases" style={{ fontSize: 22 }}>Watch a case</h2>
         <div className="guide-cards">
-          {DEMOS.map((d) => (
+          {demos.map((d) => (
             <button key={d.id} type="button" className={`card guide-card${open === d.id ? " on" : ""}`} aria-pressed={open === d.id} onClick={() => setOpen(d.id)}>
               <span className="guide-q">{d.question}</span>
               <span className="small muted">{d.place}, {d.start.slice(0, 4)} to {d.end.slice(0, 4)}</span>
