@@ -27,12 +27,6 @@ def main():
     sys.path.insert(0, str(root))
     verify_models(root / "data-pipeline/models")
     os.environ.update(LLM_PROVIDER="template", GEMINI_API_KEY="", WARM_UP="0")
-    from fastapi.testclient import TestClient
-    from backend.app.main import app
-    from backend.app.catalog import VARIABLES
-    from pipeline.forecast import AUX
-    import pandas as pd
-
     rows = []
     def checked(response, expected=200):
         assert response.status_code == expected, f"HTTP {response.status_code}, expected {expected}"
@@ -41,18 +35,28 @@ def main():
     if args.base_url:
         import httpx
         transport = httpx.Client(base_url=args.base_url, timeout=120, trust_env=False)
+        # Keep the probe small: do not import a second scientific application in
+        # the same cgroup when measuring the production server's memory needs.
+        variable_ids = ("imerg_precip", "gldas_soil_moisture_0_10cm", "gldas_air_temperature",
+                        "gldas_evapotranspiration", "merra2_air_temperature_2m")
     else:
+        from fastapi.testclient import TestClient
+        from backend.app.main import app
+        from backend.app.catalog import VARIABLES
+        from pipeline.forecast import AUX
         transport = TestClient(app)
+        variable_ids = tuple(v.id for v in VARIABLES.values() if v.pipeline_id in AUX)
     with transport as client:
         checked(client.get("/api/v1/health"))
         checked(client.get("/api/v1/variables"))
         assert client.get("/docs").status_code == 200
-        for variable in (v for v in VARIABLES.values() if v.pipeline_id in AUX):
+        for variable_id in variable_ids:
             for mode, months in (("outlook", 18), ("satellite", 12)):
                 started = time.perf_counter()
-                status = checked(client.get("/api/v1/forecast/status", params={"variable_id": variable.id, "mode": mode}))
-                first = (pd.Timestamp(status["origin"]) + pd.DateOffset(months=1)).strftime("%Y-%m")
-                request = {"variable_id": variable.id, "mode": mode, "start": first, "months": months,
+                status = checked(client.get("/api/v1/forecast/status", params={"variable_id": variable_id, "mode": mode}))
+                year, month = map(int, status["origin"].split("-"))
+                first = f"{year + month // 12:04d}-{month % 12 + 1:02d}"
+                request = {"variable_id": variable_id, "mode": mode, "start": first, "months": months,
                            "region": {"type": "preset", "id": "mekong_delta"}}
                 result = checked(client.post("/api/v1/forecast", json=request))
                 assert len(result["points"]) == months
@@ -68,11 +72,11 @@ def main():
                 regional_seconds = time.perf_counter() - started
                 target = result["points"][2]["t"]
                 started = time.perf_counter()
-                grid = checked(client.get("/api/v1/forecast/map", params={"variable_id": variable.id, "mode": mode, "month": target}))
+                grid = checked(client.get("/api/v1/forecast/map", params={"variable_id": variable_id, "mode": mode, "month": target}))
                 assert grid["cells"] and grid["t"] == target and grid["lead_months"] == 3
                 assert all(math.isfinite(c["z_forecast"]) and 0 <= c["p_above"] <= 1 and 0 <= c["p_below"] <= 1
                            and c["p_below"] + c["p_above"] <= 1.002 for c in grid["cells"])
-                row = {"variable": variable.id, "mode": mode, "origin": status["origin"], "months": months,
+                row = {"variable": variable_id, "mode": mode, "origin": status["origin"], "months": months,
                        "regional_seconds": round(regional_seconds, 3), "map_seconds": round(time.perf_counter()-started, 3),
                        "map_cells": len(grid["cells"]), "first_forecast": result["points"][0]["forecast"],
                        "status": "passed"}

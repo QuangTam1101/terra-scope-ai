@@ -8,6 +8,13 @@ on:
         description: Must remain false; publishing is disabled during pre-deployment review
         type: boolean
         default: false
+      memory_limit:
+        description: Container memory limit for measured capacity validation
+        type: choice
+        default: 4g
+        options:
+          - 4g
+          - 2g
 
 permissions:
   contents: read
@@ -17,6 +24,8 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      MEMORY_LIMIT: ${{ inputs.memory_limit || '4g' }}
     defaults:
       run:
         shell: bash
@@ -48,7 +57,9 @@ jobs:
         run: |
           mkdir -p validation-reports
           docker image inspect --format '{{.Size}}' "$IMAGE" > validation-reports/image-bytes.txt
-          docker run -d --name terra-api --network none --memory=4g --memory-swap=4g --cpus=2 \
+          cpus=2
+          if [ "$MEMORY_LIMIT" = '2g' ]; then cpus=1; fi
+          docker run -d --name terra-api --network none --memory="$MEMORY_LIMIT" --memory-swap="$MEMORY_LIMIT" --cpus="$cpus" \
             --read-only --tmpfs /tmp:rw,size=128m,mode=1777 \
             --tmpfs /app/backend/.cache/grids:rw,size=128m,mode=1777 \
             -e LLM_PROVIDER=template -e GEMINI_API_KEY= \
@@ -90,4 +101,4 @@ jobs:
         if: success()
         env:
           IMAGE: ${{ steps.tag.outputs.image }}
-        run: echo 'Linux HTTP smoke passed under 4 GiB / 2 CPU; no image was published and no hosting was deployed.' >> "$GITHUB_STEP_SUMMARY"
+        run: echo "Linux HTTP smoke passed under memory limit $MEMORY_LIMIT; no image was published and no hosting was deployed." >> "$GITHUB_STEP_SUMMARY"
