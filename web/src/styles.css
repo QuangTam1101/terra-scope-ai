@@ -986,6 +986,17 @@ select.select::-ms-expand { display: none; }
 .starter > section.card { box-shadow: none; padding: 0; background: none; }
 .starter #case-starter-title { display: none; }
 
+/* "Start investigating" wizard (CaseStarter.tsx), on Home and folded in Explore. Colours are theme tokens only. */
+.wiz-q { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.wiz-q > legend { padding: 0; margin-bottom: 8px; font: 700 17px var(--display); color: var(--ink); }
+.wiz-seg { flex-wrap: wrap; border-radius: 22px; max-width: 100%; }
+.wiz-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.wiz-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 2px solid var(--line); border-radius: 18px; background: var(--surface); }
+.wiz-rank { width: 28px; height: 28px; flex: none; border-radius: 50%; display: inline-grid; place-items: center; background: var(--ink); color: var(--on-ink); font: 800 14px var(--body); }
+.wiz-item .btn { flex: none; }
+.wiz-clue { gap: 6px; padding: 12px 14px; border: 2px dashed var(--line); border-radius: 18px; }
+@media (max-width: 520px) { .wiz-item { flex-wrap: wrap; } .wiz-item .btn { width: 100%; } }
+
 /* "What's changing here?" (PlaceCompare.tsx): on a phone the sparkline column goes and verdicts wrap, so the table fits */
 .pc-chip { white-space: nowrap; }
 .pc-rate-m { display: none; }
