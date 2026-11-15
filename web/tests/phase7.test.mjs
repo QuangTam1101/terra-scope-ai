@@ -17,11 +17,14 @@ const brokenStorage = { getItem() { throw new Error('blocked'); }, setItem() { t
 
 try {
   const demo = await server.ssrLoadModule('/src/config/demo.ts');
-  test('demo video: the local pitch video is configured, only well-formed sources are playable', async () => {
-    assert.equal(demo.DEMO_VIDEO.kind, 'file');
+  test('demo video: the team Drive video is configured, only well-formed sources are playable', async () => {
+    assert.equal(demo.DEMO_VIDEO.kind, 'drive');
     assert.equal(demo.hasPlayableVideo(demo.DEMO_VIDEO), true);
-    // The configured file and poster really exist in web/public (served as /demo/...).
-    for (const p of [demo.DEMO_VIDEO.src, demo.DEMO_VIDEO.poster]) assert.ok((await readFile(new URL(`../public${p}`, import.meta.url))).length > 1000, p);
+    assert.equal(demo.driveEmbedUrl(demo.DEMO_VIDEO.id), 'https://drive.google.com/file/d/1MhZZS5Ej8kTOD07FhYtWfzXJ7EBYB8oc/preview');
+    assert.equal(demo.driveEmbedUrl('../../evil?x=1'), null);
+    assert.equal(demo.hasPlayableVideo({ kind: 'drive', title: 't', id: 'javascript:alert(1)' }), false);
+    // The earlier local pitch video and poster stay in web/public as the fallback (served as /demo/...).
+    for (const p of ['/demo/terra-scope-ai-pitch.mp4', '/demo/pitch-poster.jpg']) assert.ok((await readFile(new URL(`../public${p}`, import.meta.url))).length > 1000, p);
     assert.equal(demo.hasPlayableVideo({ kind: 'none' }), false);
     assert.equal(demo.hasPlayableVideo({ kind: 'youtube', title: 't', id: 'dQw4w9WgXcQ' }), true);
     assert.equal(demo.youtubeEmbedUrl('not a valid id'), null);
@@ -90,9 +93,9 @@ try {
     for (const s of ["Discover Earth", "Get Started", "Watch Demo", "GPM IMERG", "GLDAS Noah", "MERRA-2",
       "Compare Regions", "Ask the AI Detective", "not an official NASA product", "Not affiliated with or endorsed by NASA",
       "describes the past, not the future", "real NASA data: MERRA-2 air temperature trend"]) assert.ok(html.includes(s), s);
-    assert.ok(html.includes('<video') && html.includes('/demo/terra-scope-ai-pitch.mp4'), 'the configured pitch video is rendered');
+    assert.ok(html.includes('<iframe') && html.includes('https://drive.google.com/file/d/1MhZZS5Ej8kTOD07FhYtWfzXJ7EBYB8oc/preview'), 'the configured Drive video is embedded');
     assert.ok(!html.includes('Product Demo: Coming Soon'), 'no placeholder once a video is configured');
-    assert.ok(!html.includes('<iframe'), 'no embed for a local file');
+    assert.ok(!html.includes('<video'), 'no local player when a Drive video is configured');
     assert.ok(!html.includes('—'), 'no long dash on the landing page');
     assert.ok((html.match(/<h1/g) || []).length === 1, 'exactly one h1');
   });
