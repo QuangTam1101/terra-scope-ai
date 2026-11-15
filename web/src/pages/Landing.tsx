@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type JSX } from "react";
 import { geoEquirectangular, geoOrthographic, geoPath } from "d3-geo";
 import heroTrend from "../assets/heroTrend.json";
 import { land } from "../WorldMap";
-import { DEMO_VIDEO, hasPlayableVideo, youtubeEmbedUrl } from "../config/demo";
+import { DEMO_VIDEO, driveEmbedUrl, hasPlayableVideo, youtubeEmbedUrl } from "../config/demo";
 import { Icon, Terra, VERDICT_TEXT } from "../ui";
 import { ThemeToggle } from "../theme";
 
@@ -478,9 +478,9 @@ function DemoVideoSection() {
             {v.captions && <track kind="captions" src={v.captions} srcLang="en" label="English" default />}
           </video>
         )}
-        {playable && v.kind === "youtube" && (
-          <iframe src={youtubeEmbedUrl(v.id)!} title={v.title} loading="lazy"
-            allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+        {playable && (v.kind === "youtube" || v.kind === "drive") && (
+          <iframe src={(v.kind === "youtube" ? youtubeEmbedUrl(v.id) : driveEmbedUrl(v.id))!} title={v.title} loading="lazy"
+            allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
         )}
         {!playable && (
           <div className="lp-video-empty" role="status">
