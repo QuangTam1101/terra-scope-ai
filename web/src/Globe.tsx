@@ -97,6 +97,14 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
     anim.current = requestAnimationFrame(step);
   };
 
+  // A newly chosen country (or switching to the globe with one selected): turn and zoom to it.
+  useEffect(() => {
+    if (!shape || !selected) return;
+    const [w, s, e, n] = selected;
+    const lat = (s + n) / 2, span = Math.max((e - w) * Math.cos((lat * Math.PI) / 180), n - s);   // degrees
+    animateTo({ lon: (w + e) / 2, lat: clampLat(lat), k: Math.max(1, Math.min(MAX_ZOOM, 80 / span)) }, 700);
+  }, [shape]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const proj = useMemo(() => geoOrthographic().translate([CW / 2, CH / 2]).scale(R).rotate([-rot.lon, -rot.lat]).clipAngle(90), [CW, CH, R, rot.lon, rot.lat]);
 
   // ---------- render ----------
