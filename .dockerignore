@@ -23,6 +23,14 @@
 !data-pipeline/processed_data/grid/cube_lst_day.nc
 !data-pipeline/processed_data/grid/cube_lst_night.nc
 !data-pipeline/processed_data/grid/cube_pet.nc
+!data-pipeline/processed_data/grid/cube_precip_gpcc.nc
+!data-pipeline/processed_data/grid/cube_precip_cru.nc
+!data-pipeline/processed_data/grid/cube_sm_surface_smap.nc
+!data-pipeline/processed_data/grid/cube_sm_10_40cm_gldas.nc
+!data-pipeline/processed_data/grid/cube_sm_40_100cm_gldas.nc
+!data-pipeline/processed_data/grid/cube_sm_100_200cm_gldas.nc
+!data-pipeline/processed_data/grid/cube_rootmoist_gldas.nc
+!data-pipeline/processed_data/grid/cube_chlor_a_seawifs.nc
 !data-pipeline/processed_data/indices/
 !data-pipeline/processed_data/indices/climate_indices.csv
 !data-pipeline/models/

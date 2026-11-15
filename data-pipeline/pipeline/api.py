@@ -66,9 +66,9 @@ def load_cube(variable):
     if not path.exists():
         raise FileNotFoundError(f"Chưa có dữ liệu lưới cho {variable} ({path})")
     da = xr.open_dataarray(path).load()
-    if variable == "soil_moisture":
-        # K22 (docs/03): GLDAS ghi 1,0 m³/m³ cố định trên ô băng, ô 1° ven băng có giá trị trộn 0,6–1,0. Che cả ô (mọi tháng)
-        # nếu có lúc vượt khoảng SANITY: 954 ô trên cube 2001–2024. Cube 0,5° đã che băng ở 0,25° nên không đổi gì.
+    if VARIABLES[variable][1] == "m3/m3":
+        # K22 (docs/03): GLDAS ghi 1,0 m³/m³ cố định trên ô băng, ô ven băng có giá trị trộn 0,6–0,95 (cube 1° 0–10 cm: 954 ô;
+        # bản 0,5° của preprocess/clean.py chỉ bỏ θ > 0,95 nên còn ~600 ô mỗi tầng). Che cả ô (mọi tháng) nếu có lúc vượt SANITY.
         da = da.where(da.max("time") <= SANITY["soil_moisture"][1])
     return da
 
