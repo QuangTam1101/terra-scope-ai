@@ -193,14 +193,12 @@ export function Explore() {
         <h2 id="setup" style={{ fontSize: 22 }}>{sci ? "Analysis parameters" : "Set up your case"}</h2>
         <div className="col" style={{ gap: 8 }} data-tour="variable">
           <span className="label">{sci ? "1 · Variable" : "1 · What would you like to investigate?"}</span>
-          <div className="row" style={{ gap: 6 }}>
+          <select className="select param-select" aria-label={sci ? "Variable" : "What would you like to investigate?"}
+            value={sel.parameter} onChange={(e) => pickParameter(e.target.value)}>
             {parameters.map(([id, p]) => (
-              <button key={id} type="button" className={`chip ${sel.parameter === id ? "on" : ""}`} disabled={!p.available}
-                aria-pressed={sel.parameter === id} onClick={() => pickParameter(id)} title={p.available ? p.description : "Not available yet"}>
-                {p.name}
-              </button>
+              <option key={id} value={id} disabled={!p.available}>{p.name}{p.available ? "" : " (not available yet)"}</option>
             ))}
-          </div>
+          </select>
           {variable && <span className="small muted">{sci ? variable.description_technical : variable.description_simple} <InfoButton id={variable.id} /></span>}
           {(units === "°C" || units === "°F") && (
             <div className="row" style={{ gap: 8 }}>

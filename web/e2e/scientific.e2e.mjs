@@ -42,7 +42,7 @@ async function main() {
     await page.evaluate(CAPTURE);
     for (const sc of SCENARIOS) {
       const rec = { ...sc };
-      await page.click(`[...document.querySelectorAll('[data-tour="variable"] .chip')].find((b) => b.innerText.trim() === ${JSON.stringify(sc.parameter)})`);
+      await page.evaluate(setSelect(`document.querySelector('[data-tour="variable"] select')`, await page.evaluate(`return [...document.querySelector('[data-tour="variable"] select').options].find((o) => o.text === ${JSON.stringify(sc.parameter)}).value`)));
       await page.click(`[...document.querySelectorAll('[data-tour="dataset"] .chip')].find((b) => b.innerText.trim().startsWith(${JSON.stringify(sc.dataset)}))`);
       const yearSel = (k) => `[...document.querySelectorAll('[data-tour="years"] select')][${k}]`;
       await page.evaluate(setSelect(yearSel(0), sc.years[0]));
