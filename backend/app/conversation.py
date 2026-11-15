@@ -6,7 +6,7 @@ from . import agent, bridge, catalog, config, service
 from .errors import ApiError
 from .schemas import (ChatContext, ChatResponse, ChatWarning, ChatAction, ChatActionParams,
                       PresetRegion, TrendResponse, ToolResult)
-from .tools import registry, PeriodInput, _region
+from .tools import MAX_MONTHS, registry, PeriodInput, _region
 from .llm import runtime
 
 
@@ -189,7 +189,7 @@ def prepare(req):
         try:
             PeriodInput.model_validate({"variable_id": ctx.variable_id, "dataset_id": ctx.dataset_id, "start": ctx.start, "end": ctx.end})
         except ValidationError:
-            raise ApiError(400, "INVALID_TIME_RANGE", "Choose an ordered period of at most 300 months (2001 to 2025).") from None
+            raise ApiError(400, "INVALID_TIME_RANGE", f"Choose an ordered period of at most {MAX_MONTHS} months (2001 to 2026).") from None
         service._check_time(v, ctx.start, ctx.end)
         for region in [ctx.region, ctx.region_b if intent == "compare" else None]:
             if region:

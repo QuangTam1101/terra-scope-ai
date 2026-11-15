@@ -13,7 +13,7 @@ from .schemas import (BBoxRegion, CompareRequest, CompareResponse, Month, Preset
                       RegionsResponse, SeriesRequest, SeriesResponse, TrendRequest, TrendResponse,
                       VariableItem, VariablesResponse, ToolResult, ToolError, ToolWarning, RegionCatalog, Provenance)
 
-MAX_MONTHS = 300  # 2001-01 to 2025-12 (0.5 degree data); was 288 for the 2001 to 2024 cubes
+MAX_MONTHS = 312  # 2001-01 to 2026-12 (GLDAS cubes reach 2026); was 300 for 2001 to 2025, 288 for 2001 to 2024
 # Cell budget for one agent region. 1000 deg² (MAX_AREA) is about 1000 cells on the old 1° grid but about 4000 on the
 # 0.5° grid, so the cell budget follows the area cap instead of rejecting areas the area cap allows.
 MAX_CELLS = 4500

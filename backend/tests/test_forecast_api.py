@@ -80,3 +80,17 @@ def test_forecast_errors(client, trained):
     assert _post(client, months=99).status_code in (400, 422)
     r = client.post("/api/v1/forecast", json={"variable_id": "gldas_soil_moisture_0_10cm", "region": {"type": "bbox", "bbox": BBOX}})
     assert r.status_code == 503 and r.json()["error"]["code"] == "MODEL_NOT_READY"
+
+
+def test_fc_cubes_cut_to_shared_months(monkeypatch, tmp_path):
+    """GLDAS cubes run to 2025-12, IMERG to 2024-12: cross-variable features need one time axis (forecast._same_grid)."""
+    import numpy as np, pandas as pd, xarray as xr
+    def cube(end):
+        t = pd.date_range("2001-01-01", end, freq="MS")
+        return xr.DataArray(np.zeros((len(t), 2, 2)), coords={"time": t, "lat": [0.5, 1.5], "lon": [0.5, 1.5]}, dims=("time", "lat", "lon"))
+    (tmp_path / "cube_precip.nc").touch()
+    monkeypatch.setattr(fs.papi, "CUBE_DIR", tmp_path)
+    monkeypatch.setattr(fs.papi, "load_cube", lambda v: cube("2025-12-01" if v == "soil_moisture" else "2024-12-01"))
+    cubes = fs._fc_cubes("soil_moisture")
+    assert sorted(cubes) == ["precip", "soil_moisture"]
+    assert {c.sizes["time"] for c in cubes.values()} == {288} and str(cubes["soil_moisture"].time.values[-1])[:7] == "2024-12"

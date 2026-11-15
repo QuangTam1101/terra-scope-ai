@@ -43,9 +43,10 @@ Lý do của từng quyết định nằm ở [`../docs/`](../docs/) (01 thiết
 
 ### 3.1 Tính chất
 
-Mỗi file là một `xarray.DataArray` kiểu **float32**, chiều `(time: 288, lat: 180, lon: 360)`. Tên DataArray trùng tên biến (`precip`, `soil_moisture`…).
+Mỗi file là một `xarray.DataArray` kiểu **float32**, chiều `(time, lat: 180, lon: 360)`. Tên DataArray trùng tên biến (`precip`, `soil_moisture`…).
+`precip`, `t2m`: 288 tháng (2001-01 → 2024-12). `soil_moisture`, `tair_land`, `evap_gldas`: 307 tháng (2001-01 → 2026-07, từ 16/11/2026).
 
-Ô nào đã có dữ liệu thì có **đủ 288 tháng**, không có tháng trống giữa chuỗi. Các con số dưới đây đo trực tiếp trên file.
+Ô nào đã có dữ liệu thì có **đủ mọi tháng** của file, không có tháng trống giữa chuỗi. Các con số dưới đây đo trực tiếp trên file.
 
 | Biến | Ý nghĩa | Nguồn NASA (lưới gốc) | Đơn vị | Số ô có dữ liệu | p1 / trung vị / p99 |
 |---|---|---|---|---|---|
@@ -59,6 +60,7 @@ Ghi chú:
 - **GLDAS chỉ có đất liền, từ 60°S trở lên.** Ô biển và Nam Cực luôn là NaN với `soil_moisture`, `tair_land`, `evap_gldas`. Muốn có nhiệt độ cả trên biển thì dùng `t2m`.
 - **Hai biến nhiệt độ khác nguồn:** `tair_land` là mô hình mặt đất GLDAS, `t2m` là tái phân tích MERRA-2. Đừng ghép chúng thành một chuỗi.
 - **`evap_gldas` có đơn vị mm/ngày.** Muốn đổi ra mm/tháng thì nhân với số ngày của tháng: `cube * cube.time.dt.days_in_month`.
+- **Ba cube GLDAS thêm 2025 và 2026-01 → 2026-07 (16/11/2026):** dựng lại bằng chính `build_cube` của `giovanni_adapter.py` từ 307 file Harmony HOSS (cùng kiểu file với lần tải 13/11). Phần 2001–2024 trùng từng bit với bản cũ (chênh lệch 0, cùng ô NaN). Quy tắc ô băng của `load_cube` (bỏ ô có lúc > 0,6) nay bỏ thêm 1 ô ẩm đất (76,5°N, 101,5°W: 0,601 tháng 7/2026). Forecast cần mọi cube cùng trục thời gian (`forecast._same_grid`), nên `backend/app/forecast_service._fc_cubes` cắt mọi cube về tháng cuối chung (hiện 2024-12): Forecast giữ nguyên như trước.
 - Bản trong folder được **nén zlib, không mất dữ liệu**. Đọc lại giống hệt bản gốc (đã kiểm tra bằng `xr.testing.assert_identical`), và xarray tự giải nén khi đọc.
 
 ### 3.1b Tám cube 1° thêm ngày 15/11/2026 (cho web)
@@ -82,7 +84,7 @@ Muốn file vào container backend thì phải thêm tên file vào `.dockerigno
 
 ### 3.2 Đã xử lý thế nào
 
-1. **Tải** qua NASA Harmony (dịch vụ HOSS của GES DISC). Mỗi biến gồm 288 file tháng NetCDF-4, toàn cầu, ở lưới gốc.
+1. **Tải** qua NASA Harmony (dịch vụ HOSS của GES DISC). Mỗi biến gồm 288 file tháng NetCDF-4 (3 biến GLDAS: 307, thêm 2025 và 2026-01 → 2026-07), toàn cầu, ở lưới gốc.
 2. **Đọc:**
    - IMERG nằm trong nhóm `Grid` với chiều (time, lon, lat); được chuyển về (time, lat, lon).
    - Giá trị fill được đổi thành NaN.

@@ -10,7 +10,7 @@ export interface ExploreState {
 }
 
 const CELL = 0.5;                                          // the cleaned global grid
-const FIRST = "2001-01", LAST = "2025-12";
+const FIRST = "2001-01", LAST = "2026-12";   // GLDAS cubes reach 2026
 const ID = /^[a-z0-9_]{1,64}$/;
 const VIEWS = ["values", "trend", "timelapse"] as const;
 
