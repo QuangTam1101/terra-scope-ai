@@ -126,9 +126,11 @@ export function Explore() {
     cells: globalCells(variable.spatial_resolution_deg), month: month ? MONTHS[month - 1] : undefined,
   }) : null, [gridOp, variable, sel.startYear, sel.endYear, sel.startMonth, sel.endMonth, month]);
 
+  /** Choosing a variable or a dataset resets the period to that dataset's whole record. */
+  const pickVariable = (v: Variable) => setSel({ parameter: v.parameter, variableId: v.id, ...(v.coverage ? periodSel(v.coverage.start, v.coverage.end) : {}) });
   const pickParameter = (p: string) => {
     const first = variables.find((v) => v.parameter === p && v.available) ?? variables.find((v) => v.parameter === p);
-    if (first) setSel({ parameter: p, variableId: first.id });
+    if (first) pickVariable(first);
   };
   const result = run;
   // A dataset with a shorter record (SeaWiFS 2001-2010, GPCC 2001-2020, SMAP 2015-2025) pulls the chosen period inside it.
@@ -215,7 +217,7 @@ export function Explore() {
           <div className="row" style={{ gap: 6 }}>
             {datasets.map((d) => (
               <button key={d.id} type="button" className={`chip ${sel.variableId === d.id ? "on" : ""}`} disabled={!d.available}
-                aria-pressed={sel.variableId === d.id} onClick={() => setSel({ variableId: d.id })}>
+                aria-pressed={sel.variableId === d.id} onClick={() => pickVariable(d)}>
                 {d.dataset_name}{!d.available && <span className="soon">soon</span>}
               </button>
             ))}
