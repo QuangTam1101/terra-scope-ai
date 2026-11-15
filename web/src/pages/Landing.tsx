@@ -1,4 +1,4 @@
-import { useEffect, useRef, type JSX } from "react";
+import { useEffect, useRef, useState, type JSX } from "react";
 import { geoEquirectangular, geoOrthographic, geoPath } from "d3-geo";
 import heroTrend from "../assets/heroTrend.json";
 import { land } from "../WorldMap";
@@ -247,8 +247,18 @@ const TEX_W = 720, TEX_H = 360;               // equirectangular texture, 0.5° 
 const HERO_UP = [[251, 224, 196], [242, 166, 90], [196, 98, 26]], HERO_DOWN = [[207, 225, 244], [127, 178, 229], [47, 111, 179]];
 const HERO_FLAT = [253, 243, 228], HERO_SEA = [184, 222, 245];
 
+/** Trend of the 3° block under a point (the same numbers the globe is painted with), or null when the block has no value. */
+export function heroTrendAt(lon: number, lat: number): { slope: number; sig: boolean } | null {
+  const d = heroTrend as { cell_deg: number; slope_x100: (number | null)[]; sig: string };
+  const nx = 360 / d.cell_deg, ny = 180 / d.cell_deg;
+  const col = Math.min(nx - 1, Math.max(0, Math.floor((lon + 180) / d.cell_deg)));
+  const row = Math.min(ny - 1, Math.max(0, Math.floor((lat + 90) / d.cell_deg)));
+  const v = d.slope_x100[row * nx + col];
+  return v === null || v === undefined ? null : { slope: v / 100, sig: d.sig[row * nx + col] === "1" };
+}
+
 /** Flat colour texture (RGB per 0.5° pixel): posterised trend colour on land, pastel sea elsewhere. */
-function buildTexture(): Uint8ClampedArray {
+function buildTexture(): { tex: Uint8ClampedArray; land: Uint8Array } {
   const d = heroTrend as { cell_deg: number; slope_x100: (number | null)[]; sig: string };
   const nx = 360 / d.cell_deg, ny = 180 / d.cell_deg;
   // encode slope (R) and significance (G) so they can be smoothed together, then classify every texel
@@ -270,10 +280,11 @@ function buildTexture(): Uint8ClampedArray {
   const eq = geoEquirectangular().scale(TEX_W / (2 * Math.PI)).translate([TEX_W / 2, TEX_H / 2]);
   mctx.fillStyle = "#fff"; mctx.beginPath(); geoPath(eq, mctx)(land); mctx.fill();
   const m = mctx.getImageData(0, 0, TEX_W, TEX_H).data;
-  const out = new Uint8ClampedArray(TEX_W * TEX_H * 3);
+  const out = new Uint8ClampedArray(TEX_W * TEX_H * 3), isLand = new Uint8Array(TEX_W * TEX_H);
   for (let i = 0, j = 0; i < enc.length; i += 4, j += 3) {
     let c = HERO_SEA;
     if (m[i + 3] > 127) {
+      isLand[i / 4] = 1;
       const slope = (enc[i] - 128) / 160, a = Math.abs(slope), sig = enc[i + 1] > 127;
       let k = a < 0.08 ? -1 : a < 0.25 ? 0 : a < 0.45 ? 1 : 2;
       if (!sig) k = Math.min(k, 0);
@@ -281,47 +292,66 @@ function buildTexture(): Uint8ClampedArray {
     }
     out[j] = c[0]; out[j + 1] = c[1]; out[j + 2] = c[2];
   }
-  return out;
+  return { tex: out, land: isLand };
 }
 
+type HeroTip = { x: number; y: number; lon: number; lat: number; land: boolean; trend: ReturnType<typeof heroTrendAt> };
+const fmtCoord = (lon: number, lat: number) =>
+  `${Math.abs(lat).toFixed(0)}°${lat >= 0 ? "N" : "S"}, ${Math.abs(lon).toFixed(0)}°${lon >= 0 ? "E" : "W"}`;
+
+/** Interactive: drag to spin (with a little momentum) and tilt, hover or tap to read the trend under the pointer,
+ * arrow keys rotate, double-click resets. Auto-spin pauses while the user is interacting and resumes after a few seconds. */
 function HeroGlobe() {
   const ref = useRef<HTMLCanvasElement>(null);
+  const api = useRef<{ reset: () => void } | null>(null);
+  const [tip, setTip] = useState<HeroTip | null>(null);
+  const [grabbing, setGrabbing] = useState(false);
 
   useEffect(() => {
     const cv = ref.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
-    const tex = buildTexture();
-    const S = HERO_PX, R = S / 2 - 10, TILT = 18 * Math.PI / 180;
-    // per pixel: texture row, longitude offset from the centre meridian, and a two-tone cartoon shade (fixed while it spins)
-    const idx: number[] = [], row: number[] = [], off: number[] = [], lit: number[] = [];
+    const { tex, land: landTex } = buildTexture();
+    const S = HERO_PX, R = S / 2 - 10, TILT0 = 18;
+    // per pixel on the disc: screen position on the unit sphere and a two-tone cartoon shade (fixed, light does not move)
+    const idx: number[] = [], vx: number[] = [], vy: number[] = [], vz: number[] = [], lit: number[] = [];
     for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
       const nx = (x + 0.5 - S / 2) / R, ny = -(y + 0.5 - S / 2) / R, rr = nx * nx + ny * ny;
       if (rr > 1) continue;
-      const z = Math.sqrt(1 - rr);
-      const lat = Math.asin(z * Math.sin(TILT) + ny * Math.cos(TILT));
-      const lon = Math.atan2(nx, z * Math.cos(TILT) - ny * Math.sin(TILT));
-      idx.push((y * S + x) * 4);
-      row.push(Math.min(TEX_H - 1, Math.max(0, Math.floor((90 - lat * 180 / Math.PI) * 2))));
-      off.push(lon * 180 / Math.PI);
+      idx.push((y * S + x) * 4); vx.push(nx); vy.push(ny); vz.push(Math.sqrt(1 - rr));
       // cel shading: a crescent on the lower right is one flat step darker
       const sx = nx - 0.16, sy = ny + 0.16;
       lit.push(sx * sx + sy * sy > 0.86 && nx - ny > -0.2 ? 0.88 : 1);
     }
+    const n = idx.length, row = new Int32Array(n), off = new Float32Array(n);
+    let tiltDone = NaN;
+    // texture row and longitude offset depend only on the tilt, so they are recomputed only when the user tilts
+    const setTilt = (deg: number) => {
+      if (deg === tiltDone) return;
+      tiltDone = deg;
+      const T = deg * Math.PI / 180, sT = Math.sin(T), cT = Math.cos(T);
+      for (let k = 0; k < n; k++) {
+        const lat = Math.asin(vz[k] * sT + vy[k] * cT), lon = Math.atan2(vx[k], vz[k] * cT - vy[k] * sT);
+        row[k] = Math.min(TEX_H - 1, Math.max(0, Math.floor((90 - lat * 180 / Math.PI) * 2)));
+        off[k] = lon * 180 / Math.PI;
+      }
+    };
     const frame = ctx.createImageData(S, S), px = frame.data;
     const proj = geoOrthographic().scale(R).translate([S / 2, S / 2]).clipAngle(90).precision(0.6);
     const path = geoPath(proj, ctx);
     const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    let centre = 100, raf = 0, last = 0;
+    let centre = 100, tilt = TILT0, raf = 0, last = 0, spin = 0, resumeAt = 0, dirty = true;
+    let drag: { id: number; x: number; y: number; t: number; moved: number } | null = null;
     const draw = () => {
+      setTilt(Math.round(tilt * 2) / 2);
       ctx.clearRect(0, 0, S, S);
-      for (let k = 0; k < idx.length; k++) {
+      for (let k = 0; k < n; k++) {
         let lon = centre + off[k];
         lon = ((lon + 180) % 360 + 360) % 360;
         const t = (row[k] * TEX_W + Math.min(TEX_W - 1, Math.floor(lon * 2))) * 3, o = idx[k], f = lit[k];
         px[o] = tex[t] * f; px[o + 1] = tex[t + 1] * f; px[o + 2] = tex[t + 2] * f; px[o + 3] = 255;
       }
       ctx.putImageData(frame, 0, 0);
-      proj.rotate([-centre, -TILT * 180 / Math.PI]);
+      proj.rotate([-centre, -tiltDone]);
       ctx.lineJoin = "round"; ctx.lineCap = "round";
       ctx.beginPath(); path(land); ctx.strokeStyle = "#2e2850"; ctx.lineWidth = 2.2; ctx.stroke();
       // cartoon shine: a soft white oval and a small dot on the upper left
@@ -333,19 +363,101 @@ function HeroGlobe() {
       ctx.beginPath(); ctx.arc(S / 2, S / 2, R, 0, 2 * Math.PI); ctx.strokeStyle = "#2e2850"; ctx.lineWidth = 9; ctx.stroke();
     };
     const tick = (t: number) => {
-      if (last) centre += (t - last) * 0.006;        // about 6 degrees per second
-      last = t; draw(); raf = requestAnimationFrame(tick);
+      const dt = last ? Math.min(64, t - last) : 0;
+      last = t;
+      if (!drag) {
+        if (Math.abs(spin) > 0.002) { centre += spin * dt; spin *= Math.pow(0.94, dt / 16); dirty = true; }   // momentum after a fling
+        else if (!still && t > resumeAt) { centre += dt * 0.006; dirty = true; }                          // about 6 degrees per second
+      }
+      if (dirty) { draw(); dirty = false; }
+      raf = requestAnimationFrame(tick);
     };
-    if (still) draw(); else raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(tick);
+
+    // canvas pixel -> lon/lat with the current rotation (null outside the disc)
+    const toCanvas = (e: { clientX: number; clientY: number }) => {
+      const r = cv.getBoundingClientRect();
+      return { cx: (e.clientX - r.left) / r.width * S, cy: (e.clientY - r.top) / r.height * S, r };
+    };
+    const where = (e: { clientX: number; clientY: number }) => {
+      const { cx, cy, r } = toCanvas(e);
+      if ((cx - S / 2) ** 2 + (cy - S / 2) ** 2 > R * R) return null;
+      proj.rotate([-centre, -Math.round(tilt * 2) / 2]);      // current state, even if no frame has been drawn yet
+      const ll = proj.invert?.([cx, cy]);
+      if (!ll || !Number.isFinite(ll[0])) return null;
+      const lon = ((ll[0] + 180) % 360 + 360) % 360 - 180, lat = ll[1];
+      const ti = Math.min(TEX_H - 1, Math.max(0, Math.floor((90 - lat) * 2))) * TEX_W + Math.min(TEX_W - 1, Math.floor((lon + 180) * 2));
+      return { x: e.clientX - r.left, y: e.clientY - r.top, lon, lat, land: landTex[ti] === 1, trend: heroTrendAt(lon, lat) };
+    };
+    const pause = (ms = 4000) => { resumeAt = performance.now() + ms; };
+    const down = (e: PointerEvent) => {
+      drag = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), moved: 0 };
+      spin = 0; pause(1e9); cv.setPointerCapture(e.pointerId); setGrabbing(true);
+    };
+    const move = (e: PointerEvent) => {
+      if (drag && e.pointerId === drag.id) {
+        const r = cv.getBoundingClientRect(), k = 180 / (r.width * 0.9);   // degrees per CSS pixel
+        const dx = e.clientX - drag.x, dy = e.clientY - drag.y, now = performance.now();
+        centre -= dx * k; tilt = Math.max(-60, Math.min(60, tilt + dy * k));
+        spin = -dx * k / Math.max(8, now - drag.t);
+        drag.moved += Math.abs(dx) + Math.abs(dy); drag.x = e.clientX; drag.y = e.clientY; drag.t = now; dirty = true;
+        if (drag.moved > 6) setTip(null);
+        return;
+      }
+      if (e.pointerType === "mouse") { const w = where(e); setTip(w); if (w) pause(); }
+    };
+    const up = (e: PointerEvent) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const tap = drag.moved <= 6;
+      if (performance.now() - drag.t > 80) spin = 0;     // released after holding still: no fling
+      drag = null; setGrabbing(false); pause(tap ? 6000 : 3000);
+      if (tap) setTip(where(e));                         // tap (touch) or click shows the reading
+    };
+    const leave = (e: PointerEvent) => { if (e.pointerType === "mouse" && !drag) { setTip(null); pause(1200); } };
+    const key = (e: KeyboardEvent) => {
+      const step = e.shiftKey ? 30 : 10;
+      if (e.key === "ArrowLeft") centre -= step; else if (e.key === "ArrowRight") centre += step;
+      else if (e.key === "ArrowUp") tilt = Math.min(60, tilt + step); else if (e.key === "ArrowDown") tilt = Math.max(-60, tilt - step);
+      else return;
+      e.preventDefault(); spin = 0; pause(6000); dirty = true; setTip(null);
+    };
+    const reset = () => { centre = 100; tilt = TILT0; spin = 0; resumeAt = 0; dirty = true; setTip(null); };
+    api.current = { reset };
+    cv.addEventListener("pointerdown", down); cv.addEventListener("pointermove", move);
+    cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+    cv.addEventListener("pointerleave", leave); cv.addEventListener("keydown", key); cv.addEventListener("dblclick", reset);
+    return () => {
+      cancelAnimationFrame(raf); api.current = null;
+      cv.removeEventListener("pointerdown", down); cv.removeEventListener("pointermove", move);
+      cv.removeEventListener("pointerup", up); cv.removeEventListener("pointercancel", up);
+      cv.removeEventListener("pointerleave", leave); cv.removeEventListener("keydown", key); cv.removeEventListener("dblclick", reset);
+    };
   }, []);
 
-  const label = "Globe showing real NASA data: MERRA-2 air temperature trend per decade, 2001 to 2025. Land is coloured by the trend: orange areas warmed, blue areas cooled; pale colours are not statistically significant.";
+  const label = "Interactive globe showing real NASA data: MERRA-2 air temperature trend per decade, 2001 to 2025. Land is coloured by the trend: orange areas warmed, blue areas cooled; pale colours are not statistically significant. Drag or use the arrow keys to rotate; point at a place to read its trend.";
+  const t = tip?.trend;
   return (
-    <figure className="hero-globe" aria-label={label} title="Real NASA data: MERRA-2 air temperature trend, 2001 to 2025 (orange warming, blue cooling)">
+    <figure className="hero-globe" aria-label={label}>
       <div className="hero-globe-ball">
-        <canvas ref={ref} width={HERO_PX} height={HERO_PX} role="img" aria-label={label} />
+        <canvas ref={ref} width={HERO_PX} height={HERO_PX} role="img" aria-label={label} tabIndex={0}
+          className={grabbing ? "grabbing" : undefined} />
+        {tip && (
+          <div className="hero-tip" role="status" style={{ left: tip.x, top: tip.y }}>
+            <b className="num">{fmtCoord(tip.lon, tip.lat)}</b>
+            {!tip.land ? <span>Ocean. This globe colours land only.</span>
+              : !t ? <span>No data here.</span>
+              : <>
+                  <span className="num" style={{ color: t.slope >= 0 ? "var(--up-2)" : "var(--down-2)", fontWeight: 800 }}>
+                    {t.slope >= 0 ? "+" : "−"}{Math.abs(t.slope).toFixed(2)} °C per decade</span>
+                  <span>{t.slope >= 0 ? "Warmed" : "Cooled"}, 2001 to 2025 · {t.sig ? "clear trend" : "not proven yet"}</span>
+                </>}
+          </div>
+        )}
       </div>
+      <figcaption className="hero-globe-hint">
+        Drag to spin · point at a place to read its trend
+        <button type="button" className="hero-globe-reset" onClick={() => api.current?.reset()}>Reset</button>
+      </figcaption>
       <div className="hero-mascot"><Terra size={120} label="Terra, the Earth detective" /></div>
     </figure>
   );
