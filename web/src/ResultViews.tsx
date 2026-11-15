@@ -14,9 +14,10 @@ const METHOD: Record<string, string> = {
 const nice = (x: unknown, fallback: string) => (typeof x === "string" ? METHOD[x] ?? x.replace(/_/g, " ") : fallback);
 const extra = (t: TrendResponse) => t as TrendResponse & { method?: string; slope_method?: string; alpha?: number };
 
-/** Position on the "How sure are we?" meter: the dark zone is p below alpha. A drawing aid only, not a statistic. */
+/** Position on the "How strong is the evidence?" meter, 0 to 100 from weak (left) to strong (right).
+ * Smaller p sits further right; p below alpha lands in the right 30% (the clear-evidence zone). A drawing aid only, not a statistic. */
 export function meterPos(p: number, alpha = 0.05): number {
-  const x = p <= alpha ? (p / alpha) * 30 : 30 + ((Math.min(p, 1) - alpha) / (1 - alpha)) * 70;
+  const x = p <= alpha ? 70 + (1 - p / alpha) * 30 : (1 - (Math.min(p, 1) - alpha) / (1 - alpha)) * 70;
   return Math.max(2, Math.min(98, x));
 }
 
@@ -25,13 +26,19 @@ export function EvidenceMeter({ t }: { t: TrendResponse }) {
   const alpha = extra(t).alpha ?? 0.05;
   if (s === "untested" || t.p_value === null) return <p className="warn" style={{ margin: 0 }}>Not tested: at least 10 years and 70% of months are needed.</p>;
   const up = (t.slope_per_decade ?? 0) >= 0;
+  const pos = meterPos(t.p_value, alpha);
   return (
     <div className="col" style={{ gap: 6 }}>
-      <div className="meter" role="img" aria-label={`p-value ${pval(t.p_value)}; the threshold is ${alpha}`}>
-        <span className="zone" />
-        <span className="dot" style={{ left: `${meterPos(t.p_value, alpha)}%`, background: up ? "var(--up-2)" : "var(--down-2)" }} />
+      <div className="meter-wrap">
+        <span className="meter-pin num" style={{ left: `${pos}%`, transform: pos < 20 ? "translateX(-12px)" : pos > 80 ? "translateX(calc(-100% + 12px))" : "translateX(-50%)" }}>This result: p {pval(t.p_value)}</span>
+        <div className="meter" role="img" aria-label={`p-value ${pval(t.p_value)}; clear evidence needs p below ${alpha}`}>
+          <span className="zone" />
+          <span className="fill" style={{ width: `${pos}%` }} />
+          <span className="tick" />
+          <span className="dot" style={{ left: `${pos}%`, background: up ? "var(--up-2)" : "var(--down-2)" }} />
+        </div>
       </div>
-      <div className="meter-labels"><span>Clear evidence zone (p below {alpha})</span><span className="num">This result: p {pval(t.p_value)}</span></div>
+      <div className="meter-labels"><span>Weaker evidence</span><span className="meter-clear">Clear evidence (p below {alpha})</span></div>
       <span className="small">{s === "clear"
         ? "The trend passed the test: it is unlikely to be chance alone. That still does not tell us why it happens."
         : "Not strong enough yet to confirm a clear change. That is not the same as \"no change\"; a longer record may help."}{" "}
@@ -66,7 +73,8 @@ export function ExplorerResult({ run, actions }: { run: Run; actions: ReactNode 
       </Section>
       <Section title="How strong is the evidence?">
         <EvidenceMeter t={t} />
-        <div className="col" style={{ gap: 4 }}>
+        <div className="col" style={{ gap: 4, marginTop: 6 }}>
+          <span className="small" style={{ fontWeight: 800 }}>Data coverage</span>
           <div style={{ height: 10, borderRadius: 6, background: "var(--track)", overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${Math.round((q.n_months / (q.n_months + q.missing_months || 1)) * 100)}%`, background: "var(--quality)" }} />
           </div>

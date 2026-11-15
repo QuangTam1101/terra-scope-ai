@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Terra-scope AI: Detecting and Testing Trends in NASA Earth Observation Data</title>
+<style>
+  @page { size: A4; margin: 22mm 20mm 22mm 20mm; }
+  html { font-family: Cambria, "Times New Roman", serif; font-size: 10.8pt; line-height: 1.45; color: #111; }
+  body { margin: 0; }
+  h1 { font-size: 19pt; line-height: 1.25; margin: 0 0 6pt; text-align: center; font-weight: bold; }
+  .subtitle { text-align: center; font-size: 12pt; margin: 0 0 14pt; font-style: italic; }
+  .authors { text-align: center; margin: 0 0 3pt; }
+  .meta { text-align: center; font-size: 9.5pt; color: #333; margin: 0 0 16pt; }
+  .fill { background: #fff3b0; padding: 0 2pt; }
+  h2 { font-size: 13pt; margin: 16pt 0 6pt; break-after: avoid; }
+  h3 { font-size: 11pt; margin: 11pt 0 4pt; font-style: italic; font-weight: bold; break-after: avoid; }
+  p { margin: 0 0 7pt; text-align: justify; hyphens: auto; }
+  .abstract { border-top: 0.6pt solid #000; border-bottom: 0.6pt solid #000; padding: 8pt 0 6pt; margin-bottom: 8pt; }
+  .abstract h2 { margin: 0 0 4pt; font-size: 11pt; text-transform: none; }
+  .kw { font-size: 9.8pt; }
+  ol.hyp { margin: 0 0 8pt 0; padding-left: 20pt; }
+  ol.hyp li { margin-bottom: 4pt; text-align: justify; }
+  table { border-collapse: collapse; width: 100%; font-size: 9pt; line-height: 1.3; margin: 2pt 0 4pt; break-inside: avoid; }
+  th, td { padding: 3pt 5pt; text-align: left; vertical-align: top; }
+  thead th { border-top: 1pt solid #000; border-bottom: 0.6pt solid #000; font-weight: bold; }
+  tbody tr:last-child td { border-bottom: 1pt solid #000; }
+  td.n, th.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tcap, figcaption { font-size: 9.3pt; line-height: 1.35; text-align: justify; }
+  .tcap { margin: 10pt 0 3pt; break-after: avoid; }
+  .tnote { font-size: 8.6pt; color: #222; margin: 0 0 10pt; text-align: justify; }
+  figure { margin: 10pt 0 12pt; break-inside: avoid; }
+  figure img { display: block; width: 100%; margin: 0 auto 5pt; }
+  figure.narrow img { width: 92%; }
+  b.lab { font-weight: bold; }
+  .refs p { padding-left: 22pt; text-indent: -22pt; text-align: left; font-size: 9.6pt; margin-bottom: 4pt; }
+  .small { font-size: 9.6pt; }
+  .appx p, .appx li { font-size: 9.6pt; text-align: left; }
+  .appx ul { padding-left: 16pt; margin: 0 0 6pt; }
+  a { color: #0b3d91; text-decoration: none; word-break: break-word; }
+  .pb { break-before: page; }
+</style>
+</head>
+<body>
+
+<h1>Terra-scope AI: Detecting and Testing Trends in<br>NASA Earth Observation Data</h1>
+<p class="subtitle">Technical report, NASA International Space Apps Challenge 2026,<br>challenge “Be An Earth System Trend Detective!”</p>
+<p class="authors">Le Gia Hung, Dang Ngo Duy Phu, Thieu Quang Tam, Le Truong Minh Dang, Tran Bao Long<br><span style="font-size:9.8pt">Team Terra-scope AI</span></p>
+<p class="meta">Universal Event, submitted 15 November 2026<br>
+Source code: <a href="https://github.com/QuangTam1101/terra-scope-ai">github.com/QuangTam1101/terra-scope-ai</a> (commit 248e3e6)</p>
+
+<div class="abstract">
+<h2>Abstract</h2>
+<p>Open NASA Earth observation data can show where the environment is changing, but turning gridded archives into a statistically tested trend still requires specialist skills. We built Terra-scope AI, a web application in which a user chooses a variable, a region and a period, and the application constructs the monthly regional series from NASA data and tests it for a monotonic trend. The application serves five variables on a common 0.5° global grid for 2001 to 2025: precipitation from GPM IMERG, soil moisture, land air temperature and evapotranspiration from the GLDAS Noah model, and 2 m air temperature from the MERRA-2 reanalysis. Trends were tested with the Seasonal Mann-Kendall test and their rates estimated with the seasonal Sen slope; global maps controlled the false discovery rate across 259,200 grid cells, and differences between two regions were tested on the difference series with a block-bootstrap interval. Global-mean 2 m air temperature increased by 0.17 °C per decade (p &lt; 0.001, n = 300 months) and Arctic temperature by 0.32 °C per decade (p &lt; 0.001). Rainfall over the Mekong Delta increased by 3.4 mm/month per decade, but the increase was not significant (p = 0.077, n = 288). The Sahel and Wisconsin had trends of opposite sign, yet the difference between them was not established (95% interval −0.87 to +0.12 °C per decade). An independent recomputation reproduced the application in all 48 executed comparisons. The main limitation is that the significance rule assumes serial independence, which inflates false positives in strongly autocorrelated series.</p>
+<p class="kw"><b>Keywords:</b> trend detection; Seasonal Mann-Kendall test; Sen slope; false discovery rate; NASA Earth observations</p>
+</div>
+
+<h2>1. Introduction</h2>
+<p>NASA distributes decades of open data on rainfall, soil moisture and temperature. These products are, however, spread across several data centres, stored as large gridded files and documented for specialists, so that choosing and reading the appropriate product can be more difficult than the analysis itself. Monthly climate series also combine a strong seasonal cycle with large year-to-year variability. A series that appears to rise on a chart is therefore not, by itself, evidence of a trend: a statistical test is required to judge whether a change of the observed size could plausibly have arisen without any underlying trend.</p>
+<p>Existing tools address parts of this problem. NASA Giovanni produces area-averaged time series and maps from many NASA products without requiring the user to download files, and the KNMI Climate Explorer offers statistical analyses of a wide range of climate datasets. Neither tool, as far as we are aware, guides a non-specialist from a question about a place to a tested trend with its uncertainty stated in plain language. The challenge set by the organisers asks for exactly this sequence of five steps: choose a variable, choose a region, choose a period, construct the time series, and test whether the trend is statistically significant.</p>
+<p>Our first objective was to build a web application that carries out these five steps for any region on Earth and reports each result together with its uncertainty and its limitations, for readers ranging from secondary-school students to researchers. Our second objective was to use the application to examine a small set of questions about recent climate change, and to verify that the numbers it reports are computed correctly. Before analysing the data we formulated the following hypotheses and predictions:</p>
+<ol class="hyp">
+  <li><b>Warming.</b> Near-surface air temperature has increased since 2001. We predicted a positive and significant trend in global-mean 2 m air temperature over 2001 to 2025, and, because of the well-documented amplification of warming at high northern latitudes, a larger rate over the Arctic than over the globe.</li>
+  <li><b>Regional rainfall.</b> Monthly rainfall over the Mekong Delta, Vietnam, has increased since 2001. We predicted a positive and significant trend over 2001 to 2024.</li>
+  <li><b>Opposite trends.</b> Two regions whose trends have opposite signs need not have rates that differ significantly. We predicted that a formal test of the difference series can fail to establish a difference even when the two individual trends point in opposite directions.</li>
+  <li><b>Correctness.</b> We predicted that the values reported by the application are identical, within numerical rounding, to those obtained by an independent implementation of the same documented method.</li>
+</ol>
+
+<h2>2. Methods</h2>
+
+<h3>2.1 Data</h3>
+<p>The application uses NASA products obtained from the Goddard Earth Sciences Data and Information Services Center (GES DISC) with the same variable codes as NASA Giovanni, retrieved through the Harmony subsetting service, which extracts a variable without altering its values, units or grid (Table 1). Precipitation came from the Integrated Multi-satellitE Retrievals for GPM (IMERG; Huffman et al., 2023); soil moisture in the 0 to 10 cm layer, land air temperature and evapotranspiration came from the Global Land Data Assimilation System (GLDAS) Noah model (Beaudoing et al., 2020); and 2 m air temperature came from the Modern-Era Retrospective analysis for Research and Applications, Version 2 (MERRA-2; Global Modeling and Assimilation Office &amp; Pawson, 2015). IMERG Final is released about 3.5 months after the observation month, so the last month with data was September 2025. Vegetation index and land surface temperature from MODIS on Terra (Didan, 2021; Wan et al., 2021; Running et al., 2021) were obtained through AppEEARS for three sample regions in Vietnam only and are not used in the results below.</p>
+
+<p class="tcap"><b>Table 1.</b> NASA products used for the results in this report. Native grid is the resolution of the distributed product; all products were regridded to a common 0.5° grid (Section 2.2).</p>
+<table>
+  <thead><tr><th>Variable</th><th>Product (short name, version)</th><th>Type</th><th>Native grid</th><th>Period used</th></tr></thead>
+  <tbody>
+    <tr><td>Precipitation</td><td>GPM IMERG Final monthly (GPM_3IMERGM, V07)</td><td>Satellite estimate, gauge-adjusted</td><td>0.1°</td><td>2001-01 to 2025-09</td></tr>
+    <tr><td>Soil moisture, 0 to 10 cm</td><td>GLDAS Noah monthly (GLDAS_NOAH025_M, 2.1)</td><td>Land surface model</td><td>0.25°</td><td>2001-01 to 2025-12</td></tr>
+    <tr><td>Air temperature over land</td><td>GLDAS Noah monthly (as above)</td><td>Land surface model</td><td>0.25°</td><td>2001-01 to 2025-12</td></tr>
+    <tr><td>Evapotranspiration</td><td>GLDAS Noah monthly (as above)</td><td>Land surface model</td><td>0.25°</td><td>2001-01 to 2025-12</td></tr>
+    <tr><td>Air temperature, 2 m</td><td>MERRA-2 (M2IMNXASM, 5.12.4)</td><td>Reanalysis</td><td>0.5° × 0.625°</td><td>2001-01 to 2025-12</td></tr>
+  </tbody>
+</table>
+<p class="tnote">Independent reference data used only for checks: CRU TS 4.10 and GPCC v2022 gridded gauge precipitation, GHCN monthly station summaries (GSOM), and SMAP Level 3 soil moisture, version 9 (O’Neill et al., 2023).</p>
+
+<h3>2.2 Processing</h3>
+<p>Fill values were set to missing, values were converted to common units (mm/month, m³/m³ and °C) and values outside physical ranges were removed. GLDAS cells whose soil moisture equalled the full layer capacity (3.95% of land cells, mainly on Greenland and glaciers) represent ice rather than saturated soil, so values above 0.95 m³/m³ were removed. All products were then regridded to a common 0.5° global grid (720 × 360 = 259,200 cells) by area-conservative averaging, with weights equal to the overlapping area on the sphere; a cell was retained only when at least 50% of its area had valid data. We chose 0.5° because it is the native resolution of the coarsest rainfall reference (CRU TS), and conservative averaging preserves regional means, which bilinear interpolation does not.</p>
+
+<h3>2.3 Regional series and trend test</h3>
+<p>A region was defined by a bounding box (west, south, east and north edges), a named preset or a single grid cell. Boxes crossing the 180° meridian or smaller than one grid cell were rejected. The monthly regional value was the cos(latitude)-weighted mean of the 0.5° cells whose centres lie in the box, and missing months were left missing. Monthly anomalies were computed as each month’s value minus the mean of the same calendar month over the selected period. A series was tested only if it spanned at least 10 years and at least 70% of its months had data.</p>
+<p>We tested for a monotonic trend with the Seasonal Mann-Kendall (SMK) test (Hirsch et al., 1982), which compares each calendar month only with the same month in other years, so that the seasonal cycle cannot produce a trend. The rate of change was estimated with the seasonal Sen slope (Sen, 1968) and is reported per decade. Both were computed with pyMannKendall (Hussain &amp; Mahmud, 2019) with a period of 12 months. A trend was called significant when the SMK p-value was below α = 0.05. As diagnostics that do not change this verdict, we also report the Hamed-Rao modified Mann-Kendall p-value on the anomalies (Hamed &amp; Rao, 1998), which inflates the variance of the test statistic to account for autocorrelation, and a 95% interval from ordinary least squares on the anomalies.</p>
+
+<h3>2.4 Global trend maps</h3>
+<p>Every cell of the 0.5° grid was tested separately with a vectorised SMK. Because testing 259,200 cells at α = 0.05 would be expected to mark about 13,000 cells as significant even if no cell had a trend, we controlled the false discovery rate at 0.05 across all cells with data using the Benjamini-Hochberg procedure (Benjamini &amp; Hochberg, 1995). The grid implementation omits the tie correction in the SMK variance.</p>
+
+<h3>2.5 Comparing two regions</h3>
+<p>To test whether two regions changed at different rates, we formed the difference series (anomaly of region A minus anomaly of region B for each month). Its rate is the Sen slope of that series, its p-value comes from the Hamed-Rao test, and its 95% interval from a moving-block bootstrap (Künsch, 1989) with 12-month blocks and 1,000 resamples. A difference was reported as established only when p &lt; 0.05 and the interval excluded zero; when p &lt; 0.05 but the interval included zero, the comparison was reported as inconclusive. Before a comparison, deterministic checks confirmed that both sides measure the same quantity in the same units over comparable periods with sufficient data. Comparisons between two datasets or two periods have no formal test in the application and were treated as descriptive.</p>
+
+<h3>2.6 Data checks and software verification</h3>
+<p>The processed grids were compared with the independent references listed under Table 1 using Pearson correlation of monthly values per cell or per station, and with global means from the literature. In addition, one regional series was exported manually from NASA Giovanni and compared month by month with the application.</p>
+<p>To test hypothesis 4, we wrote an independent implementation (an “oracle”) that reads the processed NetCDF files directly and recomputes the weighted regional means, the SMK test, the Sen slope, the Hamed-Rao test, the OLS interval and the Benjamini-Hochberg procedure without importing any code from the application. The oracle was run on 25 regional cases (including invalid requests), two complete global maps, one two-region comparison and 15 synthetic series with known properties, and five scenarios were checked in a browser, including both PDF report editions. A comparison passed when every quantity was within a stated tolerance (6 × 10⁻⁷ absolute for monthly values, which the interface rounds to six decimals; 10⁻⁹ relative for Sen slopes; 10⁻⁷ relative for p-values) and every significance flag was identical. A simulation of 200 first-order autoregressive series with coefficient 0.8 and no trend was used to estimate the false-positive rate of the decision rule.</p>
+
+<h3>2.7 Application and AI assistant</h3>
+<p>The backend was written in Python with FastAPI and the interface in React with TypeScript. Users can explore maps and regional trends, compare two regions, datasets or periods, export reports, and ask questions in plain language. The question-answering assistant uses the Gemini model, called only from the backend. The model can call seven allow-listed tools that use the same services as the web pages; every number it cites is compared with the tool results and, if any number does not match, the answer is regenerated once and otherwise replaced by a template answer that uses no model. The assistant therefore explains results but does not compute them.</p>
+
+<h2>3. Results</h2>
+
+<h3>3.1 Data checks</h3>
+<p>The processed data agreed with the independent references (Table 2). IMERG correlated with GPCC at r = 0.92 over 73,527 cells and with 34,313 GHCN stations at r = 0.89; both correlations fell to 0.32 and 0.21 when one series was shifted by one month. Global-mean MERRA-2 temperature and IMERG rainfall were within published ranges. Agreement between GLDAS and SMAP soil moisture was weaker (r = 0.69). The Giovanni export and the application agreed at r = 0.9996.</p>
+
+<p class="tcap"><b>Table 2.</b> Checks of the processed 0.5° data against independent sources. r is the Pearson correlation of monthly values unless stated otherwise.</p>
+<table>
+  <thead><tr><th>Comparison</th><th>Result</th><th>Sample</th></tr></thead>
+  <tbody>
+    <tr><td>Recomputation from the raw files</td><td>All compared cells match; global means differ by at most 0.19%</td><td>6 months per product</td></tr>
+    <tr><td>IMERG vs GPCC, per cell</td><td>r = 0.92 (0.32 with a one-month shift)</td><td>73,527 cells</td></tr>
+    <tr><td>IMERG vs GHCN-GSOM stations</td><td>r = 0.89 (0.21 with a one-month shift)</td><td>34,313 stations</td></tr>
+    <tr><td>IMERG vs CRU TS, map of mean rainfall</td><td>r = 0.96</td><td>Global map</td></tr>
+    <tr><td>GLDAS vs MERRA-2 air temperature, map of means</td><td>r = 0.997; mean difference over land 0.23 °C</td><td>Global map</td></tr>
+    <tr><td>GLDAS 0 to 10 cm vs SMAP soil moisture</td><td>r = 0.69</td><td>33,099 cells</td></tr>
+    <tr><td>MERRA-2 global-mean 2 m temperature</td><td>14.6 °C</td><td>Expected 13.5 to 16 °C</td></tr>
+    <tr><td>IMERG global-mean rainfall</td><td>2.76 mm/day</td><td>GPCP about 2.7 mm/day</td></tr>
+    <tr><td>Giovanni area average vs application, GLDAS soil moisture, box 104.8° E to 106.3° E, 9.2° N to 10.8° N</td><td>r = 0.9996; mean absolute difference 0.0018 m³/m³</td><td>293 months</td></tr>
+  </tbody>
+</table>
+
+<h3>3.2 Regional trends</h3>
+<p>Global-mean 2 m air temperature increased significantly by 0.17 °C per decade from 2001 to 2025, and Arctic temperature by 0.32 °C per decade (both p &lt; 0.001, n = 300; Table 3). Temperature over the Southern Ocean and Antarctica decreased by 0.26 °C per decade (p &lt; 0.001). Rainfall over the Mekong Delta increased by 3.43 mm/month per decade from 2001 to 2024, but the trend was not significant (p = 0.077, n = 288; Figure 1b); over the whole Mekong basin the rate was similar (3.18 mm/month per decade, p = 0.070). Rainfall over the Amazon Basin decreased significantly (−7.1 mm/month per decade, p &lt; 0.001). Over the Mekong Delta, 2 m air temperature increased by 0.19 °C per decade (p &lt; 0.001, n = 300; Figure 1a).</p>
+<p>The SMK and Hamed-Rao p-values led to different verdicts in 4 of the 21 regional series that were tested in the verification suite. Three of these appear in Table 3: over Hanoi and over the Southern Ocean the SMK test was significant while the Hamed-Rao test was not, and over the Mekong basin the reverse held.</p>
+
+<p class="tcap"><b>Table 3.</b> Regional trends. Slopes are seasonal Sen slopes per decade. The verdict uses the SMK p-value at α = 0.05; the Hamed-Rao p-value is a diagnostic. n is the number of months with data; no month was missing in any series. Coverage is the fraction of the box with valid cells (below 100% where the variable is defined over land only).</p>
+<table>
+  <thead><tr><th>Region</th><th>Variable (dataset), period</th><th class="n">Slope per decade</th><th class="n">SMK p</th><th class="n">Hamed-Rao p</th><th class="n">n</th><th>Verdict</th></tr></thead>
+  <tbody>
+    <tr><td>Whole world</td><td>2 m air temperature (MERRA-2), 2001 to 2025</td><td class="n">+0.167 °C</td><td class="n">&lt; 0.001</td><td class="n">0.011</td><td class="n">300</td><td>Significant</td></tr>
+    <tr><td>Arctic, north of 66.5° N</td><td>2 m air temperature (MERRA-2), 2001 to 2025</td><td class="n">+0.322 °C</td><td class="n">&lt; 0.001</td><td class="n">&lt; 0.001</td><td class="n">300</td><td>Significant</td></tr>
+    <tr><td>Hanoi, Vietnam</td><td>2 m air temperature (MERRA-2), 2001 to 2025</td><td class="n">+0.228 °C</td><td class="n">&lt; 0.001</td><td class="n">0.090</td><td class="n">300</td><td>Significant</td></tr>
+    <tr><td>Southern Ocean and Antarctica, south of 60° S</td><td>2 m air temperature (MERRA-2), 2001 to 2025</td><td class="n">−0.262 °C</td><td class="n">&lt; 0.001</td><td class="n">0.23</td><td class="n">300</td><td>Significant</td></tr>
+    <tr><td>Amazon Basin</td><td>Precipitation (IMERG), 2001 to 2024</td><td class="n">−7.12 mm/month</td><td class="n">&lt; 0.001</td><td class="n">0.033</td><td class="n">288</td><td>Significant</td></tr>
+    <tr><td>Mekong Delta, Vietnam</td><td>Precipitation (IMERG), 2001 to 2024</td><td class="n">+3.43 mm/month</td><td class="n">0.077</td><td class="n">0.29</td><td class="n">288</td><td>Not significant</td></tr>
+    <tr><td>Mekong basin</td><td>Precipitation (IMERG), 2001 to 2024</td><td class="n">+3.18 mm/month</td><td class="n">0.070</td><td class="n">&lt; 0.001</td><td class="n">288</td><td>Not significant</td></tr>
+    <tr><td>Central Highlands, Vietnam (97% coverage)</td><td>Evapotranspiration (GLDAS), 2001 to 2025</td><td class="n">+6.79 mm/month</td><td class="n">&lt; 0.001</td><td class="n">&lt; 0.001</td><td class="n">300</td><td>Significant</td></tr>
+    <tr><td>California, USA (75% coverage)</td><td>Soil moisture 0 to 10 cm (GLDAS), 2001 to 2025</td><td class="n">+0.0019 m³/m³</td><td class="n">0.14</td><td class="n">0.38</td><td class="n">300</td><td>Not significant</td></tr>
+  </tbody>
+</table>
+<p class="tnote">Boxes (west, south, east, north): Amazon Basin −75, −15, −50, 5; California −124.5, 32.5, −114, 42; Mekong Delta 104.4, 8.5, 106.9, 11.1; Mekong basin 94, 8, 110, 35; Central Highlands 107.2, 11.2, 109.0, 15.5; Hanoi 105.3, 20.5, 106.1, 21.4.</p>
+
+<figure>
+  <img style="width:80%" src="figures/fig1_mekong_delta.png" alt="Monthly anomalies over the Mekong Delta with Sen trend lines">
+  <figcaption><b>Figure 1.</b> Monthly anomalies over the Mekong Delta, Vietnam (grey line), annual means of the anomalies (dots) and the seasonal Sen slope (orange line, drawn through the median anomaly at the middle of the record). (a) MERRA-2 2 m air temperature, 2001 to 2025, n = 300, SMK p &lt; 0.001 (solid line: significant). (b) GPM IMERG precipitation, 2001 to 2024, n = 288, SMK p = 0.077 (dashed line: not significant).</figcaption>
+</figure>
+
+<h3>3.3 Global trend map</h3>
+<p>For MERRA-2 2 m air temperature over 2001 to 2025, 163,713 of the 259,200 cells (63%) had a significant trend after false discovery rate control: 142,545 cells (55%) increased and 21,168 cells (8%) decreased (Figure 2). Significant decreases were concentrated over the Southern Ocean and parts of Antarctica, central Africa and South and Southeast Asia. For IMERG precipitation over 2001 to 2024, 73,266 of the 257,760 cells with data (28%) had a significant trend.</p>
+
+<figure class="narrow">
+  <img src="figures/fig2_global_trend_map.png" alt="Global map of 2 m air temperature trends">
+  <figcaption><b>Figure 2.</b> Seasonal Sen slope of MERRA-2 2 m air temperature, 2001 to 2025, on the 0.5° grid (Robinson projection). Orange: increase; blue: decrease. Cells shown in grey were not significant after Benjamini-Hochberg control of the false discovery rate at 0.05 (95,487 of 259,200 cells).</figcaption>
+</figure>
+
+<h3>3.4 Comparison of two regions</h3>
+<p>From 2001 to 2025, 2 m air temperature over the Sahel (17° W to 30° E, 10° N to 18° N) decreased by 0.21 °C per decade (SMK p &lt; 0.001), whereas over Wisconsin, USA (92.9° W to 86.8° W, 42.5° N to 47.1° N) it increased by 0.21 °C per decade (SMK p = 0.15; n = 300 for both). The difference series had a Sen slope of −0.38 °C per decade and a Hamed-Rao p-value of 0.022, but its 95% block-bootstrap interval (−0.87 to +0.12 °C per decade) included zero, so the comparison was classified as inconclusive (Figure 3). Over the Sahel, the two temperature products disagreed in sign: MERRA-2 gave −0.21 °C per decade and GLDAS +0.80 °C per decade, both with SMK p &lt; 0.001.</p>
+
+<figure>
+  <img src="figures/fig3_sahel_wisconsin.png" alt="Difference series Sahel minus Wisconsin">
+  <figcaption><b>Figure 3.</b> Difference between the monthly 2 m air temperature anomalies of the Sahel and Wisconsin (MERRA-2, 2001 to 2025; grey line), annual means (dots) and the Sen slope of the difference series (blue dashed line, −0.38 °C per decade). Hamed-Rao p = 0.022; 95% moving-block bootstrap interval −0.87 to +0.12 °C per decade (12-month blocks, 1,000 resamples); n = 300.</figcaption>
+</figure>
+
+<h3>3.5 Verification</h3>
+<p>All 48 executed oracle comparisons passed and none failed (Table 4). The largest differences were 5 × 10⁻⁷ for monthly values (the interface rounds to six decimals), 4 × 10⁻¹⁴ for Sen slopes and 2 × 10⁻¹⁶ for p-values, and no cell of the two global maps received a different verdict. Four planned checks were not run: the content of Gemini answers, recomputation of the bootstrap interval, drawing a box on the map, and the experimental outlook page. In the autocorrelation simulation, the SMK rule rejected the null hypothesis in 51.5% of 200 trend-free series and the Hamed-Rao test in 24%, against a nominal 5%.</p>
+
+<p class="tcap"><b>Table 4.</b> Verification results as of 15 November 2026.</p>
+<table>
+  <thead><tr><th>Suite</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td>Independent oracle: 25 regional cases, 2 global maps, 1 comparison, 15 synthetic series, 5 browser scenarios</td><td>48 passed, 0 failed, 1 inconclusive (false-positive simulation), 4 not run</td></tr>
+    <tr><td>Backend unit tests</td><td>258 passed</td></tr>
+    <tr><td>Data pipeline tests</td><td>63 passed, 2 skipped</td></tr>
+    <tr><td>Frontend unit tests</td><td>66 passed</td></tr>
+    <tr><td>Live API and report PDF tests on NASA data</td><td>26 passed, 5 skipped (Gemini only)</td></tr>
+    <tr><td>Browser end-to-end tests</td><td>13 passed</td></tr>
+  </tbody>
+</table>
+
+<h2>4. Discussion</h2>
+<p>The results support hypothesis 1. Global-mean near-surface temperature increased significantly over 2001 to 2025, at a rate (0.17 °C per decade) within the plausibility range used in our data checks (0.1 to 0.45 °C per decade), and the Arctic warmed at about twice the global rate. The cooling found over the Southern Ocean and Antarctica rests on one reanalysis, and its Hamed-Rao p-value (0.23) indicates that the evidence is weak once autocorrelation is allowed for.</p>
+<p>Hypothesis 2 was not supported at the 5% level. Rainfall over the Mekong Delta rose by 3.4 mm/month per decade, but with p = 0.077 the test could not exclude chance. This result does not show that rainfall has not changed: with only 24 years of highly variable monthly rainfall (Figure 1b), the record may be too short to detect a trend of this size, and the verdict was sensitive to the period chosen (adding 2025 gave p = 0.041, with a Hamed-Rao p-value of 0.15). We therefore regard the Mekong Delta rainfall trend as unresolved.</p>
+<p>The comparison of the Sahel and Wisconsin supports hypothesis 3. Although the two regional trends have opposite signs, the trend of their difference was not established, because the bootstrap interval included zero. Reporting the two trends side by side would have suggested a contrast that the data do not confirm. The two regions were chosen after their individual trends had been seen, so this example illustrates the method rather than testing a prior hypothesis about these regions. The disagreement between MERRA-2 and GLDAS over the Sahel shows a second reason for caution: two NASA products can disagree in sign, and the application cannot determine which is correct. It therefore names the dataset on every result.</p>
+<p>Hypothesis 4 was supported for every component that was checked. The oracle reproduced all regional, map and comparison values within numerical rounding. This establishes that the application computes the documented method correctly. It does not establish that every reported trend reflects a physical change.</p>
+<p>The most important limitation concerns the decision rule. The SMK test assumes that the years are independent, but climate series are often autocorrelated. In our simulation with strong autocorrelation, the rule produced false positives in about half of trend-free series. The Hamed-Rao test reduced this rate but did not remove the problem, and the two p-values disagreed for 4 of 21 regional series. Small SMK p-values for strongly autocorrelated series, such as the Southern Ocean result, should therefore be read with caution. Several corrections, including the test of Hirsch and Slack (1984), are being evaluated, and the application displays the Hamed-Rao p-value beside the verdict so that users can see when the two disagree.</p>
+<p>Further limitations follow from the data. Four of the five gridded variables come from a land surface model or a reanalysis, so their trends may partly reflect model physics or changes in the assimilated observations. The record covers at most 25 years. On the global maps, omitting the tie correction makes the precipitation map conservative in dry regions: 4,151 IMERG cells would change their verdict if the correction were applied. Finally, the content of the AI assistant’s answers, the bootstrap interval and the experimental outlook page were not checked by the oracle, and the outlook page was outside the scope of this report.</p>
+<p>Two extensions would address the main gaps: adopting an autocorrelation-robust decision rule once one of the candidate corrections has been validated, and adding formal tests for differences between datasets and between periods, which the application currently treats as descriptive. In conclusion, Terra-scope AI turns open NASA rainfall, soil moisture and temperature data into tested regional and global trends that non-specialists can explore and specialists can audit, and the independent recomputation confirms that the numbers it reports match the documented method.</p>
+
+<h2>Acknowledgements</h2>
+<p>We thank the NASA GES DISC, LP DAAC and NSIDC DAAC for open access to the data, the organisers of the NASA Space Apps Challenge, and Dr James Acker for setting the challenge. Terra-scope AI is a student project; it is not an official NASA product and is not endorsed by NASA.</p>
+
+<h2>Data and code availability</h2>
+<p class="small">All NASA products are openly available from the links in Appendix A and require a free NASA Earthdata Login. The source code, the download and cleaning scripts, the verification suite and the scripts that produced the figures in this report (<i>report/source/</i>) are available at <a href="https://github.com/QuangTam1101/terra-scope-ai">github.com/QuangTam1101/terra-scope-ai</a>.</p>
+
+<div class="refs">
+<h2>References</h2>
+<p>Beaudoing, H., Rodell, M., &amp; Hydrological Sciences Laboratory. (2020). <i>GLDAS Noah land surface model L4 monthly 0.25 x 0.25 degree, version 2.1</i> [Data set]. NASA GES DISC. <a href="https://doi.org/10.5067/SXAVCZFAQLNO">https://doi.org/10.5067/SXAVCZFAQLNO</a></p>
+<p>Benjamini, Y., &amp; Hochberg, Y. (1995). Controlling the false discovery rate: A practical and powerful approach to multiple testing. <i>Journal of the Royal Statistical Society: Series B, 57</i>(1), 289–300. <a href="https://doi.org/10.1111/j.2517-6161.1995.tb02031.x">https://doi.org/10.1111/j.2517-6161.1995.tb02031.x</a></p>
+<p>Didan, K. (2021). <i>MODIS/Terra vegetation indices monthly L3 global 1km SIN grid V061</i> [Data set]. NASA LP DAAC. <a href="https://doi.org/10.5067/MODIS/MOD13A3.061">https://doi.org/10.5067/MODIS/MOD13A3.061</a></p>
+<p>Global Modeling and Assimilation Office, &amp; Pawson, S. (2015). <i>MERRA-2 instM_2d_asm_Nx: 2d, monthly mean, single-level, assimilation, single-level diagnostics V5.12.4</i> [Data set]. NASA GES DISC. <a href="https://doi.org/10.5067/5ESKGQTZG7FO">https://doi.org/10.5067/5ESKGQTZG7FO</a></p>
+<p>Hamed, K. H., &amp; Rao, A. R. (1998). A modified Mann-Kendall trend test for autocorrelated data. <i>Journal of Hydrology, 204</i>(1–4), 182–196. <a href="https://doi.org/10.1016/S0022-1694(97)00125-X">https://doi.org/10.1016/S0022-1694(97)00125-X</a></p>
+<p>Hirsch, R. M., &amp; Slack, J. R. (1984). A nonparametric trend test for seasonal data with serial dependence. <i>Water Resources Research, 20</i>(6), 727–732. <a href="https://doi.org/10.1029/WR020i006p00727">https://doi.org/10.1029/WR020i006p00727</a></p>
+<p>Hirsch, R. M., Slack, J. R., &amp; Smith, R. A. (1982). Techniques of trend analysis for monthly water quality data. <i>Water Resources Research, 18</i>(1), 107–121. <a href="https://doi.org/10.1029/WR018i001p00107">https://doi.org/10.1029/WR018i001p00107</a></p>
+<p>Huffman, G. J., Stocker, E. F., Bolvin, D. T., Nelkin, E. J., &amp; Tan, J. (2023). <i>GPM IMERG Final precipitation L3 1 month 0.1 degree x 0.1 degree V07</i> [Data set]. NASA GES DISC. <a href="https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07">https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07</a></p>
+<p>Hussain, M., &amp; Mahmud, I. (2019). pyMannKendall: A python package for non parametric Mann Kendall family of trend tests. <i>Journal of Open Source Software, 4</i>(39), 1556. <a href="https://doi.org/10.21105/joss.01556">https://doi.org/10.21105/joss.01556</a></p>
+<p>Künsch, H. R. (1989). The jackknife and the bootstrap for general stationary observations. <i>The Annals of Statistics, 17</i>(3), 1217–1241. <a href="https://doi.org/10.1214/aos/1176347265">https://doi.org/10.1214/aos/1176347265</a></p>
+<p>O’Neill, P. E., Chan, S., Njoku, E. G., Jackson, T., Bindlish, R., &amp; Chaubell, J. (2023). <i>SMAP L3 radiometer global daily 36 km EASE-Grid soil moisture, version 9</i> [Data set]. NASA NSIDC DAAC. <a href="https://doi.org/10.5067/4XXOGX0OOW1S">https://doi.org/10.5067/4XXOGX0OOW1S</a></p>
+<p>Running, S., Mu, Q., Zhao, M., &amp; Moreno, A. (2021). <i>MODIS/Terra net evapotranspiration gap-filled 8-day L4 global 500m SIN grid V061</i> [Data set]. NASA LP DAAC. <a href="https://doi.org/10.5067/MODIS/MOD16A2GF.061">https://doi.org/10.5067/MODIS/MOD16A2GF.061</a></p>
+<p>Sen, P. K. (1968). Estimates of the regression coefficient based on Kendall’s tau. <i>Journal of the American Statistical Association, 63</i>(324), 1379–1389. <a href="https://doi.org/10.1080/01621459.1968.10480934">https://doi.org/10.1080/01621459.1968.10480934</a></p>
+<p>Wan, Z., Hook, S., &amp; Hulley, G. (2021). <i>MODIS/Terra land surface temperature/emissivity 8-day L3 global 1km SIN grid V061</i> [Data set]. NASA LP DAAC. <a href="https://doi.org/10.5067/MODIS/MOD11A2.061">https://doi.org/10.5067/MODIS/MOD11A2.061</a></p>
+</div>
+
+<div class="appx">
+<h2>Appendix A. NASA data and tools</h2>
+<ul>
+  <li>GPM IMERG Final monthly, V07: <a href="https://disc.gsfc.nasa.gov/datasets/GPM_3IMERGM_07/summary">disc.gsfc.nasa.gov/datasets/GPM_3IMERGM_07/summary</a></li>
+  <li>GLDAS Noah monthly 0.25°, v2.1: <a href="https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary">disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary</a></li>
+  <li>MERRA-2 M2IMNXASM, 5.12.4: <a href="https://disc.gsfc.nasa.gov/datasets/M2IMNXASM_5.12.4/summary">disc.gsfc.nasa.gov/datasets/M2IMNXASM_5.12.4/summary</a></li>
+  <li>SMAP SPL3SMP, version 9: <a href="https://nsidc.org/data/spl3smp/versions/9">nsidc.org/data/spl3smp/versions/9</a></li>
+  <li>NASA Giovanni: <a href="https://giovanni.gsfc.nasa.gov/giovanni/">giovanni.gsfc.nasa.gov/giovanni</a>; NASA Harmony: <a href="https://harmony.earthdata.nasa.gov/">harmony.earthdata.nasa.gov</a>; AppEEARS: <a href="https://appeears.earthdatacloud.nasa.gov/">appeears.earthdatacloud.nasa.gov</a></li>
+</ul>
+<h2>Appendix B. Reproducibility</h2>
+<ul>
+  <li>Code version: branch <i>main</i>, commit 248e3e6, 15 November 2026.</li>
+  <li>Data: download scripts in <i>data-pipeline/download/</i> (NASA Earthdata Login required), cleaning with <i>data-pipeline/preprocess/clean.py</i>.</li>
+  <li>Verification: <i>validation/</i> (oracle and test cases) and <i>scripts/test-all.ps1</i>.</li>
+  <li>Figures and Table 3 of this report: <i>report/source/</i> (fetch scripts that query the running backend, and <i>make_figures.py</i>).</li>
+</ul>
+</div>
+
+</body>
+</html>

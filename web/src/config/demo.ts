@@ -21,10 +21,11 @@ export type DemoVideo =
   | { kind: "file"; title: string; src: string; poster?: string; captions?: string }
   | { kind: "youtube"; title: string; id: string };
 
-// Music-only promo (no speech): the English headlines are burned into the picture, so there is no captions track.
-// Source and QA: media/demo/PROMO_PRODUCTION_NOTES.md. Code change AI-assisted.
+// Website pitch video (about 67 s, music only, no speech): the English text is burned into the picture, so there is
+// no captions track. This is NOT the Space Apps submission demo (that one must be 30 s or shorter).
+// Source and QA: media/demo/PITCH_VIDEO_NOTES.md. Code change AI-assisted.
 export const DEMO_VIDEO: DemoVideo = {
-  kind: "file", title: "Terra-Scope AI: 30-second promo", src: "/demo/terra-scope-ai-promo-30s.mp4", poster: "/demo/poster.jpg",
+  kind: "file", title: "Terra-Scope AI: pitch video", src: "/demo/terra-scope-ai-pitch.mp4", poster: "/demo/pitch-poster.jpg",
 };
 
 /** Only well-formed YouTube ids produce an embed URL (privacy-enhanced domain); anything else is rejected. */

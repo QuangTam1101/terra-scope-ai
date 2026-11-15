@@ -511,10 +511,17 @@ dl.gloss dt { font-weight: 800; font-size: 14.5px; } dl.gloss dd { margin: 2px 0
 /* Explorer: slightly larger reading text; Scientist: denser tables. Colours and components stay the same. */
 .aud-explorer .result p, .aud-explorer .plain-lead { font-size: 16px; }
 .plain-lead { margin: 0; font: 700 16px/1.55 var(--body); }
-.meter { position: relative; height: 16px; border-radius: 999px; background: var(--ne-bg); }
-.meter > .zone { position: absolute; left: 0; top: 0; bottom: 0; width: 30%; border-radius: 999px 0 0 999px; background: var(--ink); }
-.meter > .dot { position: absolute; top: -5px; width: 24px; height: 24px; margin-left: -12px; border-radius: 999px; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.25); }
+.meter-wrap { position: relative; padding-top: 30px; }
+.meter-pin { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; font: 800 12px var(--body); color: var(--ink);
+  background: #fff; border: 2px solid var(--line); border-radius: 999px; padding: 2px 9px; }
+.meter { position: relative; height: 16px; border-radius: 999px; background: #e4dccd; box-shadow: inset 0 0 0 1px rgba(43,37,64,.08); }
+.meter > .zone { position: absolute; right: 0; top: 0; bottom: 0; width: 30%; border-radius: 0 999px 999px 0; background: var(--sig-bg);
+  background-image: repeating-linear-gradient(135deg, rgba(29,79,134,.12) 0 4px, transparent 4px 8px); }
+.meter > .tick { position: absolute; left: 70%; top: -5px; bottom: -5px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--sig-ink); box-shadow: 0 0 0 2px #fff; }
+.meter > .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--ink); }
+.meter > .dot { position: absolute; top: 50%; width: 24px; height: 24px; transform: translate(-50%, -50%); border-radius: 999px; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); z-index: 1; }
 .meter-labels { display: flex; justify-content: space-between; font: 700 12px var(--body); color: var(--muted); gap: 8px; }
+.meter-labels .meter-clear { width: 30%; min-width: 0; text-align: right; color: var(--sig-ink); }
 .disclose { border-radius: 16px; background: var(--hover); padding: 8px 12px; }
 .disclose > summary { cursor: pointer; font: 800 14px var(--body); min-height: 32px; display: flex; align-items: center; }
 .disclose[open] > summary { margin-bottom: 6px; }
