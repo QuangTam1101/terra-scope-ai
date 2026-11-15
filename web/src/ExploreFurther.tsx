@@ -1,30 +1,32 @@
 // Phase 8.5D1 (Seasonal Trend Explorer) and D3 (Time Window Explorer), shown under the Explore chart.
 // D1 is descriptive: yearly means of the chosen months and a Theil-Sen slope, with no significance test, because no
 // season-specific test is approved yet. D3 reuses the production /trends test for each window and caps the number
-// of windows, and says clearly that many windows mean many tests.
+// of windows, and says clearly that many windows mean many tests. Stripes, Month by year and Each year live in Patterns.tsx.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type TrendResponse } from "./api";
 import { useStore } from "./store";
+import { EachYear, MonthGrid, Stripes } from "./Patterns";
 import { MAX_WINDOWS, SEASONS, seasonalYears, senPerDecade } from "./explore";
 import { pval, signed, VerdictBadge } from "./ui";
-import { trendF } from "./units";
+import { convFor, convTrend } from "./units";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const TABS = [["stripes", "Stripes"], ["grid", "Month by year"], ["years", "Each year"], ["season", "Seasons"], ["window", "Time window"]] as const;
+type Tab = (typeof TABS)[number][0];
 
 export function ExploreFurther() {
   const { run } = useStore();
-  const [tab, setTab] = useState<"season" | "window">("season");
+  const [tab, setTab] = useState<Tab>("stripes");
   if (!run) return null;
   return (
     <section className="card pad col chartcard" aria-labelledby="further">
       <div className="row" style={{ justifyContent: "space-between" }}>
         <h2 id="further" style={{ fontSize: 20 }}>Explore further · {run.place.label}</h2>
         <div className="seg" role="tablist" aria-label="Exploration view">
-          <button type="button" role="tab" aria-selected={tab === "season"} className={tab === "season" ? "on" : ""} onClick={() => setTab("season")}>Seasons</button>
-          <button type="button" role="tab" aria-selected={tab === "window"} className={tab === "window" ? "on" : ""} onClick={() => setTab("window")}>Time window</button>
+          {TABS.map(([id, name]) => <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? "on" : ""} onClick={() => setTab(id)}>{name}</button>)}
         </div>
       </div>
-      {tab === "season" ? <Seasons /> : <Windows />}
+      {tab === "stripes" ? <Stripes /> : tab === "grid" ? <MonthGrid /> : tab === "years" ? <EachYear /> : tab === "season" ? <Seasons /> : <Windows />}
     </section>
   );
 }
@@ -77,7 +79,7 @@ function Seasons() {
 }
 
 function Windows() {
-  const { run, variable, tempUnit, showError } = useStore();
+  const { run, variable, tempUnit, audience, showError } = useStore();
   const cov = variable?.coverage;
   const y0 = cov ? Number(cov.start.slice(0, 4)) : 2001, y1 = cov ? Number(cov.end.slice(0, 4)) : 2024;
   const [start, setStart] = useState(y0), [end, setEnd] = useState(y1);
@@ -104,8 +106,8 @@ function Windows() {
   }, [start, end, run]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!run) return null;
-  const F = tempUnit === "F" && run.trend.units === "°C";
-  const shown = rows.map((r) => ({ ...r, t: F ? trendF(r.t) : r.t })).sort((a, b) => a.start - b.start || a.end - b.end);
+  const c = convFor(run.variable.display_units, tempUnit, audience);   // windows come raw from the API; run is already shown
+  const shown = rows.map((r) => ({ ...r, t: c ? convTrend(r.t, c) : r.t })).sort((a, b) => a.start - b.start || a.end - b.end);
   const u = run.variable.display_units;
   const years = Array.from({ length: y1 - y0 + 1 }, (_, i) => y0 + i);
   return (

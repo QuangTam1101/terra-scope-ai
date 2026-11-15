@@ -1,13 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, type TrendGrid, type ValueGrid } from "../api";
-import { areaPlace, cellPlace, useStore, WORLD } from "../store";
+import { api, ApiError, type SensitivityResponse, type TrendGrid, type ValueGrid, type Variable } from "../api";
+import { areaPlace, cellPlace, useStore, WORLD, type Place, type Selection } from "../store";
+import { clampPeriod, PlaceCompare } from "../PlaceCompare";
+import { ShareButton } from "../ShareButton";
+import { exploreHash, linkPlace, parseExplore, type ExploreState } from "../urlState";
+import { CaseStarter } from "../CaseStarter";
+import type { StarterCase } from "../starterCases";
+import { InfoButton } from "../InfoButton";
+import { Term } from "../Term";
+import { seriesCsv } from "../report/model";
 import { periodEnd, periodMonths, periodStart } from "../period";
 import { PlacePicker } from "../PlacePicker";
 import { Legend, WorldMap, type Layer } from "../WorldMap";
 import { TrendChart } from "../TrendChart";
 import { Terra } from "../ui";
 import { ExplorerResult, ScientistResult } from "../ResultViews";
-import { trendGridF, valueGridF } from "../units";
+import { convFor, convTrendGrid, convValueGrid } from "../units";
 import { APPEEARS_URL, giovanniUrl } from "../config/giovanni";
 import { globalCells, gridMessage, regionalSteps, type GridOp } from "../progress";
 import { ExploreFurther } from "../ExploreFurther";
@@ -19,9 +27,18 @@ const GRID_CACHE = new Map<string, TrendGrid | ValueGrid>();
 /** "2001-01" → "Jan 2001" for labels. */
 const periodLabel = (ym: string) => `${MONTHS[Number(ym.slice(5, 7)) - 1].slice(0, 3)} ${ym.slice(0, 4)}`;
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+/** Selection fields for a "YYYY-MM" to "YYYY-MM" period. */
+const periodSel = (start: string, end: string): Partial<Selection> =>
+  ({ startYear: +start.slice(0, 4), startMonth: +start.slice(5, 7), endYear: +end.slice(0, 4), endMonth: +end.slice(5, 7) });
+/** The period clamped to a variable's record (GPCC, SMAP and SeaWiFS are shorter); the whole record when they do not overlap. */
+const fitPeriod = (v: Variable, start: string, end: string): Partial<Selection> => {
+  if (!v.coverage) return {};
+  const p = clampPeriod(start, end, v.coverage) ?? { start: v.coverage.start, end: v.coverage.end };
+  return periodSel(p.start, p.end);
+};
 
 export function Explore() {
-  const { variables, sel, setSel, variable, runAnalysis, running, run, showError, go, tempUnit, setTempUnit, progress, cancelAnalysis, audience } = useStore();
+  const { variables, sel, setSel, variable, runAnalysis, running, run, showError, go, tempUnit, setTempUnit, progress, cancelAnalysis, audience, regions, ready, page } = useStore();
   const sci = audience === "scientist";
   const [layer, setLayer] = useState<Layer>("trend");
   const [timelapse, setTimelapse] = useState(false);   // 2D time-lapse replaces the static map while on
@@ -71,10 +88,9 @@ export function Explore() {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void mapRef.current?.requestFullscreen?.().catch(() => undefined);
   }, []);
-  const isTemp = units === "°C" || units === "°F";
-  const toF = isTemp && tempUnit === "F";
-  const shownTrend = useMemo(() => (trendGrid && toF ? trendGridF(trendGrid) : trendGrid), [trendGrid, toF]);
-  const shownValues = useMemo(() => (valueGrid && toF ? valueGridF(valueGrid) : valueGrid), [valueGrid, toF]);
+  const conv = convFor(units, tempUnit, audience);   // map grids come raw from the API
+  const shownTrend = useMemo(() => (trendGrid && conv ? convTrendGrid(trendGrid, conv) : trendGrid), [trendGrid, conv]);
+  const shownValues = useMemo(() => (valueGrid && conv ? convValueGrid(valueGrid, conv) : valueGrid), [valueGrid, conv]);
 
   // Load the map layer for the chosen dataset and period (cached per combination). Before fetching, ask the
   // server whether this map is already computed so the message says what is really happening (Phase 8.5A).
@@ -115,6 +131,60 @@ export function Explore() {
     if (first) setSel({ parameter: p, variableId: first.id });
   };
   const result = run;
+  // A dataset with a shorter record (SeaWiFS 2001-2010, GPCC 2001-2020, SMAP 2015-2025) pulls the chosen period inside it.
+  useEffect(() => {
+    if (!variable?.coverage) return;
+    const fit = fitPeriod(variable, periodStart(sel), periodEnd(sel)), s = sel;
+    if (fit.startYear !== s.startYear || fit.startMonth !== (s.startMonth ?? 1) || fit.endYear !== s.endYear || fit.endMonth !== (s.endMonth ?? 12)) setSel(fit);
+  }, [variable?.id]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /** Open one variable at a place, its period clamped to that variable's record. */
+  const openVariable = (id: string, place: Place, start: string, end: string) => {
+    const v = variables.find((x) => x.id === id);
+    if (v) void runAnalysis({ parameter: v.parameter, variableId: v.id, place, ...fitPeriod(v, start, end) });
+  };
+
+  /** "Not sure where to start?" (F5): open a curated case. */
+  const pickCase = (c: StarterCase) => {
+    const r = c.place.type === "preset" ? regions.find((x) => x.id === (c.place as { id: string }).id) : undefined;
+    const place: Place = c.place.type === "bbox" ? { ref: c.place, label: c.placeName, bbox: c.place.bbox }
+      : { ref: c.place, label: r?.name ?? c.placeName, bbox: r?.bbox ?? WORLD.bbox };
+    setTimelapse(false);
+    openVariable(c.variable_id, place, c.start, c.end);
+  };
+
+  // Shareable link (F4): restore variable, place, period and view from "#explore?..." once, then keep the address current.
+  const restored = useRef(false);
+  const restore = (hash: string) => {
+    const st = parseExplore(hash);
+    if (!st) return;
+    if (st.view === "timelapse") setTimelapse(true); else if (st.view) setLayer(st.view);
+    const v = variables.find((x) => x.id === st.variableId && x.available);
+    const r = st.place?.kind === "region" ? regions.find((x) => x.id === (st.place as { id: string }).id) : undefined;
+    const place: Place | undefined = !st.place ? undefined : st.place.kind === "cell" ? cellPlace(st.place.lon, st.place.lat)
+      : st.place.kind === "box" ? areaPlace(st.place.bbox) : r && { ref: { type: "preset", id: r.id }, label: r.name, bbox: r.bbox };
+    const target = v ?? variable;
+    if (!target || (!v && !place)) return;
+    const start = st.start ?? periodStart(sel), end = st.end ?? periodEnd(sel);
+    void runAnalysis({ parameter: target.parameter, variableId: target.id, ...(place ? { place } : {}), ...fitPeriod(target, start <= end ? start : end, end) });
+  };
+  const share: ExploreState = { variableId: sel.variableId, place: linkPlace(sel.place.ref), start: periodStart(sel), end: periodEnd(sel), view: timelapse ? "timelapse" : layer };
+  const shareHash = exploreHash(share);
+  const latest = useRef({ restore, shareHash });
+  latest.current = { restore, shareHash };
+  useEffect(() => {
+    if (restored.current || !ready) return;
+    restored.current = true;
+    restore(location.hash);
+  }, [ready]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // A link pasted while Explore is already open changes only the hash: restore it too (our own replaceState fires no event).
+    const onHash = () => { if (restored.current && location.hash.startsWith("#explore?") && location.hash !== latest.current.shareHash) latest.current.restore(location.hash); };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  useEffect(() => {
+    if (page === "explore" && restored.current && location.hash !== shareHash) history.replaceState(null, "", shareHash);
+  }, [page, shareHash]);
 
   return (
     <div className="explore">
@@ -129,8 +199,8 @@ export function Explore() {
               <option key={id} value={id} disabled={!p.available}>{p.name}{p.available ? "" : " (not available yet)"}</option>
             ))}
           </select>
-          {variable && <span className="small muted">{sci ? variable.description_technical : variable.description_simple}</span>}
-          {isTemp && (
+          {variable && <span className="small muted">{sci ? variable.description_technical : variable.description_simple} <InfoButton id={variable.id} /></span>}
+          {(units === "°C" || units === "°F") && (
             <div className="row" style={{ gap: 8 }}>
               <span className="small muted">Show temperature in</span>
               <div className="seg" role="group" aria-label="Temperature unit">
@@ -141,7 +211,7 @@ export function Explore() {
           )}
         </div>
         <div className="col" style={{ gap: 8 }} data-tour="dataset">
-          <span className="label">{sci ? "2 · Product" : "2 · Which NASA dataset should we use?"}</span>
+          <span className="label">{sci ? "2 · Product" : "2 · Which dataset should we use?"}{variable && <> <InfoButton id={`dataset:${variable.id.split("_")[0]}`} /></>}</span>
           <div className="row" style={{ gap: 6 }}>
             {datasets.map((d) => (
               <button key={d.id} type="button" className={`chip ${sel.variableId === d.id ? "on" : ""}`} disabled={!d.available}
@@ -186,6 +256,11 @@ export function Explore() {
         </button>
       </section>
 
+      <details className="card pad starter">
+        <summary>Not sure where to start? Pick a ready case</summary>
+        <CaseStarter onPick={pickCase} />
+      </details>
+
       {/* ---------- map ---------- */}
       <section ref={mapRef} className={`card pad col mapcard${expanded ? " map-expanded" : ""}`} aria-label="Map" data-tour="map">
         <div className="row" style={{ justifyContent: "space-between" }}>
@@ -211,7 +286,7 @@ export function Explore() {
           </div>
         </div>
         {timelapse && variable?.available ? (
-          <Timelapse variable={variable} start={periodStart(sel)} end={periodEnd(sel)} toF={toF}
+          <Timelapse variable={variable} start={periodStart(sel)} end={periodEnd(sel)} conv={conv}
             bbox={sel.place.bbox[2] - sel.place.bbox[0] >= 360 ? null : sel.place.bbox} />
         ) : <>
         <WorldMap layer={layer} trend={shownTrend} values={shownValues} loading={gridLoading} loadingInfo={gridInfo} units={units}
@@ -258,12 +333,20 @@ export function Explore() {
             <p style={{ font: "700 15px/1.5 var(--body)", margin: 0 }}>Pick a place on the map or from the list, then press Run analysis. I'll check if the change is real or just noise.</p>
           </div>
         )}
-        {!running && result && <ResultBody />}
+        {!running && result && <ResultBody share={share} />}
       </section>
       <ChartCard />
+      {!running && result && (
+        <section className="card pad col" aria-labelledby="compare-title">
+          <h2 id="compare-title" style={{ fontSize: 20 }}>What's changing here?</h2>
+          <PlaceCompare place={result.place} start={result.trend.start} end={result.trend.end} variables={variables}
+            onOpen={(id) => openVariable(id, result.place, result.trend.start, result.trend.end)} />
+        </section>
+      )}
+      <MoreYears />
       {!running && <ExploreFurther />}
       <span className="footer explore-foot">
-        NASA data: GPM IMERG, GLDAS Noah, MERRA-2, MODIS ({variable?.spatial_resolution_deg ?? 0.5}° global grid, {years[0]} to {years[years.length - 1]}).{" "}
+        <a href="#guide">Numbers checked against an independent recalculation</a> · not peer reviewed · NASA data: GPM IMERG, GLDAS Noah, MERRA-2, MODIS, SMAP, SeaWiFS; ground references (not NASA): GPCC, CRU TS ({variable?.spatial_resolution_deg ?? 0.5}° global grid, {years[0]} to {years[years.length - 1]}).{" "}
         <button type="button" className="btn soft" style={{ minHeight: 32, padding: "0 12px", fontSize: 12.5 }} onClick={() => go("report")}>Open report</button>
       </span>
     </div>
@@ -299,7 +382,61 @@ function ChartCard() {
   );
 }
 
-function ResultBody() {
+// "Would more years help?" (F6): the same test re-run for every start year, from POST /trends/sensitivity.
+function MoreYears() {
+  const { run, running, audience } = useStore();
+  const [res, setRes] = useState<SensitivityResponse | null | "error">(null);
+  useEffect(() => {
+    if (!run) return;
+    const ctrl = new AbortController();
+    setRes(null);
+    api.sensitivity(run.variable.id, run.place.ref, run.trend.start, run.trend.end, ctrl.signal)
+      .then(setRes, () => { if (!ctrl.signal.aborted) setRes("error"); });
+    return () => ctrl.abort();
+  }, [run]);
+  if (running || !run || res === "error" || run.trend.significant === null) return null;
+  if (!res) return <section className="card pad"><div className="skel" style={{ height: 120 }} /></section>;
+  const pts = res.points.filter((p) => p.p_value !== null);
+  if (pts.length < 2) return null;
+  const sci = audience === "scientist", last = res.points[res.points.length - 1];
+  // Shorter records that pass while the full one does not: the answer hangs on the start year, and the years estimate
+  // (which assumes the full record's rate continues) would contradict the dots, so it is not shown.
+  const shorterPass = !last.significant && res.points.some((p) => p.significant);
+  const n = shorterPass ? null : res.years_needed.estimate;
+  const W = 320, H = 120, L = 34, B = 22;
+  const y0 = pts[0].years, y1 = pts[pts.length - 1].years, top = Math.max(0.2, ...pts.map((p) => p.p_value!));
+  const x = (yr: number) => L + ((yr - y0) / Math.max(1, y1 - y0)) * (W - L - 8), y = (p: number) => 6 + (1 - p / top) * (H - B - 6);
+  return (
+    <section className="card pad col" aria-labelledby="years-title">
+      <h2 id="years-title" style={{ fontSize: 20 }}>Would more years help?</h2>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: 420 }} role="img"
+        aria-label={`p-value for records from ${y0} to ${y1} years long, ending ${last.end}`}>
+        <line x1={L} x2={W - 8} y1={y(0.05)} y2={y(0.05)} stroke="var(--coral)" strokeDasharray="4 3" />
+        <text x={sci ? W - 8 : L + 2} y={y(0.05) - 4} textAnchor={sci ? "end" : "start"} fontSize="10" fill="var(--coral)">{sci ? res.alpha : "below this line: clear"}</text>
+        <polyline fill="none" stroke="var(--ink)" strokeWidth="2" points={pts.map((p) => `${x(p.years)},${y(p.p_value!)}`).join(" ")} />
+        {pts.map((p) => <circle key={p.start} cx={x(p.years)} cy={y(p.p_value!)} r="2.5" fill={p.significant ? "var(--coral)" : "var(--ink)"} />)}
+        {sci && <text x={L - 4} y={y(0) + 3} textAnchor="end" fontSize="10" fill="var(--muted)">0</text>}
+        {sci && <text x={L - 4} y={y(top) + 8} textAnchor="end" fontSize="10" fill="var(--muted)">{top.toFixed(2)}</text>}
+        <text x={L} y={H - 4} fontSize="10" fill="var(--muted)">{y0} years</text>
+        <text x={W - 8} y={H - 4} textAnchor="end" fontSize="10" fill="var(--muted)">{y1} years of data, ending {last.end.slice(0, 4)}</text>
+      </svg>
+      {sci ? <span className="small">Raw Seasonal Mann-Kendall p by record length (start in January of each year, same end); dashed line α = {res.alpha}.</span>
+        : <span className="small">Each dot repeats the test with more years of data. A dot below the dashed line means the change is <Term id="significant">clear, not chance</Term>.</span>}
+      <p style={{ margin: 0, fontWeight: 700 }}>
+        {last.significant ? `With ${last.years} years of data, the change is already ${sci ? "significant" : "clear"}.`
+          : shorterPass ? (sci ? "The answer depends on the start year: some shorter records pass the test, the full record does not. Treat it as a clue, not a verdict."
+            : "It depends on the start year. Some shorter stretches pass the test, but the full record does not. Treat it as a clue.")
+          : n !== null ? `${sci ? "Not significant" : "Not clear"} yet. If the change keeps its pace, about ${n} more year${n === 1 ? "" : "s"} of data might settle it.`
+          : "We cannot say how many more years would help here."}
+      </p>
+      {!last.significant && !shorterPass && (sci
+        ? <span className="small muted">{n !== null ? `${res.years_needed.caveat} ` : ""}{res.years_needed.basis}</span>
+        : n !== null && <span className="small muted">A rough guess: it assumes the change and the usual ups and downs stay the same.</span>)}
+    </section>
+  );
+}
+
+function ResultBody({ share }: { share: ExploreState }) {
   const { run, go, audience } = useStore();
   if (!run) return null;
   const { trend: t, variable: v, place } = run;
@@ -308,6 +445,12 @@ function ResultBody() {
       <div className="row">
         <button type="button" className="btn soft" onClick={() => go("detective")}>Ask the Detective</button>
         <button type="button" className="btn soft" onClick={() => go("hunt")}>Compare with another place</button>
+        <ShareButton state={share} />
+        <button type="button" className="btn soft" title="The monthly numbers behind the chart, with the test result, as a spreadsheet file" onClick={() => {
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(new Blob([seriesCsv(run, new Date())], { type: "text/csv" }));
+          a.download = `terra-scope-${v.id}-${t.start}-${t.end}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        }}>{audience === "scientist" ? "Download data (CSV)" : "Download the numbers"}</button>
       </div>
       <NasaCheck variableId={v.id} provider={v.source.provider} bbox={place.bbox} start={t.start} end={t.end} coverage={v.coverage} />
       <span className="footer">Source: {v.source.product} v{v.source.version}, {v.source.provider}.</span>

@@ -11,6 +11,7 @@ import { AUDIENCE_LABEL, lastAudience, type Audience } from "./audience";
 import { Component, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 // Home does not need the map atlas or analysis/chat pages at first load.
+const DetectiveGuide = lazy(() => import('./pages/DetectiveGuide').then((m) => ({ default: m.DetectiveGuide })));
 const Explore = lazy(() => import('./pages/Explore').then((m) => ({ default: m.Explore })));
 const Forecast = lazy(() => import('./pages/Forecast').then((m) => ({ default: m.Forecast })));
 const Hunt = lazy(() => import('./pages/Hunt').then((m) => ({ default: m.Hunt })));
@@ -30,8 +31,13 @@ class PageBoundary extends Component<{ children: ReactNode }, { failed: boolean 
 
 import type { JSX } from "react";
 
-const NAV: { id: Page; label: string; icon: () => JSX.Element }[] = [
+// Magnifier over a rising line: the guide to reading trends (the plain magnifier is the Detective chat).
+const GuideIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" /><path d="M15 15l6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /><path d="M6.8 12l2.2-2.2 1.8 1.4 2.4-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+
+// `short` is the label in the narrow mobile tab bar.
+const NAV: { id: Page; label: string; short?: string; icon: () => JSX.Element }[] = [
   { id: "home", label: "Home", icon: Icon.home },
+  { id: "guide", label: "Detective guide", short: "Guide", icon: GuideIcon },
   { id: "explore", label: "Explore", icon: Icon.globe },
   { id: "forecast", label: "Forecast", icon: Icon.forecast },
   { id: "hunt", label: "Hunt", icon: Icon.hunt },
@@ -133,6 +139,7 @@ function Shell() {
         {!ready && !toast && <div className="card pad">Connecting to the Terra-scope server…</div>}
         <PageBoundary key={page}><Suspense fallback={<div className="card pad" role="status" aria-live="polite">Loading page…</div>}>
         {page === "home" && <Home />}
+        {page === "guide" && <DetectiveGuide />}
         {page === "explore" && <Explore />}
         {page === "forecast" && <Forecast />}
         {page === "hunt" && <Hunt />}
@@ -143,7 +150,7 @@ function Shell() {
       <nav className="tabbar" aria-label="Main">
         {NAV.map((n) => (
           <button key={n.id} type="button" className={page === n.id ? "on" : ""} aria-current={page === n.id ? "page" : undefined} onClick={() => go(n.id)}>
-            <n.icon />{n.label}
+            <n.icon />{n.short ?? n.label}
           </button>
         ))}
       </nav>

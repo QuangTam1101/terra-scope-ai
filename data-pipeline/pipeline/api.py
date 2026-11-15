@@ -25,6 +25,15 @@ VARIABLES = {
     "lst_night": ("Nhiệt độ bề mặt ban đêm", "degC", "MODIS Terra MOD11C3 v061 monthly 0.05° CMG night-time LST, NASA LP DAAC"),
     "et": ("Bốc thoát hơi thực tế", "mm/month", "MODIS Terra MOD16A2GF v061, NASA LP DAAC"),
     "pet": ("Bốc thoát hơi tiềm năng", "mm/month", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) potential evaporation, NASA GES DISC, via Harmony"),
+    # Lưới 0,5° bản mới (preprocess/clean.py), web nối thêm 15/11/2026; id = tên sản phẩm.
+    "precip_gpcc": ("Lượng mưa (trạm đo GPCC)", "mm/month", "GPCC Full Data Monthly v2022 0.25°, Deutscher Wetterdienst (không phải NASA; đối chiếu bằng trạm đo)"),
+    "precip_cru": ("Lượng mưa (trạm đo CRU TS)", "mm/month", "CRU TS 4.10, University of East Anglia (không phải NASA; đối chiếu bằng trạm đo)"),
+    "sm_surface_smap": ("Độ ẩm đất lớp mặt (SMAP)", "m3/m3", "SMAP L3 Radiometer Global Daily 36 km EASE-Grid Soil Moisture v009 (SPL3SMP.009), NASA NSIDC DAAC qua Harmony"),
+    "sm_10_40cm_gldas": ("Độ ẩm đất 10–40 cm", "m3/m3", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) SoilMoi10_40cm_inst qua Giovanni/Harmony"),
+    "sm_40_100cm_gldas": ("Độ ẩm đất 40–100 cm", "m3/m3", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) SoilMoi40_100cm_inst qua Giovanni/Harmony"),
+    "sm_100_200cm_gldas": ("Độ ẩm đất 100–200 cm", "m3/m3", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) SoilMoi100_200cm_inst qua Giovanni/Harmony"),
+    "rootmoist_gldas": ("Nước trong đất vùng rễ", "kg/m2", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) RootMoist_inst qua Giovanni/Harmony"),
+    "chlor_a_seawifs": ("Chlorophyll-a mặt biển", "mg/m3", "SeaWiFS Level-3 mapped monthly CHL 9 km, bản 2022.0 (SeaWiFS_L3m_CHL), NASA OB.DAAC"),
 }
 METHOD = ("Trung bình vùng trên lưới 1° (trọng số cos vĩ độ); Seasonal Mann-Kendall + Sen's slope theo mùa; "
           "Hamed-Rao MK trên anomaly (hiệu chỉnh tự tương quan); OLS trên anomaly ± CI 95%; FDR Benjamini–Hochberg cho bản đồ")
@@ -33,7 +42,7 @@ LIMITATIONS = [
     "Lưới 1°: vùng nhỏ hơn ~100 km không phân tích được; ô ven biển có thể lẫn biển (IMERG, MERRA-2).",
     "Biến MODIS (NDVI, LST, ET) trên lưới là 1 pixel mẫu mỗi ô, không phải trung bình ô; thiếu khi trời nhiều mây.",
     "GLDAS và MERRA-2 là mô hình / tái phân tích, không phải quan sát trực tiếp.",
-    "Chưa có chlorophyll: hai nguồn đã chọn không có dữ liệu quan sát màu nước biển.",
+    "Chlorophyll SeaWiFS chỉ có 2001–2010 (vệ tinh ngừng cuối 2010) và chỉ trên biển.",
 ]
 
 

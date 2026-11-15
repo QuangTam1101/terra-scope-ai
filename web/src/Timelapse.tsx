@@ -7,11 +7,12 @@ import { H, W, land, projection } from "./WorldMap";
 import { colourOf, decodeFrames, DIVERGING, monthLabel, paintFrame, SEQUENTIAL, valueAt, type Frames } from "./timelapseData";
 import { plain } from "./ui";
 import { periodText } from "./period";
+import type { Conv } from "./units";
 
 type Kind = "anomaly" | "value";
 const SPEEDS = [{ fps: 3, label: "Slow" }, { fps: 6, label: "Normal" }, { fps: 12, label: "Fast" }];
 
-export function Timelapse({ variable, start, end, bbox, toF }: { variable: Variable; start: string; end: string; bbox: BBox | null; toF: boolean }) {
+export function Timelapse({ variable, start, end, bbox, conv }: { variable: Variable; start: string; end: string; bbox: BBox | null; conv: Conv | null }) {
   const [kind, setKind] = useState<Kind>("anomaly");
   const [res, setRes] = useState<FramesResponse | null>(null);
   const [frames, setFrames] = useState<Frames | null>(null);
@@ -41,9 +42,9 @@ export function Timelapse({ variable, start, end, bbox, toF }: { variable: Varia
     return () => window.clearInterval(id);
   }, [playing, fps, frames]);
 
-  const convert = useMemo(() => (toF ? (kind === "anomaly" ? (v: number) => v * 1.8 : (v: number) => v * 1.8 + 32) : (v: number) => v), [toF, kind]);
+  const convert = useMemo(() => (conv ? (kind === "anomaly" ? (v: number) => v * conv.k : (v: number) => v * conv.k + conv.add) : (v: number) => v), [conv, kind]);
   const range = useMemo<[number, number] | null>(() => res && [convert(res.display_range[0]), convert(res.display_range[1])], [res, convert]);
-  const units = toF ? "°F" : variable.display_units;
+  const units = conv ? conv.to : variable.display_units;
   const palette = kind === "anomaly" ? DIVERGING : SEQUENTIAL;
 
   // View: whole world, or the selected box with some margin, in the same equirectangular frame as the main map.

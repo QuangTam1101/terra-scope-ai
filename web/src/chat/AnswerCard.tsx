@@ -4,7 +4,7 @@ import type { ChatAction, ChatEvidence, ChatResponse, CompareResponse, Variable 
 import { ScientificPanel } from "../ScientificPanel";
 import { ToolDetails } from "../ToolDetails";
 import { signed, Terra, VerdictBadge } from "../ui";
-import { textToF } from "../units";
+import { convAllText, convFor, type Conv } from "../units";
 import { XIcon } from "../report/EditionDoc";
 import { periodText } from "../period";
 
@@ -26,11 +26,16 @@ export function splitAnswer(text: string): { paragraphs: string[]; data: string[
   return { paragraphs, data: [...new Set(data)], caveats: [...new Set(caveats)] };
 }
 
-function EvidenceCard({ evidence, fahrenheit, variables }: { evidence: ChatEvidence; fahrenheit: boolean; variables: Variable[] }) {
+/** Numbers in chat results are raw API units; the store's variables may already carry the shown label (°F, % water). */
+function shownUnits(raw: string, v: Variable | undefined, conv: Conv | null) {
+  return conv ? conv.to : isC(raw) ? "°C" : (v?.display_units ?? raw);
+}
+
+function EvidenceCard({ evidence, fahrenheit, audience, variables }: { evidence: ChatEvidence; fahrenheit: boolean; audience: string; variables: Variable[] }) {
   const t = evidence.trend;
   const v = variables.find((x) => x.id === t.variable_id);
-  const temp = isC(t.units), f = temp && fahrenheit ? 1.8 : 1;
-  const units = temp ? (fahrenheit ? "°F" : "°C") : (v?.display_units ?? t.units);
+  const conv = convFor(v?.display_units ?? (isC(t.units) ? "°C" : undefined), fahrenheit ? "F" : "C", audience), f = conv?.k ?? 1;
+  const units = shownUnits(t.units, v, conv);
   const slope = t.slope_per_decade === null ? null : t.slope_per_decade * f;
   const dir = !t.quality.sufficient || slope === null ? "none" : slope > 0 ? "up" : slope < 0 ? "down" : "flat";
   return (
@@ -66,8 +71,10 @@ function EvidenceCard({ evidence, fahrenheit, variables }: { evidence: ChatEvide
   );
 }
 
-function CompareCard({ c, fahrenheit }: { c: CompareResponse; fahrenheit: boolean }) {
-  const d = c.difference, f = isC(c.a.units) && fahrenheit ? 1.8 : 1, u = isC(c.a.units) ? (fahrenheit ? "°F" : "°C") : c.a.units;
+function CompareCard({ c, fahrenheit, audience, variables }: { c: CompareResponse; fahrenheit: boolean; audience: string; variables: Variable[] }) {
+  const v = variables.find((x) => x.id === c.a.variable_id);
+  const conv = convFor(v?.display_units ?? (isC(c.a.units) ? "°C" : undefined), fahrenheit ? "F" : "C", audience);
+  const d = c.difference, f = conv?.k ?? 1, u = shownUnits(c.a.units, v, conv);
   const crosses = !!d.ci && d.ci[0] <= 0 && d.ci[1] >= 0;
   const st = d.p_value === null ? { t: "Not tested", cls: "ne" } : d.significant ? { t: "Difference confirmed", cls: "sig" }
     : d.p_value < 0.05 && crosses ? { t: "Inconclusive", cls: "inc" } : { t: "No significant difference", cls: "np" };
@@ -87,9 +94,9 @@ function CompareCard({ c, fahrenheit }: { c: CompareResponse; fahrenheit: boolea
   );
 }
 
-export function AnswerCard({ response, fahrenheit, variables, onAction }: { response: ChatResponse; fahrenheit: boolean; variables: Variable[]; onAction: (a: ChatAction) => void }) {
+export function AnswerCard({ response, fahrenheit, audience, variables, onAction }: { response: ChatResponse; fahrenheit: boolean; audience: string; variables: Variable[]; onAction: (a: ChatAction) => void }) {
   const llm = response.mode === "llm";
-  const { paragraphs, caveats } = splitAnswer(fahrenheit ? textToF(response.answer) : response.answer);
+  const { paragraphs, caveats } = splitAnswer(convAllText(response.answer, fahrenheit ? "F" : "C", audience));
   const compares = (response.tool_results ?? []).filter((r) => r.ok && r.tool === "compare_regions").map((r) => r.data as CompareResponse);
   const others = (response.tool_results ?? []).filter((r) => !(r.ok && r.tool === "compare_regions"));
   // Only a fallback notice stays visible (it changes how to read the answer); the general disclaimer is shown once at the top of the page.
@@ -105,10 +112,10 @@ export function AnswerCard({ response, fahrenheit, variables, onAction }: { resp
       {response.clarification && <span className="warn" role="status">Selection needed: {response.clarification}</span>}
       {response.evidence.length > 0 && (
         <div className={`ev-grid ${response.evidence.length > 1 ? "two" : ""}`}>
-          {response.evidence.map((e) => <EvidenceCard key={e.trend.trend_id} evidence={e} fahrenheit={fahrenheit} variables={variables} />)}
+          {response.evidence.map((e) => <EvidenceCard key={e.trend.trend_id} evidence={e} fahrenheit={fahrenheit} audience={audience} variables={variables} />)}
         </div>
       )}
-      {compares.map((c) => <CompareCard key={c.compare_id} c={c} fahrenheit={fahrenheit} />)}
+      {compares.map((c) => <CompareCard key={c.compare_id} c={c} fahrenheit={fahrenheit} audience={audience} variables={variables} />)}
       {others.map((r, i) => <ToolDetails key={`${r.tool}-${i}`} result={r} fahrenheit={fahrenheit} />)}
       {caveats.length > 0 && <ul className="answer-caveats" aria-label="What this cannot tell us">{caveats.map((c) => <li key={c}>{c}</li>)}</ul>}
       {response.actions.length > 0 && (

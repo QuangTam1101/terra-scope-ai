@@ -546,3 +546,76 @@ def regions() -> dict:
 
 def available_variables() -> list[str]:
     return [v.id for v in catalog.VARIABLES.values() if bridge.is_available(v.pipeline_id)]
+
+
+# ---------------------------------------------------------------- /trends/sensitivity ("Would more years help?")
+def _years_needed(value: pd.Series, significant: bool | None, alpha: float) -> dict:
+    """Ước lượng số năm cần thêm để xu hướng hiện tại thành có ý nghĩa (ước lượng thô, không phải kiểm định)."""
+    from scipy import stats
+    caveat = ("A rough estimate, not a promise: it assumes the current rate and year-to-year noise stay the same, "
+              "and the real test (Seasonal Mann-Kendall) may need more or fewer years.")
+    if significant:
+        return {"estimate": None, "basis": "The trend is already statistically significant.", "caveat": caveat}
+    a = bridge.anomaly(value)
+    ok = a.notna().to_numpy()
+    if ok.sum() < 24:
+        return {"estimate": None, "basis": "Too few months with data to estimate.", "caveat": caveat}
+    k = np.arange(len(a))[ok]                       # tháng
+    lr = stats.linregress(k, a.to_numpy()[ok])
+    resid = pd.Series(np.nan, index=a.index)
+    resid[ok] = a.to_numpy()[ok] - (lr.intercept + lr.slope * k)
+    sd = float(np.std(resid.dropna(), ddof=2))
+    r1 = min(max(float(resid.autocorr(1)), 0.0), 0.99)  # âm → 0 (thận trọng); ≈1 → giới hạn để không chia 0
+    if not (math.isfinite(lr.slope) and lr.slope != 0 and math.isfinite(sd) and math.isfinite(r1)):
+        return {"estimate": None, "basis": "Not estimable: the current rate is zero or the data do not vary.",
+                "caveat": caveat}
+    zc = float(stats.norm.ppf(1 - alpha / 2))
+    # se(b) = sd·√(12 / (N³ − N))·√((1 + r1)/(1 − r1)) cho N tháng cách đều; giải |b|/se = zc.
+    # ponytail: N³ − N ≈ N³ (sai < 0,01 % khi N ≥ 120); bỏ qua tháng thiếu, đủ cho chuỗi trung bình vùng.
+    n_needed = (12 * (zc * sd / lr.slope) ** 2 * (1 + r1) / (1 - r1)) ** (1 / 3)
+    n_needed = max(n_needed, 120.0)                 # luật của backend: cần ít nhất 10 năm mới kiểm định
+    record = len(value) / 12
+    if n_needed <= len(value):                      # độ dốc OLS bảo đã đủ dài nhưng Mann-Kendall chưa qua: không đoán
+        return {"estimate": None, "caveat": caveat,
+                "basis": "The simple slope estimate says this record is already long enough, yet the trend test does "
+                         "not pass, so a number of years would mean nothing here."}
+    extra = round((n_needed - len(value)) / 12)
+    if extra > record:                              # ngoại suy quá độ dài cả chuỗi hiện có: không đưa số
+        return {"estimate": None, "caveat": caveat,
+                "basis": f"The change is small next to the year-to-year swings: it would take more than another "
+                         f"{record:.0f} years (longer than the whole record), so we give no number."}
+    extra = max(1, extra)
+    return {"estimate": int(extra),
+            "basis": (f"OLS slope of the deseasonalised monthly anomalies ({_fmt(lr.slope * 120)} per decade), "
+                      f"residual SD {_fmt(sd)} and lag-1 autocorrelation {r1:.2f} (effective sample size). "
+                      f"Solved for the record length where |slope| / standard error >= {zc:.2f} "
+                      f"(about {n_needed / 12:.0f} years in total), at least 10 years and at least 1 more year."),
+            "caveat": caveat}
+
+
+def trend_sensitivity(req: TrendRequest) -> dict:
+    """Xu hướng và p theo năm bắt đầu: cùng trend_one + cùng luật kết luận như /trends, một lần nạp dữ liệu.
+    points sắp theo số năm tăng dần: điểm cuối = đúng kỳ của request (= kết quả /trends)."""
+    v = get_variable(req.variable_id)
+    _, bbox, _ = resolve_region(req.region)
+    _check_time(v, req.start, req.end)
+    value = _region_values(v, bbox, req.start, req.end)[0]
+    starts = [req.start] + [f"{y}-01" for y in range(int(req.start[:4]) + 1, int(req.end[:4]) + 1)]
+    points = []
+    for start in starts:
+        s = value.loc[start:]
+        if s.index.year.nunique() < 10:             # >= 10 năm tới `end`, cùng cách đếm năm với _insufficient
+            continue
+        try:
+            tr = bridge.trend_one(s)
+        except Exception:                           # giống _compute_trend: chuỗi quá ngắn cho pymannkendall
+            tr = None
+        insufficient = tr is None or bool(tr["insufficient_data"]) or _insufficient(s)
+        p = None if insufficient else _num(tr["p_value"])
+        points.append({"start": start, "end": req.end, "years": round(len(s) / 12, 2),
+                       "slope_per_decade": _num(tr["slope_per_decade"]) if tr else None,
+                       "p_value": p, "significant": None if p is None else bool(p < req.alpha)})
+    points.reverse()
+    full_sig = points[-1]["significant"] if points else None      # điểm cuối luôn là kỳ đầy đủ của request
+    return {"variable_id": v.id, "units": v.units, "alpha": req.alpha, "points": points,
+            "years_needed": _years_needed(value, full_sig, req.alpha)}

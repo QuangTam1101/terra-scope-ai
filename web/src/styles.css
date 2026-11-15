@@ -75,7 +75,7 @@ button { font-family: var(--body); }
 .explore > * { min-width: 0; }
 /* Phase 7C: set-up column on the left, the map takes the rest; result and chart sit under the map. */
 .explore > section:first-child { grid-row: 1 / span 3; position: sticky; top: 20px; max-height: calc(100vh - 40px); overflow-y: auto; }
-.explore > .mapcard, .explore > .result, .chartcard { grid-column: 2; }
+.explore > :not(:first-child), .chartcard { grid-column: 2; }
 .explore > .explore-foot { grid-column: 2; }
 .mapwrap canvas { max-width: 100%; }
 .page { width: 100%; display: flex; flex-direction: column; gap: 18px; }
@@ -100,7 +100,7 @@ th { font: 800 12px var(--body); color: var(--muted); text-transform: uppercase;
 td.n { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 700; }
 
 @media (max-width: 1100px) { .explore { grid-template-columns: 1fr; } .explore > section:first-child { grid-row: auto; position: static; max-height: none; }
-  .explore > .mapcard, .explore > .result, .chartcard, .explore > .explore-foot { grid-column: 1; } }
+  .explore > :not(:first-child), .chartcard { grid-column: 1; } }
 @media (max-width: 860px) {
   .shell { padding: 12px 12px 96px; }
   .sidebar { display: none; }
@@ -941,6 +941,65 @@ select.select::-ms-expand { display: none; }
 [data-theme="dark"] .rpage .rchart circle[fill="#2b2540"], [data-theme="dark"] .rpage .rchart rect[fill="#2b2540"] { fill: #2b2540; }
 [data-theme="dark"] .fc-pos { color: #5fd3a3; } [data-theme="dark"] .fc-neg { color: #f39a88; }
 :root:not([data-theme="dark"]) [style^="color: rgb(196, 98, 26)"], :root:not([data-theme="dark"]) [style*="; color: rgb(196, 98, 26)"] { color: #a24c12 !important; }
+/* Detective guide (F3): guide page and demo player */
+.guide-hero { gap: 22px; align-items: center; }
+.guide-intro { flex: 1; min-width: 240px; }
+.guide-intro h1 { font-size: 34px; line-height: 1.1; }
+.guide-intro p { font: 700 17px/1.45 var(--body); margin: 0; }
+.guide-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.guide-card { border: 2px solid transparent; padding: 18px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; color: var(--ink); }
+.guide-card.on { border-color: var(--coral); }
+.guide-card .btn { align-self: flex-start; min-height: 36px; }
+.guide-q { font: 700 18px/1.25 var(--display); }
+.guide-how { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
+.guide-how li { display: flex; align-items: flex-start; gap: 10px; padding: 14px; border-radius: 20px; background: var(--lavender-2); font: 700 15px/1.4 var(--body); }
+.guide-how svg { flex: none; color: var(--ink); }
+.guide-num { width: 26px; height: 26px; flex: none; border-radius: 50%; background: var(--coral); color: #fff; display: inline-grid; place-items: center; font: 800 13px var(--body); }
+.guide-sci { display: block; margin-top: 4px; font-weight: 700; }
+.guide-proof { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font: 700 15px/1.45 var(--body); }
+.guide-proof a { color: #5b4e94; }
+[data-theme="dark"] .guide-proof a { color: var(--down-2); }
+.guide-method ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font: 600 14px/1.45 var(--body); }
+.guide-chip { background: var(--surface); border-radius: 999px; padding: 8px 14px; font: 800 13px var(--body); box-shadow: var(--shadow); }
+.demo-player { border: 2px solid var(--lavender); }
+.demo-head { justify-content: space-between; align-items: baseline; }
+.demo-head h3 { font-size: 21px; }
+.demo-dots { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.demo-dots li { flex: 1; height: 6px; border-radius: 3px; background: var(--track); }
+.demo-dots li.on { background: var(--coral); }
+.demo-step { min-height: 300px; gap: 10px; }
+.demo-title { font: 600 17px var(--display); }
+.demo-cap { margin: 0; font: 700 15px/1.45 var(--body); max-width: 60ch; }
+.demo-verdict { margin: 0; font: 700 19px/1.4 var(--display); max-width: 48ch; }
+.demo-chip { align-self: flex-start; cursor: default; gap: 6px; display: inline-flex; align-items: center; }
+.demo-skel { height: 200px; }
+.demo-error .btn { align-self: flex-start; }
+.demo-step > .btn { align-self: flex-start; }
+.demo-controls { justify-content: center; }
+.demo-controls .btn { min-width: 88px; }
+@media (max-width: 520px) { .guide-intro h1 { font-size: 28px; } .demo-step { min-height: 260px; } }
+
+/* Explore: "Not sure where to start?" (F5) folded above the map */
+.starter > summary { cursor: pointer; font: 700 17px var(--display); color: var(--ink); }
+.starter > summary::marker { color: var(--coral); }
+.starter[open] > summary { margin-bottom: 10px; }
+.starter > section.card { box-shadow: none; padding: 0; background: none; }
+.starter #case-starter-title { display: none; }
+
+/* "What's changing here?" (PlaceCompare.tsx): on a phone the sparkline column goes and verdicts wrap, so the table fits */
+.pc-chip { white-space: nowrap; }
+.pc-rate-m { display: none; }
+@media (max-width: 560px) { .pc-table .pc-spark, .pc-table .pc-rate { display: none; } .pc-rate-m { display: block; margin-top: 4px; } .pc-table .pc-chip { white-space: normal; } .pc-table th, .pc-table td { padding: 6px 4px; } }
+
+/* Explore further: "see the pattern" views (Patterns.tsx) */
+.pat-stripes { height: 150px; cursor: crosshair; }
+.pat-grid { display: grid; grid-template-columns: 38px repeat(12, minmax(0, 1fr)); gap: 1px; font: 700 10.5px/1 var(--body); color: var(--muted); max-width: 560px; }
+.pat-grid > span { height: 13px; display: flex; align-items: center; }
+.pat-grid .pat-mh { justify-content: center; }
+.pat-grid .pat-cell { border-radius: 2px; cursor: crosshair; }
+.pat-grid .pat-cell.on { box-shadow: inset 0 0 0 2px var(--ink); }
+.pat-stripes:focus-visible, .pat-grid:focus-visible { outline: 3px solid var(--down-3); outline-offset: 2px; }
+
 .param-select { width: 100%; min-height: 48px; font: 800 15px var(--body); }
 [data-theme="dark"] select.select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23eeeaf7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 [data-theme="dark"] select option { background: var(--surface); color: var(--ink); }

@@ -306,5 +306,10 @@ def job_status(job_id: str):
     raise ApiError(404, "NOT_FOUND", f"Job '{job_id}' not found: this server answers every request synchronously.")
 
 
+@api.post("/trends/sensitivity")
+def trends_sensitivity(req: TrendRequest):
+    return service.trend_sensitivity(req)
+
+
 app.include_router(api)
 app.include_router(forecast_service.router)

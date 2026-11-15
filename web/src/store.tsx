@@ -1,4 +1,4 @@
-import { isCelsius, seriesF, trendF, variableF, type TempUnit } from "./units";
+import { convFor, convSeries, convTrend, convVariable, type TempUnit } from "./units";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, errorText, type BBox, type ChatContext, type ChatHistoryTurn, type ChatResponse, type Region, type RegionRef, type SeriesResponse, type TrendResponse, type Variable } from "./api";
 import { pointPlace, setGridCell } from "./places";
@@ -8,7 +8,7 @@ import type { ReportComparison } from "./report/model";
 import { CASE_SCHEMA, type CaseItem, type SavedCase } from "./cases";
 import { initialAudience, saveAudience, type Audience } from "./audience";
 
-export type Page = "landing" | "start" | "home" | "explore" | "forecast" | "hunt" | "detective" | "report";
+export type Page = "landing" | "start" | "home" | "guide" | "explore" | "forecast" | "hunt" | "detective" | "report";
 
 export interface Place { ref: RegionRef; label: string; bbox: BBox }
 import { periodEnd, periodStart } from "./period";
@@ -238,13 +238,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setRunning(false); setProgress(null);
   }, []);
 
-  // Everything the pages read goes through the chosen temperature unit (the API always answers in °C).
+  // Everything the pages read goes through the display units: °F when chosen, plain water units in Explorer mode
+  // (units.ts). The API always answers in its own units.
   const shown = useMemo(() => {
-    if (tempUnit === "C") return { variables, run, history };
-    const runF = (r: Run): Run => (isCelsius(r.variable.display_units)
-      ? { ...r, variable: variableF(r.variable), series: seriesF(r.series), trend: trendF(r.trend) } : r);
-    return { variables: variables.map(variableF), run: run && runF(run), history: history.map(runF) };
-  }, [tempUnit, variables, run, history]);
+    const conv = (v: Variable) => convFor(v.display_units, tempUnit, audience);
+    const runC = (r: Run): Run => { const c = conv(r.variable);
+      return c ? { ...r, variable: convVariable(r.variable, c), series: convSeries(r.series, c), trend: convTrend(r.trend, c) } : r; };
+    return { variables: variables.map((v) => { const c = conv(v); return c ? convVariable(v, c) : v; }), run: run && runC(run), history: history.map(runC) };
+  }, [tempUnit, audience, variables, run, history]);
 
   const value = useMemo<Store>(() => ({
     page, go, variables: shown.variables, regions, ready, sel, setSel, run: shown.run, running, runAnalysis, progress, cancelAnalysis, history: shown.history, comparisons, addComparison, removeReportItem, backendVersion, makeCase, openCase,

@@ -215,3 +215,20 @@ export function toReproJson(m: ReportModel) {
   };
 }
 
+
+/** The monthly series behind the Explore chart as CSV ("Download data"), with the backend's trend result in "#" header
+ *  lines. Every number is copied from the API response; nothing is recomputed. */
+export function seriesCsv(r: { series: SeriesResponse; trend: TrendResponse; variable: Variable; place: { label: string; bbox: [number, number, number, number] } },
+  exportedAt: Date): string {
+  const { series: s, trend: t, variable: v, place } = r;
+  const u = v.display_units, cell = (x: number | null) => (x === null ? "" : String(x));
+  const head = [
+    `Terra-scope AI: monthly area average, exported ${exportedAt.toISOString().slice(0, 10)}`,
+    `Place: ${place.label} (box west,south,east,north: ${place.bbox.join(",")})`,
+    `Variable: ${v.parameter_name}, ${u}; dataset ${v.dataset_name} (${v.source.product} v${v.source.version}, ${v.source.provider}, ${v.source.url})`,
+    `anomaly = value minus the average for that calendar month over ${t.start} to ${t.end}; valid_fraction = share of grid cells with data`,
+    `Trend ${t.start} to ${t.end}: Sen slope ${cell(t.slope_per_decade)} ${u} per decade; Seasonal Mann-Kendall raw p ${cell(t.p_value)} (alpha ${t.alpha ?? ""}): ${verdictText(t)}`
+      + `; Hamed-Rao adjusted p ${cell(t.p_value_autocorr_adjusted)} (diagnostic only); ${t.quality.n_months} months, ${t.quality.missing_months} missing`,
+  ].map((l) => `# ${l.replace(/[\r\n]+/g, " ")}`);
+  return [...head, "month,value,anomaly,valid_fraction", ...s.points.map((p) => `${p.t},${cell(p.value)},${cell(p.anomaly)},${p.valid_fraction}`)].join("\n") + "\n";
+}

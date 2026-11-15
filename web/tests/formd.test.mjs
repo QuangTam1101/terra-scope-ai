@@ -64,6 +64,19 @@ try {
     assert.ok(b.includes('## Abstract'));
     assert.ok(!a.includes('—') && !b.includes('—'));
   });
+
+  test('Download data (CSV): one row per month, numbers copied from the API, verdict and diagnostic labelled', () => {
+    const t = { ...trend(true, 3.43, 0.004), alpha: 0.05 };
+    const pts = [{ t: '2001-01', value: 240.5, anomaly: -12.25, valid_fraction: 1 }, { t: '2001-02', value: null, anomaly: null, valid_fraction: 0 }];
+    const v = { ...variable, source: src };
+    const csv = model.seriesCsv({ trend: t, series: { points: pts }, variable: v, place: { label: 'Mekong Delta', bbox: [104.4, 8.5, 106.9, 11.1] } }, new Date('2026-11-15T12:00:00Z'));
+    const lines = csv.trimEnd().split('\n');
+    assert.deepEqual(lines.slice(-3), ['month,value,anomaly,valid_fraction', '2001-01,240.5,-12.25,1', '2001-02,,,0']);   // missing month: empty cells
+    assert.ok(lines.slice(0, -3).every((l) => l.startsWith('# ')));
+    assert.match(csv, /exported 2026-11-15/);
+    assert.match(csv, /Sen slope 3\.43 mm\/month per decade; Seasonal Mann-Kendall raw p 0\.004 \(alpha 0\.05\): Significant trend; Hamed-Rao adjusted p 0\.4 \(diagnostic only\)/);
+    assert.ok(!csv.includes('—'));
+  });
 } finally {
   await server.close();
 }

@@ -29,9 +29,16 @@ export interface SeriesResponse {
 export interface TrendResponse {
   trend_id: string; variable_id: string; region: RegionOut; start: string; end: string; units: string;
   slope_per_decade: number | null; slope_ci: [number, number] | null; ci_method: string;
-  p_value: number | null; p_value_autocorr_adjusted: number | null; significant: boolean | null;
+  p_value: number | null; p_value_autocorr_adjusted: number | null; significant: boolean | null; alpha?: number;
   direction: "increasing" | "decreasing" | "no_trend"; n: number;
   trend_line: { t: string; value: number }[]; quality: Quality; plain_summary: string; source: DataSource; warnings: string[];
+}
+/** POST /trends/sensitivity: the /trends test re-run for each January start year with >= 10 years to `end`, shortest record first. */
+export interface SensitivityPoint { start: string; end: string; years: number; slope_per_decade: number | null; p_value: number | null; significant: boolean | null }
+export interface SensitivityResponse {
+  variable_id: string; units: string; alpha: number;
+  points: SensitivityPoint[];
+  years_needed: { estimate: number | null; basis: string; caveat: string };   // extra years of data; null when already significant or not estimable
 }
 export interface GridCell { lon: number; lat: number; slope_per_decade: number | null; q_value: number | null; significant_fdr: boolean | null; valid: boolean }
 export interface TrendGrid { variable_id: string; units: string; start: string; end: string; cell_size_deg: number; value_range: { min_slope: number; max_slope: number }; cells: GridCell[]; warnings: string[] }
@@ -161,6 +168,8 @@ export const api = {
     post<SeriesResponse>("/series", { variable_id, region, start, end }, signal),
   trends: (variable_id: string, region: RegionRef, start: string, end: string, signal?: AbortSignal) =>
     post<TrendResponse>("/trends", { variable_id, region, start, end, method: "seasonal_mk", alpha: 0.05 }, signal),
+  sensitivity: (variable_id: string, region: RegionRef, start: string, end: string, signal?: AbortSignal) =>
+    post<SensitivityResponse>("/trends/sensitivity", { variable_id, region, start, end, method: "seasonal_mk", alpha: 0.05 }, signal),
   trendGrid: (variable_id: string, start: string, end: string, signal?: AbortSignal) =>
     call<TrendGrid>("/trends/grid" + qs({ variable_id, start, end }), signal ? { signal } : undefined, 90000),
   valueGrid: (variable_id: string, start: string, end: string, month?: number, signal?: AbortSignal) =>

@@ -7,9 +7,10 @@ import { useStore } from "../store";
 import { periodEnd, periodStart } from "../period";
 import { TrendChart } from "../TrendChart";
 import { ci, pval, signed, Stat, VerdictBadge } from "../ui";
-import { compareF, seriesF, trendF } from "../units";
+import { convCompare, convFor, convSeries, convTrend } from "../units";
 import { LocatorMap } from "../report/ReportDoc";
 import { compatiblePartner, EXTENTS } from "../explore";
+import { clampPeriod } from "../PlaceCompare";
 import {
   CATEGORY_LABEL, categorize, checkComparability, conclusion, detectiveRequest, evidenceStatus, EXAMPLE_QUESTIONS, explainComparison, overlapMonths,
   STATUS_LABEL, VALIDITY_LABEL, type Category, type HuntMode, type Side,
@@ -232,9 +233,13 @@ function Workspace({ mode, reopen, onReopened, onSaved }: { mode: HuntMode; reop
 
   const res = useMemo(() => {
     if (!raw) return null;
-    if (!(tempUnit === "F" && raw.a.trend.units === "°C")) return raw;
-    return { ...raw, a: { ...raw.a, trend: trendF(raw.a.trend) }, b: { ...raw.b, trend: trendF(raw.b.trend) }, sa: seriesF(raw.sa), sb: raw.sb ? seriesF(raw.sb) : null, test: raw.test ? compareF(raw.test) : null };
-  }, [raw, tempUnit]);
+    // Numbers stay raw in the saved result; labels and numbers follow the current units (°F, % water in Explorer).
+    const varA = variables.find((v) => v.id === raw.a.variable.id) ?? raw.a.variable, varB = variables.find((v) => v.id === raw.b.variable.id) ?? raw.b.variable;
+    const c = convFor(varA.display_units, tempUnit, audience);
+    if (!c) return { ...raw, a: { ...raw.a, variable: varA }, b: { ...raw.b, variable: varB } };
+    return { ...raw, a: { ...raw.a, variable: varA, trend: convTrend(raw.a.trend, c) }, b: { ...raw.b, variable: varB, trend: convTrend(raw.b.trend, c) },
+      sa: convSeries(raw.sa, c), sb: raw.sb ? convSeries(raw.sb, c) : null, test: raw.test ? convCompare(raw.test, c) : null };
+  }, [raw, tempUnit, audience, variables]);
   const analysis = useMemo(() => {
     if (!res) return null;
     const { validity, checks } = checkComparability(res.mode, res.a, res.b);
@@ -474,15 +479,19 @@ function Discover({ onInspect }: { onInspect: (mode: HuntMode, a: Opt, b: Opt | 
   const tiles = Math.ceil((ext.bbox[2] - ext.bbox[0]) / tile) * Math.ceil((ext.bbox[3] - ext.bbox[1]) / tile);
   const f = tempUnit === "F" && v?.display_units === "°F" ? 1.8 : 1;
   const u = v?.display_units ?? "";
+  // Explore's period, fitted to the dataset(s) scanned (GPCC ends 2020, SMAP starts 2015): the server rejects months outside.
+  const fit0 = v?.coverage ? clampPeriod(periodStart(sel), periodEnd(sel), v.coverage) : null;
+  const per = fit0 && twoDatasets && partner?.coverage ? clampPeriod(fit0.start, fit0.end, partner.coverage) : fit0;
+  const y0 = per ? per.start.slice(0, 4) : sel.startYear, y1 = per ? per.end.slice(0, 4) : sel.endYear;
 
   const scan = async () => {
-    if (!v) return;
+    if (!v || !per) return;
     ctrl.current?.abort();
     const c = new AbortController(); ctrl.current = c;
     setBusy(true); setRes(null);
     try {
       setRes(await api.discover({ variable_id: v.id, variable_id_b: twoDatasets && partner ? partner.id : null,
-        start: periodStart(sel), end: periodEnd(sel), extent: ext.bbox, tile_deg: tile, max_candidates: 5 }, c.signal));
+        start: per.start, end: per.end, extent: ext.bbox, tile_deg: tile, max_candidates: 5 }, c.signal));
     } catch (e) { if (!c.signal.aborted) showError(e); } finally { if (ctrl.current === c) { setBusy(false); ctrl.current = null; } }
   };
   const cancel = () => { ctrl.current?.abort(); ctrl.current = null; setBusy(false); };
@@ -492,8 +501,8 @@ function Discover({ onInspect }: { onInspect: (mode: HuntMode, a: Opt, b: Opt | 
       <section className="card pad col" aria-labelledby="disc-h">
         <h2 id="disc-h" style={{ fontSize: 22 }}>Discover Interesting Differences</h2>
         <p className="small muted" style={{ margin: 0 }}>{sci
-          ? `Scans the precomputed per-cell trend map (Seasonal MK + Sen, BH-FDR across cells) for ${sel.startYear} to ${sel.endYear}. The extent is cut into tiles; a tile "leans" one way when at least 30% of its cells are FDR-significant in that direction. Region pairs leaning opposite ways are ranked by the weaker side's share, then the slope gap, then distance; the top 5 are re-tested with the regional difference test. Candidates are selected and re-tested on the same data, so treat them as leads, not confirmed findings.`
-          : `The app looks at the ${sel.startYear} to ${sel.endYear} trend map, cuts it into squares and pairs squares that lean opposite ways. The best pairs are then checked with the same test as Compare Regions. These are leads to investigate, not proof.`}</p>
+          ? `Scans the precomputed per-cell trend map (Seasonal MK + Sen, BH-FDR across cells) for ${y0} to ${y1}. The extent is cut into tiles; a tile "leans" one way when at least 30% of its cells are FDR-significant in that direction. Region pairs leaning opposite ways are ranked by the weaker side's share, then the slope gap, then distance; the top 5 are re-tested with the regional difference test. Candidates are selected and re-tested on the same data, so treat them as leads, not confirmed findings.`
+          : `The app looks at the ${y0} to ${y1} trend map, cuts it into squares and pairs squares that lean opposite ways. The best pairs are then checked with the same test as Compare Regions. These are leads to investigate, not proof.`}</p>
         <div className="row">
           <label className="col small muted" style={{ gap: 4, minWidth: 220, flex: 1 }}>Variable and dataset
             <select className="select" value={varId} onChange={(e) => { setVarId(e.target.value); setTwoDatasets(false); }}>{avail.map((x) => <option key={x.id} value={x.id}>{x.parameter_name} · {x.dataset_name}</option>)}</select></label>
@@ -506,8 +515,9 @@ function Discover({ onInspect }: { onInspect: (mode: HuntMode, a: Opt, b: Opt | 
           <label className="row small" style={{ gap: 8, minHeight: 44 }}>
             <input type="checkbox" checked={twoDatasets && !!partner} disabled={!partner} onChange={(e) => setTwoDatasets(e.target.checked)} />
             {partner ? `Look for disagreement with ${partner.dataset_name} instead (descriptive)` : "No compatible second dataset for this variable"}</label>
-          <button type="button" className="btn" disabled={busy || !v?.available || tiles > 600} onClick={() => void scan()}>Scan</button>
-          <span className="small muted">{tiles} tiles{tiles > 600 ? " (limit 600: choose larger tiles)" : ""} · at most 5 candidates · period from Explore ({sel.startYear} to {sel.endYear})</span>
+          <button type="button" className="btn" disabled={busy || !v?.available || tiles > 600 || !per || per.short} onClick={() => void scan()}>Scan</button>
+          <span className="small muted">{tiles} tiles{tiles > 600 ? " (limit 600: choose larger tiles)" : ""} · at most 5 candidates · period from Explore ({y0} to {y1}{per?.clamped ? ", fitted to this data" : ""})</span>
+          {v?.available && (!per || per.short) && <span className="warn small">This data does not cover 10 years of the period chosen in Explore. Pick a longer period there.</span>}
         </div>
       </section>
       {busy && (
