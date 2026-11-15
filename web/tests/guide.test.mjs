@@ -31,6 +31,7 @@ after(async () => { await server.close(); await rm(cache, { recursive: true, for
 
 const routes = await server.ssrLoadModule('/src/pageRouting.ts');
 const { DEMOS, DetectiveGuide, fitDemo } = await server.ssrLoadModule('/src/pages/DetectiveGuide.tsx');
+const { CHALLENGE_ROWS } = await server.ssrLoadModule('/src/ChallengeMap.tsx');
 const { DemoPlayer, verdictParts, methodLine, pText } = await server.ssrLoadModule('/src/DemoPlayer.tsx');
 
 test('#guide routes to the guide; existing hashes still route', () => {
@@ -99,7 +100,7 @@ test('guide page: Explorer copy budget, no long dash, Scientist extras only in S
     assert.ok(exp.includes(s), s);
   assert.ok(!exp.includes('Method and limits') && !exp.includes('verify.py') && !exp.includes('0.9996'));
   assert.ok(!exp.includes('—'), 'no long dash');
-  const n = words(exp);
+  const n = words(exp.replace(/<section[^>]*guide-challenge[\s\S]*?<\/section>/, ''));   // the judges' map is outside the student copy budget
   assert.ok(n <= 180, `Explorer words: ${n}`); console.log(`Explorer visible words: ${n}`);
 
   globalThis.guideStore = { ...globalThis.guideStore, audience: 'scientist' };
@@ -113,4 +114,19 @@ test('demo player starts on the question with Back, Play/Pause and Next', () => 
   const html = renderToStaticMarkup(createElement(DemoPlayer, { demo: DEMOS[0] }));
   for (const s of ['Step 1 of 6', DEMOS[0].question, '25 years of monthly NASA data, 2001 to 2025', '>Back<', '>Pause<', '>Next<']) assert.ok(html.includes(s), s);
   assert.ok(!html.includes('—'));
+});
+
+test('challenge map: 4 objectives and the considerations, each linking to a real page', () => {
+  globalThis.guideStore = { ...globalThis.guideStore, audience: 'explorer' };
+  const html = renderToStaticMarkup(createElement(DetectiveGuide));
+  const sec = html.match(/<section[^>]*guide-challenge[\s\S]*?<\/section>/)?.[0];
+  assert.ok(sec && sec.includes('How Terra-scope meets the challenge'));
+  for (let i = 1; i <= 4; i++) assert.ok(sec.includes(`Objective ${i}`), `Objective ${i}`);
+  const hrefs = [...sec.matchAll(/<a[^>]*href="([^"]*)"/g)].map((m) => m[1]);
+  assert.equal(hrefs.length, CHALLENGE_ROWS.length);
+  const pages = ['guide', 'explore', 'forecast', 'hunt', 'detective', 'report'];
+  for (const h of hrefs) assert.ok(pages.includes(routes.pageFromHash(h)) && routes.pageFromHash(h) === h.slice(1), h);
+  for (const r of CHALLENGE_ROWS) assert.ok(sec.includes(r.need), r.need);
+  assert.ok(sec.includes('Partly') && sec.includes('does not pick variables yet'), 'AI row is honest');
+  assert.ok(!sec.includes('—'), 'no long dash');
 });
