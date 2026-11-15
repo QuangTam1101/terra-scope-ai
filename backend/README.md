@@ -31,7 +31,7 @@ Backend đọc cube `cube_<biến>.nc` (time, lat, lon). Có hai loại, backend
 
 | Loại | Tạo bằng | Thư mục | Cỡ ô |
 |---|---|---|---|
-| **Toàn cầu (mặc định, đội chốt 13/11)** | Long chia sẻ trong git (`data-pipeline/download_grid.py`) | `data-pipeline/processed_data/grid/` | 1°, 5 biến, 2001–2024 |
+| **Toàn cầu (mặc định, đội chốt 13/11)** | Long chia sẻ trong git (`data-pipeline/download_grid.py`) | `data-pipeline/processed_data/grid/` | 1°, 5 biến gốc (IMERG, MERRA-2: 2001–2024; 3 biến GLDAS: 2001–2025) + 8 biến thêm 15/11 |
 | Toàn cầu (tự tạo lại) | `data-pipeline/download_grid.py` | `data-pipeline/data/processed/grid/` | 1° |
 | Vùng Mekong lưới mịn (tuỳ chọn) | `python scripts/download_region.py` | `data-pipeline/data/processed/regions/mekong/` | IMERG 0,1°, GLDAS 0,25°, khung `[94, 8, 110, 35]`; dùng bằng cách đặt `CUBE_DIR` |
 

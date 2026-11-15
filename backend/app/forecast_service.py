@@ -32,7 +32,10 @@ def _fc_cubes(pipeline_id: str) -> dict:
         cubes = {v: papi.load_cube(v) for v in pforecast.AUX if v == pipeline_id or (papi.CUBE_DIR / f"cube_{v}.nc").exists()}
     except FileNotFoundError:
         raise ApiError(503, "DATA_NOT_READY", f"Data for '{pipeline_id}' is not available on the server yet.", {"variable": pipeline_id})
-    return cubes
+    # Cross-variable features need equal time axes (forecast._same_grid): cut every cube to the months all of them hold
+    # (GLDAS cubes run to 2025-12, IMERG and MERRA-2 to 2024-12), so no feature is silently dropped.
+    end = min(c.time.values[-1] for c in cubes.values())
+    return {v: c.sel(time=slice(None, end)) for v, c in cubes.items()}
 
 
 def _fc_region(pipeline_id: str, bbox, targets: list[str], variant: str):
