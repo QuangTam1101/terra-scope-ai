@@ -1,0 +1,93 @@
+name: Build verified Forecast backend image
+
+# Manual only: reviewing/merging this file does not upload an image or deploy hosting.
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Must remain false; publishing is disabled during pre-deployment review
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Enforce validation-only scope
+        env:
+          PUBLISH: ${{ inputs.publish }}
+        run: test "$PUBLISH" = 'false' || { echo 'Publishing is disabled in this validation workflow.'; exit 1; }
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Fetch private release and verify pinned SHA256 before loading
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python3 scripts/fetch-forecast-models.py
+          --manifest-sha256 def7b92323142bceeca5491622a311b631e1acbaf59bd49e35684113fe8b7985
+      - name: Define immutable image tag
+        id: tag
+        shell: bash
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/terra-scope-api:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - name: Build (includes offline artifact gate in Linux)
+        env:
+          IMAGE: ${{ steps.tag.outputs.image }}
+        run: docker build -f backend/Dockerfile -t "$IMAGE" .
+      - name: Start isolated production container and record image size
+        env:
+          IMAGE: ${{ steps.tag.outputs.image }}
+        run: |
+          mkdir -p validation-reports
+          docker image inspect --format '{{.Size}}' "$IMAGE" > validation-reports/image-bytes.txt
+          docker run -d --name terra-api --network none --memory=4g --memory-swap=4g --cpus=2 \
+            --read-only --tmpfs /tmp:rw,size=128m,mode=1777 \
+            --tmpfs /app/backend/.cache/grids:rw,size=128m,mode=1777 \
+            -e LLM_PROVIDER=template -e GEMINI_API_KEY= \
+            -v "$PWD/scripts:/verification:ro" "$IMAGE"
+          for attempt in {1..60}; do
+            if docker exec terra-api python -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/api/v1/health", timeout=2).read()'; then
+              break
+            fi
+            if [ "$attempt" = 60 ]; then exit 1; fi
+            sleep 2
+          done
+          docker exec terra-api python -m pip freeze > validation-reports/python-packages.txt
+      - name: Run real NASA and Forecast endpoints over HTTP
+        timeout-minutes: 15
+        run: |
+          (while true; do docker stats --no-stream --format '{{json .}}' terra-api; sleep 5; done) > validation-reports/memory-samples.jsonl &
+          sampler=$!
+          trap 'kill "$sampler" 2>/dev/null || true' EXIT
+          docker exec terra-api python /verification/smoke-forecast.py --repo-root /app \
+            --base-url http://127.0.0.1:8000 --output /tmp/linux-forecast.json | tee validation-reports/smoke.log
+          docker cp terra-api:/tmp/linux-forecast.json validation-reports/linux-forecast.json
+      - name: Collect diagnostic evidence and stop only the test container
+        if: always()
+        run: |
+          mkdir -p validation-reports
+          docker logs terra-api > validation-reports/server.log 2>&1 || true
+          docker inspect --format '{{json .State}}' terra-api > validation-reports/container-state.json || true
+          docker exec terra-api cat /sys/fs/cgroup/memory.peak > validation-reports/memory-peak-bytes.txt || true
+          docker rm -f terra-api || true
+      - name: Save small validation reports (no data or models)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux-validation-reports
+          path: validation-reports/
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Record completion in workflow summary
+        if: success()
+        env:
+          IMAGE: ${{ steps.tag.outputs.image }}
+        run: echo 'Linux HTTP smoke passed under 4 GiB / 2 CPU; no image was published and no hosting was deployed.' >> "$GITHUB_STEP_SUMMARY"

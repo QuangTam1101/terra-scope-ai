@@ -1,6 +1,12 @@
 # Local Python environment created by developers (scripts/start-local.ps1 expects it here)
 .venv/
 
+# Secrets belong in hosting environment settings, never in source control.
+.env
+.env.*
+!.env.example
+__pycache__/
+
 # forecast model downloads and backups (large binary files)
 .release-staging/
 data-pipeline/models_local_backup/

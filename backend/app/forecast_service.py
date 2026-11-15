@@ -273,7 +273,8 @@ def forecast_map(variable_id: str, mode: str, month: str | None) -> dict:
     variant = _variant(mode)
     model = _model_or_503(v.pipeline_id, variant)
     origin = pd.Timestamp(_fc_origin(v.pipeline_id, variant))
-    target = pd.Timestamp((month or (pd.Timestamp(_today_month() + "-01") + pd.DateOffset(months=3)).strftime("%Y-%m")) + "-01")
+    default_base = origin if mode == "satellite" else pd.Timestamp(_today_month() + "-01")
+    target = pd.Timestamp((month or (default_base + pd.DateOffset(months=3)).strftime("%Y-%m")) + "-01")
     lead = (target.year - origin.year) * 12 + target.month - origin.month
     if not 1 <= lead <= model["hmax"]:
         raise ApiError(400, "INVALID_PARAMETER", f"In '{mode}' mode the map month must be between {(origin + pd.DateOffset(months=1)):%Y-%m} and "
@@ -303,7 +304,7 @@ def forecast_route(req: ForecastRequest):
 
 @router.get("/forecast/map", response_model=ForecastMapResponse)
 def forecast_map_route(variable_id: str, mode: str = Query("outlook", pattern="^(outlook|satellite)$"),
-                       month: str | None = Query(None, pattern=r"^\d{4}-(0[1-9]|1[0-2])$", description="Target month, default: 3 months from now")):
+                       month: str | None = Query(None, pattern=r"^\d{4}-(0[1-9]|1[0-2])$", description="Target month; default: 3 months from now (outlook) or satellite data end (satellite)")):
     return forecast_map(variable_id, mode, month)
 
 

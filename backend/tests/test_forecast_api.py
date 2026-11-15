@@ -66,6 +66,9 @@ def test_map_status_and_reality(client, trained):
     j = r.json()
     assert j["t"] == "2027-02" and j["lead_months"] == 8 and j["cells"] and all(0 <= c["p_above"] <= 1 for c in j["cells"])
     assert client.get("/api/v1/forecast/map", params={"variable_id": "imerg_precip", "month": "2031-02"}).status_code == 400
+    satellite = client.get("/api/v1/forecast/map", params={"variable_id": "imerg_precip", "mode": "satellite"})
+    assert satellite.status_code == 200, satellite.text
+    assert satellite.json()["t"] == "2021-03" and satellite.json()["lead_months"] == 3
     s = client.get("/api/v1/forecast/status", params={"variable_id": "imerg_precip"}).json()
     assert s["origin"] == "2026-06" and s["mode"] == "outlook"
     rc = client.get("/api/v1/forecast/reality-check").json()

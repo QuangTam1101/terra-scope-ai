@@ -7,3 +7,4 @@ data/**
 !data/raw/*/README.md
 # mô hình dự báo (khoảng 275 MB): train lại bằng train_forecast.py, xem docs/05 mục 10
 models/*.joblib
+models/SHA256SUMS.txt

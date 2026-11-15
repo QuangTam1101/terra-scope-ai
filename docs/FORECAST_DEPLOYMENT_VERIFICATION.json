@@ -1,0 +1,123 @@
+{
+  "status": "passed",
+  "transport": "FastAPI TestClient (in-process HTTP)",
+  "manifest_sha256": "def7b92323142bceeca5491622a311b631e1acbaf59bd49e35684113fe8b7985",
+  "real_artifacts": true,
+  "cases": [
+    {
+      "variable": "imerg_precip",
+      "mode": "outlook",
+      "origin": "2026-06",
+      "months": 18,
+      "regional_seconds": 12.026,
+      "map_seconds": 6.888,
+      "map_cells": 64762,
+      "first_forecast": 295.4403,
+      "status": "passed"
+    },
+    {
+      "variable": "imerg_precip",
+      "mode": "satellite",
+      "origin": "2024-12",
+      "months": 12,
+      "regional_seconds": 8.343,
+      "map_seconds": 5.582,
+      "map_cells": 64762,
+      "first_forecast": 22.62194,
+      "status": "passed"
+    },
+    {
+      "variable": "gldas_soil_moisture_0_10cm",
+      "mode": "outlook",
+      "origin": "2026-06",
+      "months": 18,
+      "regional_seconds": 9.795,
+      "map_seconds": 1.401,
+      "map_cells": 17284,
+      "first_forecast": 0.3666,
+      "status": "passed"
+    },
+    {
+      "variable": "gldas_soil_moisture_0_10cm",
+      "mode": "satellite",
+      "origin": "2024-12",
+      "months": 12,
+      "regional_seconds": 9.842,
+      "map_seconds": 1.227,
+      "map_cells": 17284,
+      "first_forecast": 0.29539,
+      "status": "passed"
+    },
+    {
+      "variable": "gldas_air_temperature",
+      "mode": "outlook",
+      "origin": "2026-06",
+      "months": 18,
+      "regional_seconds": 8.379,
+      "map_seconds": 1.408,
+      "map_cells": 17392,
+      "first_forecast": 27.97228,
+      "status": "passed"
+    },
+    {
+      "variable": "gldas_air_temperature",
+      "mode": "satellite",
+      "origin": "2024-12",
+      "months": 12,
+      "regional_seconds": 8.619,
+      "map_seconds": 1.153,
+      "map_cells": 17392,
+      "first_forecast": 26.08499,
+      "status": "passed"
+    },
+    {
+      "variable": "gldas_evapotranspiration",
+      "mode": "outlook",
+      "origin": "2026-06",
+      "months": 18,
+      "regional_seconds": 8.46,
+      "map_seconds": 1.463,
+      "map_cells": 17284,
+      "first_forecast": 4.63528,
+      "status": "passed"
+    },
+    {
+      "variable": "gldas_evapotranspiration",
+      "mode": "satellite",
+      "origin": "2024-12",
+      "months": 12,
+      "regional_seconds": 11.48,
+      "map_seconds": 1.236,
+      "map_cells": 17284,
+      "first_forecast": 3.29281,
+      "status": "passed"
+    },
+    {
+      "variable": "merra2_air_temperature_2m",
+      "mode": "outlook",
+      "origin": "2026-06",
+      "months": 18,
+      "regional_seconds": 7.889,
+      "map_seconds": 6.557,
+      "map_cells": 64800,
+      "first_forecast": 28.28089,
+      "status": "passed"
+    },
+    {
+      "variable": "merra2_air_temperature_2m",
+      "mode": "satellite",
+      "origin": "2024-12",
+      "months": 12,
+      "regional_seconds": 13.811,
+      "map_seconds": 12.225,
+      "map_cells": 64800,
+      "first_forecast": 26.45261,
+      "status": "passed"
+    }
+  ],
+  "ui_defaults": "passed",
+  "reality_check": "passed",
+  "error_contracts": "passed",
+  "nasa_trend_reference": "unchanged",
+  "live_gemini_called": false
+}
