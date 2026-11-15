@@ -78,9 +78,10 @@ it with air temperature as if they were the same quantity.
   variables (see `quality.coverage_fraction` in FACTS).
 - **MODIS is an optical satellite sensor**: it cannot see through clouds. Very cloudy months (monsoon seasons,
   the humid tropics) and snow-covered months (for NDVI) can be missing, so coverage can be lower than for model data.
-- **Terra orbit drift:** since 2022 the Terra satellite crosses the equator earlier than 10:30 / 22:30 as it ends its
-  mission. Recent MODIS land surface temperatures can therefore read slightly cooler. When FACTS show a land surface
-  temperature trend, mention that checking a period ending in 2021 is a good robustness test.
+- **Terra orbit drift:** since its last orbit adjustment in February 2020 the Terra satellite crosses the equator
+  earlier than 10:30 / 22:30 as it ends its mission. Recent daytime MODIS land surface temperatures can therefore read
+  slightly cooler (night-time ones slightly warmer). When FACTS show a land surface temperature trend, mention that
+  checking a period ending in 2019 is a good robustness test.
 - **There is no salinity, river flow, groundwater or air pollution data** in Terra-scope at the moment.
   Questions about them cannot be answered from this data.
 

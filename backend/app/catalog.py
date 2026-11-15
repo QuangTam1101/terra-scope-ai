@@ -46,9 +46,9 @@ class Variable:
 
 _MODIS_NOTE = ("MODIS is an optical satellite sensor: it cannot see through cloud, so very cloudy months (and snow for "
                "NDVI) can be missing. Each 0.5° cell is the mean of its clear 0.05° MODIS pixels.")
-_LST_NOTE = (_MODIS_NOTE + " Terra's overpass time has drifted earlier since 2022 as the satellite ends its mission, "
-             "which can make recent day and night surface temperatures read slightly cooler; check whether a trend "
-             "holds when the period ends in 2021.")
+_LST_NOTE = (_MODIS_NOTE + " Terra's overpass time has drifted earlier since 2020 (its last orbit adjustment) as the "
+             "satellite ends its mission, which can make recent daytime surface temperatures read slightly cooler "
+             "(night-time slightly warmer); check whether a trend holds when the period ends in 2019.")
 _MODEL_NOTE = "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
 
 _VARS = [
