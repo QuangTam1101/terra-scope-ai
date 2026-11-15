@@ -8,7 +8,7 @@ import { useStore } from "./store";
 import { EachYear, MonthGrid, Stripes } from "./Patterns";
 import { MAX_WINDOWS, SEASONS, seasonalYears, senPerDecade } from "./explore";
 import { pval, signed, VerdictBadge } from "./ui";
-import { trendF } from "./units";
+import { convFor, convTrend } from "./units";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const TABS = [["stripes", "Stripes"], ["grid", "Month by year"], ["years", "Each year"], ["season", "Seasons"], ["window", "Time window"]] as const;
@@ -79,7 +79,7 @@ function Seasons() {
 }
 
 function Windows() {
-  const { run, variable, tempUnit, showError } = useStore();
+  const { run, variable, tempUnit, audience, showError } = useStore();
   const cov = variable?.coverage;
   const y0 = cov ? Number(cov.start.slice(0, 4)) : 2001, y1 = cov ? Number(cov.end.slice(0, 4)) : 2024;
   const [start, setStart] = useState(y0), [end, setEnd] = useState(y1);
@@ -106,8 +106,8 @@ function Windows() {
   }, [start, end, run]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!run) return null;
-  const F = tempUnit === "F" && run.trend.units === "°C";
-  const shown = rows.map((r) => ({ ...r, t: F ? trendF(r.t) : r.t })).sort((a, b) => a.start - b.start || a.end - b.end);
+  const c = convFor(run.variable.display_units, tempUnit, audience);   // windows come raw from the API; run is already shown
+  const shown = rows.map((r) => ({ ...r, t: c ? convTrend(r.t, c) : r.t })).sort((a, b) => a.start - b.start || a.end - b.end);
   const u = run.variable.display_units;
   const years = Array.from({ length: y1 - y0 + 1 }, (_, i) => y0 + i);
   return (

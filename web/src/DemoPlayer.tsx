@@ -7,7 +7,7 @@ import { Term } from "./Term";
 import { InfoButton } from "./InfoButton";
 import { exploreHash, linkPlace } from "./urlState";
 import { plain, signed, verdictOf } from "./ui";
-import { seriesF, trendF } from "./units";
+import { convFor, convSeries, convTrend } from "./units";
 
 // A demo case: one question, one variable, one place, one period. Every number shown comes from the live /trends and
 // /series answers for exactly this request; the captions below are templates filled from those answers.
@@ -68,10 +68,10 @@ export function DemoPlayer({ demo: d, extra }: { demo: Demo; extra?: ReactNode }
 
   const v = variables.find((x) => x.id === d.variable_id);
   // The API answers in its own units ("degC", "m3/m3"); show the catalog's display units. Store variables are already
-  // converted to °F when the user picked °F, so "°F" here means a Celsius variable to convert.
-  const toF = tempUnit === "F" && v?.display_units === "°F";
+  // converted (°F, % water…), and convFor reads either kind, so this converts the raw demo numbers once.
+  const c = convFor(v?.display_units, tempUnit, audience);
   const u = v?.display_units ?? data?.t.units ?? "";
-  const t = data && { ...(toF ? trendF(data.t) : data.t), units: u }, s = data && { ...(toF ? seriesF(data.s) : data.s), units: u };
+  const t = data && { ...(c ? convTrend(data.t, c) : data.t), units: u }, s = data && { ...(c ? convSeries(data.s, c) : data.s), units: u };
   const ref = d.region;
   const bbox = data?.t.region.bbox ?? (ref.type === "bbox" ? ref.bbox : regions.find((r) => r.id === ref.id)?.bbox);
   const y0 = d.start.slice(0, 4), y1 = d.end.slice(0, 4);
@@ -87,7 +87,7 @@ export function DemoPlayer({ demo: d, extra }: { demo: Demo; extra?: ReactNode }
     v ? <>
       <span className="chip demo-chip">{v.parameter_name}{sci && <span className="muted">· {v.dataset_name}</span>} <InfoButton id={v.id} /></span>
       <p className="demo-cap">{sci ? v.description_technical : v.description_simple}</p>
-      <p className="demo-cap muted">Measured in {toF ? "°F" : v.display_units}.</p>
+      <p className="demo-cap muted">Measured in {c ? c.to : v.display_units}.</p>
     </> : ready ? <div className="warn">This dataset is not on the server yet.</div> : skel,
     <>
       {bbox ? <LocatorMap boxes={[{ bbox, label: d.place, color: "#e8735a" }]} height={200} /> : skel}

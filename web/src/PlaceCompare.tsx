@@ -5,7 +5,7 @@ import { api, ApiError, errorText, type SeriesResponse, type TrendResponse, type
 import { InfoButton } from "./InfoButton";
 import { useStore, type Place } from "./store";
 import { pval, signed, verdictOf } from "./ui";
-import { isCelsius, seriesF, trendF } from "./units";
+import { convFor, convSeries, convTrend } from "./units";
 
 /** Clamp the chosen period to a variable's coverage. null: no overlap. short: under 10 calendar years (the backend's test needs 10 years with data). */
 export function clampPeriod(start: string, end: string, coverage: Variable["coverage"]) {
@@ -115,10 +115,10 @@ export function PlaceCompare({ place, start, end, variables, onOpen }: {
 
   const line = (r: (typeof view)[number]) => {
     const { v, p, row } = r;
-    const f = tempUnit === "F" && isCelsius(v.display_units);
-    const units = f ? "°F" : v.display_units;
-    const t = row?.kind === "data" ? (f ? trendF(row.trend) : row.trend) : null;
-    const s = row?.kind === "data" ? (f ? seriesF(row.series) : row.series) : null;
+    const c = convFor(v.display_units, tempUnit, audience);   // raw API numbers → shown units (°F, % water…)
+    const units = c ? c.to : v.display_units;
+    const t = row?.kind === "data" ? (c ? convTrend(row.trend, c) : row.trend) : null;
+    const s = row?.kind === "data" ? (c ? convSeries(row.series, c) : row.series) : null;
     const verdict = t && rowVerdict(t);
     const status = !p ? "No data for these years" : row?.kind === "nodata" ? "No data for this place" : p?.short ? "Too short to test (needs 10 years)"
       : row?.kind === "error" ? `Could not load: ${row.text}` : !t ? "Loading…" : null;
@@ -149,12 +149,12 @@ export function PlaceCompare({ place, start, end, variables, onOpen }: {
 
   return (
     <div className="col" style={{ gap: 8 }}>
-      <p style={{ margin: 0, fontWeight: 700 }}>Same place, same years, every variable: which ones are changing?</p>
+      <p style={{ margin: 0, fontWeight: 700 }}>{sci ? "Same place, same years, every variable: which ones are changing?" : "Same place, same years: which measurements are changing?"}</p>
       <div style={{ overflowX: "auto" }}>
         <table className="fc-table">
           <thead>
             <tr>
-              <th>Variable</th><th>Verdict</th><th>{sci ? "Sen's slope per decade" : "Rate per decade"}</th><th>{sci ? "Anomaly (seasons removed)" : "Change over time"}</th>
+              <th>{sci ? "Variable" : "Measurement"}</th><th>{sci ? "Verdict" : "What we found"}</th><th>{sci ? "Sen's slope per decade" : "Change every 10 years"}</th><th>{sci ? "Anomaly (seasons removed)" : "Year to year"}</th>
               {sci && <><th>Mann-Kendall p (raw)</th><th>p adjusted (Hamed-Rao)</th><th>Years</th><th title="Mean share of the area with data each month">Area with data</th></>}
             </tr>
           </thead>

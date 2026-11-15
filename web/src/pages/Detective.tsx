@@ -72,7 +72,7 @@ export function Detective() {
           <div key={t.id} className="col" style={{ overflowWrap: "anywhere" }}>
             <div className="bubble-user">{t.question}</div>
             {t.response ? (
-              <AnswerCard response={t.response} fahrenheit={F} variables={variables} onAction={(a) => void act(a)} />
+              <AnswerCard response={t.response} fahrenheit={F} audience={audience} variables={variables} onAction={(a) => void act(a)} />
             ) : t.error ? <div className="card bubble-ai" role="alert">
               <b>Could not answer this message</b><span>{t.error}</span>
               <button type="button" className="btn soft" disabled={busy || !ready} onClick={() => void sendChat(t.question, t.context)}>Try again</button>

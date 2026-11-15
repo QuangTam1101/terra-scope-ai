@@ -15,7 +15,7 @@ import { Legend, WorldMap, type Layer } from "../WorldMap";
 import { TrendChart } from "../TrendChart";
 import { Terra } from "../ui";
 import { ExplorerResult, ScientistResult } from "../ResultViews";
-import { trendGridF, valueGridF } from "../units";
+import { convFor, convTrendGrid, convValueGrid } from "../units";
 import { APPEEARS_URL, giovanniUrl } from "../config/giovanni";
 import { globalCells, gridMessage, regionalSteps, type GridOp } from "../progress";
 import { ExploreFurther } from "../ExploreFurther";
@@ -88,10 +88,9 @@ export function Explore() {
     if (document.fullscreenElement) void document.exitFullscreen();
     else void mapRef.current?.requestFullscreen?.().catch(() => undefined);
   }, []);
-  const isTemp = units === "°C" || units === "°F";
-  const toF = isTemp && tempUnit === "F";
-  const shownTrend = useMemo(() => (trendGrid && toF ? trendGridF(trendGrid) : trendGrid), [trendGrid, toF]);
-  const shownValues = useMemo(() => (valueGrid && toF ? valueGridF(valueGrid) : valueGrid), [valueGrid, toF]);
+  const conv = convFor(units, tempUnit, audience);   // map grids come raw from the API
+  const shownTrend = useMemo(() => (trendGrid && conv ? convTrendGrid(trendGrid, conv) : trendGrid), [trendGrid, conv]);
+  const shownValues = useMemo(() => (valueGrid && conv ? convValueGrid(valueGrid, conv) : valueGrid), [valueGrid, conv]);
 
   // Load the map layer for the chosen dataset and period (cached per combination). Before fetching, ask the
   // server whether this map is already computed so the message says what is really happening (Phase 8.5A).
@@ -203,7 +202,7 @@ export function Explore() {
             ))}
           </div>
           {variable && <span className="small muted">{sci ? variable.description_technical : variable.description_simple} <InfoButton id={variable.id} /></span>}
-          {isTemp && (
+          {(units === "°C" || units === "°F") && (
             <div className="row" style={{ gap: 8 }}>
               <span className="small muted">Show temperature in</span>
               <div className="seg" role="group" aria-label="Temperature unit">
@@ -289,7 +288,7 @@ export function Explore() {
           </div>
         </div>
         {timelapse && variable?.available ? (
-          <Timelapse variable={variable} start={periodStart(sel)} end={periodEnd(sel)} toF={toF}
+          <Timelapse variable={variable} start={periodStart(sel)} end={periodEnd(sel)} conv={conv}
             bbox={sel.place.bbox[2] - sel.place.bbox[0] >= 360 ? null : sel.place.bbox} />
         ) : <>
         <WorldMap layer={layer} trend={shownTrend} values={shownValues} loading={gridLoading} loadingInfo={gridInfo} units={units}
@@ -421,14 +420,15 @@ function MoreYears() {
         <text x={L - 4} y={y(0) + 3} textAnchor="end" fontSize="10" fill="var(--muted)">0</text>
         <text x={L - 4} y={y(top) + 8} textAnchor="end" fontSize="10" fill="var(--muted)">{top.toFixed(2)}</text>
         <text x={L} y={H - 4} fontSize="10" fill="var(--muted)">{y0} years</text>
-        <text x={W - 8} y={H - 4} textAnchor="end" fontSize="10" fill="var(--muted)">{y1} years of data, ending {last.end}</text>
+        <text x={W - 8} y={H - 4} textAnchor="end" fontSize="10" fill="var(--muted)">{y1} years of data, ending {last.end.slice(0, 4)}</text>
       </svg>
       {sci ? <span className="small">Raw Seasonal Mann-Kendall p by record length (start in January of each year, same end); dashed line α = {res.alpha}.</span>
-        : <span className="small">Each dot is the same test with a longer record. Below the dashed line, the change is <Term id="significant">significant</Term>.</span>}
+        : <span className="small">Each dot repeats the test with more years of data. A dot below the dashed line means the change is <Term id="significant">clear, not chance</Term>.</span>}
       <p style={{ margin: 0, fontWeight: 700 }}>
-        {last.significant ? `With ${last.years} years of data, the change is already significant.`
-          : shorterPass ? "The answer depends on the start year: some shorter records pass the test, the full record does not. Treat it as a clue, not a verdict."
-          : n !== null ? `Not significant yet. If the change keeps its pace, about ${n} more year${n === 1 ? "" : "s"} of data might settle it.`
+        {last.significant ? `With ${last.years} years of data, the change is already ${sci ? "significant" : "clear"}.`
+          : shorterPass ? (sci ? "The answer depends on the start year: some shorter records pass the test, the full record does not. Treat it as a clue, not a verdict."
+            : "It depends on the start year. Some shorter stretches pass the test, but the full record does not. Treat it as a clue.")
+          : n !== null ? `${sci ? "Not significant" : "Not clear"} yet. If the change keeps its pace, about ${n} more year${n === 1 ? "" : "s"} of data might settle it.`
           : "We cannot say how many more years would help here."}
       </p>
       {!last.significant && !shorterPass && (sci
@@ -452,7 +452,7 @@ function ResultBody({ share }: { share: ExploreState }) {
           const a = document.createElement("a");
           a.href = URL.createObjectURL(new Blob([seriesCsv(run, new Date())], { type: "text/csv" }));
           a.download = `terra-scope-${v.id}-${t.start}-${t.end}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-        }}>Download data (CSV)</button>
+        }}>{audience === "scientist" ? "Download data (CSV)" : "Download the numbers"}</button>
       </div>
       <NasaCheck variableId={v.id} provider={v.source.provider} bbox={place.bbox} start={t.start} end={t.end} coverage={v.coverage} />
       <span className="footer">Source: {v.source.product} v{v.source.version}, {v.source.provider}.</span>

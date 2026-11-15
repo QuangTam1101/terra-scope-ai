@@ -7,7 +7,7 @@ import { useStore } from "../store";
 import { periodEnd, periodStart } from "../period";
 import { TrendChart } from "../TrendChart";
 import { ci, pval, signed, Stat, VerdictBadge } from "../ui";
-import { compareF, seriesF, trendF } from "../units";
+import { convCompare, convFor, convSeries, convTrend } from "../units";
 import { LocatorMap } from "../report/ReportDoc";
 import { compatiblePartner, EXTENTS } from "../explore";
 import { clampPeriod } from "../PlaceCompare";
@@ -233,9 +233,13 @@ function Workspace({ mode, reopen, onReopened, onSaved }: { mode: HuntMode; reop
 
   const res = useMemo(() => {
     if (!raw) return null;
-    if (!(tempUnit === "F" && raw.a.trend.units === "°C")) return raw;
-    return { ...raw, a: { ...raw.a, trend: trendF(raw.a.trend) }, b: { ...raw.b, trend: trendF(raw.b.trend) }, sa: seriesF(raw.sa), sb: raw.sb ? seriesF(raw.sb) : null, test: raw.test ? compareF(raw.test) : null };
-  }, [raw, tempUnit]);
+    // Numbers stay raw in the saved result; labels and numbers follow the current units (°F, % water in Explorer).
+    const varA = variables.find((v) => v.id === raw.a.variable.id) ?? raw.a.variable, varB = variables.find((v) => v.id === raw.b.variable.id) ?? raw.b.variable;
+    const c = convFor(varA.display_units, tempUnit, audience);
+    if (!c) return { ...raw, a: { ...raw.a, variable: varA }, b: { ...raw.b, variable: varB } };
+    return { ...raw, a: { ...raw.a, variable: varA, trend: convTrend(raw.a.trend, c) }, b: { ...raw.b, variable: varB, trend: convTrend(raw.b.trend, c) },
+      sa: convSeries(raw.sa, c), sb: raw.sb ? convSeries(raw.sb, c) : null, test: raw.test ? convCompare(raw.test, c) : null };
+  }, [raw, tempUnit, audience, variables]);
   const analysis = useMemo(() => {
     if (!res) return null;
     const { validity, checks } = checkComparability(res.mode, res.a, res.b);
