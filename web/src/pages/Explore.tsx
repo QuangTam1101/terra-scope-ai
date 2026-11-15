@@ -265,7 +265,7 @@ export function Explore() {
       <ChartCard />
       {!running && <ExploreFurther />}
       <span className="footer explore-foot">
-        Preliminary · not yet validated · NASA data: GPM IMERG, GLDAS Noah, MERRA-2 ({variable?.spatial_resolution_deg ?? 0.5}° global grid, {years[0]} to {years[years.length - 1]}).{" "}
+        NASA data: GPM IMERG, GLDAS Noah, MERRA-2, MODIS ({variable?.spatial_resolution_deg ?? 0.5}° global grid, {years[0]} to {years[years.length - 1]}).{" "}
         <button type="button" className="btn soft" style={{ minHeight: 32, padding: "0 12px", fontSize: 12.5 }} onClick={() => go("report")}>Open report</button>
       </span>
     </div>

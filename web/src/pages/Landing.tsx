@@ -4,6 +4,7 @@ import heroTrend from "../assets/heroTrend.json";
 import { land } from "../WorldMap";
 import { DEMO_VIDEO, hasPlayableVideo, youtubeEmbedUrl } from "../config/demo";
 import { Icon, Terra, VERDICT_TEXT } from "../ui";
+import { ThemeToggle } from "../theme";
 
 /** The team research paper (PDF in web/public/paper), opened from the hero. */
 const RESEARCH_PAPER = "/paper/terra-scope-research-paper.pdf";
@@ -306,7 +307,6 @@ const fmtCoord = (lon: number, lat: number) =>
  * arrow keys rotate, double-click resets. Auto-spin pauses while the user is interacting and resumes after a few seconds. */
 function HeroGlobe() {
   const ref = useRef<HTMLCanvasElement>(null);
-  const api = useRef<{ reset: () => void } | null>(null);
   const [tip, setTip] = useState<HeroTip | null>(null);
   const [grabbing, setGrabbing] = useState(false);
 
@@ -425,12 +425,12 @@ function HeroGlobe() {
       e.preventDefault(); spin = 0; pause(6000); dirty = true; setTip(null);
     };
     const reset = () => { centre = 100; tilt = TILT0; spin = 0; resumeAt = 0; dirty = true; setTip(null); };
-    api.current = { reset };
+
     cv.addEventListener("pointerdown", down); cv.addEventListener("pointermove", move);
     cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
     cv.addEventListener("pointerleave", leave); cv.addEventListener("keydown", key); cv.addEventListener("dblclick", reset);
     return () => {
-      cancelAnimationFrame(raf); api.current = null;
+      cancelAnimationFrame(raf);
       cv.removeEventListener("pointerdown", down); cv.removeEventListener("pointermove", move);
       cv.removeEventListener("pointerup", up); cv.removeEventListener("pointercancel", up);
       cv.removeEventListener("pointerleave", leave); cv.removeEventListener("keydown", key); cv.removeEventListener("dblclick", reset);
@@ -457,10 +457,6 @@ function HeroGlobe() {
           </div>
         )}
       </div>
-      <figcaption className="hero-globe-hint">
-        Drag to spin
-        <button type="button" className="hero-globe-reset" onClick={() => api.current?.reset()}>Reset</button>
-      </figcaption>
       <div className="hero-mascot"><Terra size={120} label="Terra, the Earth detective" /></div>
     </figure>
   );
@@ -547,6 +543,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
             <a key={n.id} href="#landing" onClick={(e) => { e.preventDefault(); jump(n.id); }}>{n.label}</a>
           ))}
         </nav>
+        <ThemeToggle className="lp-theme" label={false} />
         <button type="button" className="btn" onClick={onStart}>Get Started</button>
       </header>
 

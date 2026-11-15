@@ -1,4 +1,5 @@
 import { StoreProvider, useStore, type Page } from "./store";
+import { ThemeToggle } from "./theme";
 import { Icon, Terra } from "./ui";
 import { Home } from "./pages/Home";
 import { Landing } from "./pages/Landing";
@@ -110,6 +111,7 @@ function Shell() {
         <div className="nav-extra">
           <button type="button" className="nav" onClick={replayTutorial}><HelpIcon />Replay Tutorial</button>
           <button type="button" className="nav" onClick={toLanding}><BackIcon />About Terra-scope</button>
+          <ThemeToggle className="nav" />
         </div>
       </nav>
       <main className="main">

@@ -60,8 +60,7 @@ export function Detective() {
       <div role="note" className="card pad" style={{ border: "2px solid var(--ink)", font: "700 14px/1.45 var(--body)" }}>
         Terra only explains numbers from the statistics engine and can be wrong, especially about causes. Trend lines are past trends, not forecasts.
       </div>
-      <div className="row">
-        <span className="small muted" style={{ flex: 1 }}>Conversation stays while you navigate. Reloading clears it.</span>
+      <div className="row" style={{ justifyContent: "flex-end" }}>
         <button type="button" className="btn soft" disabled={busy || turns.length === 0} onClick={clearChat}>Clear chat</button>
       </div>
       {turns.length === 0 && <div className="card pad col">

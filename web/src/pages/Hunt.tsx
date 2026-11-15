@@ -383,7 +383,7 @@ function Workspace({ mode, reopen, onReopened, onSaved }: { mode: HuntMode; reop
             {mode === "regions" && <LocatorMap height={200} boxes={[{ bbox: res.a.trend.region.bbox, label: "A", color: "#5b4e94" }, { bbox: res.b.trend.region.bbox, label: "B", color: "#2b2540" }]} />}
             <span style={{ font: "800 14px var(--body)" }}>{mode === "periods" ? "One monthly anomaly series, two windows" : "Monthly anomalies, A solid and B dashed, one shared axis"} ({u})</span>
             {mode === "periods" ? <PeriodChart series={res.sa} a={res.a.trend} b={res.b.trend} units={u} />
-              : <TrendChart anomaly units={u} lines={[{ series: res.sa, trend: res.a.trend, color: "#2b2540", label: "A" }, { series: res.sb!, trend: res.b.trend, color: "#8d86a0", dash: true, label: "B" }]} />}
+              : <TrendChart anomaly units={u} lines={[{ series: res.sa, trend: res.a.trend, color: "var(--ink)", label: "A" }, { series: res.sb!, trend: res.b.trend, color: "#8d86a0", dash: true, label: "B" }]} />}
             <span className="small muted">Trend lines carry the reported Sen slopes (orange rising, blue falling, dashed = not significant). Missing months are gaps, not interpolated. Estimated past trends, not forecasts.</span>
           </section>
 

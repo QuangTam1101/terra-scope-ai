@@ -88,31 +88,31 @@ export function TrendChart({ lines, anomaly, height = 340, units = "" }: { lines
         aria-label={`Monthly ${anomaly ? "anomalies" : "values"} from ${firstYear} to ${lastYear}${lines.some((l) => l.trend) ? ' with seasonal Sen trend line; no Sen confidence band is available' : ''}`}>
         {yTicks.map((v) => (
           <g key={v}>
-            <line x1={PL} x2={W - PR} y1={Y(v)} y2={Y(v)} stroke={anomaly && v === 0 ? "rgba(43,37,64,.35)" : "rgba(43,37,64,.08)"} strokeWidth={anomaly && v === 0 ? 1.4 : 1} />
-            <text x={PL - 8} y={Y(v) + 4} textAnchor="end" fontSize="12.5" fontWeight="700" fill="#4e4860" fontFamily="Nunito">{plain(v, dec)}</text>
+            <line x1={PL} x2={W - PR} y1={Y(v)} y2={Y(v)} style={{ stroke: "var(--ink)" }} strokeOpacity={anomaly && v === 0 ? 0.35 : 0.08} strokeWidth={anomaly && v === 0 ? 1.4 : 1} />
+            <text x={PL - 8} y={Y(v) + 4} textAnchor="end" fontSize="12.5" fontWeight="700" style={{ fill: "var(--muted)" }} fontFamily="Nunito">{plain(v, dec)}</text>
           </g>
         ))}
         {xTicks.map((t) => (
           <g key={t.i}>
-            <line x1={X(t.i)} x2={X(t.i)} y1={PT} y2={H - PB} stroke="rgba(43,37,64,.06)" />
-            <text x={X(t.i)} y={H - 12} textAnchor="middle" fontSize="12.5" fontWeight="700" fill="#4e4860" fontFamily="Nunito">{t.label}</text>
+            <line x1={X(t.i)} x2={X(t.i)} y1={PT} y2={H - PB} style={{ stroke: "var(--ink)" }} strokeOpacity={0.06} />
+            <text x={X(t.i)} y={H - 12} textAnchor="middle" fontSize="12.5" fontWeight="700" style={{ fill: "var(--muted)" }} fontFamily="Nunito">{t.label}</text>
           </g>
         ))}
-        <text x={12} y={PT + 2} fontSize="11.5" fontWeight="800" fill="#4e4860" fontFamily="Nunito" transform={`rotate(-90 12 ${PT + 2})`} textAnchor="end">{units}</text>
+        <text x={12} y={PT + 2} fontSize="11.5" fontWeight="800" style={{ fill: "var(--muted)" }} fontFamily="Nunito" transform={`rotate(-90 12 ${PT + 2})`} textAnchor="end">{units}</text>
         {lines.map((l, k) => (
-          <path key={`p${k}`} d={pathOf(l)} fill="none" stroke={l.color ?? "#5e5872"} strokeOpacity={0.75} strokeWidth={1.5}
+          <path key={`p${k}`} d={pathOf(l)} fill="none" style={{ stroke: l.color ?? "var(--muted-2)" }} strokeOpacity={0.75} strokeWidth={1.5}
             strokeLinejoin="round" strokeDasharray={l.dash ? "5 4" : undefined} />
         ))}
         {lines.map((l, k) => { const g = trendGeom(l); return g ? <path key={`t${k}`} d={g.line} fill="none" stroke={g.color} strokeWidth={4.5} strokeLinecap="round" strokeDasharray={g.dashed ? "12 8" : undefined} /> : null; })}
         {hover !== null && (
           <g>
-            <line x1={X(hover)} x2={X(hover)} y1={PT} y2={H - PB} stroke="#2b2540" strokeOpacity={0.35} />
-            {lines.map((l, k) => { const v = get(l.series.points[hover]); return v === null ? null : <circle key={k} cx={X(hover)} cy={Y(v)} r={4.5} fill="#2b2540" />; })}
+            <line x1={X(hover)} x2={X(hover)} y1={PT} y2={H - PB} style={{ stroke: "var(--ink)" }} strokeOpacity={0.35} />
+            {lines.map((l, k) => { const v = get(l.series.points[hover]); return v === null ? null : <circle key={k} cx={X(hover)} cy={Y(v)} r={4.5} style={{ fill: "var(--ink)" }} />; })}
           </g>
         )}
       </svg>
       {hover !== null && (
-        <div className="num" style={{ position: "absolute", top: 8, left: Math.min(Math.max(X(hover) + 12, 0), W - 230), background: "#fff", borderRadius: 14,
+        <div className="num" style={{ position: "absolute", top: 8, left: Math.min(Math.max(X(hover) + 12, 0), W - 230), background: "var(--surface)", borderRadius: 14,
           boxShadow: "var(--shadow)", padding: "6px 12px", font: "700 13px var(--body)", pointerEvents: "none", whiteSpace: "nowrap" }}>
           <div style={{ fontWeight: 800 }}>{lines[0].series.points[hover].t}</div>
           {lines.map((l, k) => <div key={k}>{l.label ? `${l.label}: ` : ""}{fmt(get(l.series.points[hover]))}</div>)}

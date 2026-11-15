@@ -169,7 +169,6 @@ export function Home() {
       <section className="card pad row" style={{ gap: 22, alignItems: "center" }}>
         <Terra size={130} label="Terra, a round Earth detective with a hat and a magnifying glass" />
         <div className="col" style={{ flex: 1, minWidth: 260 }}>
-          <span className="prelim" style={{ alignSelf: "flex-start" }}>Preliminary · not yet validated</span>
           <h1 style={{ fontSize: 38, lineHeight: 1.1 }}>Is it really changing?</h1>
           <p style={{ font: "700 17px/1.45 var(--body)", margin: 0 }}>Pick a clue and a place. Terra checks 25 years of NASA data (2001 to 2025) and tells you if the change is real.</p>
           <div className="row">
@@ -296,7 +295,7 @@ export function Home() {
           ["Detective", "detective", "Ask Terra in plain words", "#ede6fb"],
           ["Report", "report", "Save your evidence", "#dff5ea"],
         ].map(([t, page, d, bg]) => (
-          <button key={t} type="button" className="card" onClick={() => go(page as "explore" | "hunt" | "detective" | "report")} style={card({ background: bg })}>
+          <button key={t} type="button" className="card force-light" onClick={() => go(page as "explore" | "hunt" | "detective" | "report")} style={card({ background: bg })}>
             <span style={{ font: "700 20px var(--display)" }}>{t}</span>
             <span style={{ font: "700 14px var(--body)" }}>{d}</span>
           </button>
@@ -324,8 +323,8 @@ export function Home() {
 
       {/* limits */}
       <section className="row" aria-label="Good to know" style={{ gap: 10 }}>
-        {["Shows what changed, not why", "Past trends, not forecasts", "0.5° grid (about 55 km)", "Preliminary results"].map((t) => (
-          <span key={t} style={{ background: "#fff", borderRadius: 999, padding: "8px 14px", font: "800 13px var(--body)", boxShadow: "var(--shadow)" }}>{t}</span>
+        {["Shows what changed, not why", "Past trends, not forecasts", "0.5° grid (about 55 km)"].map((t) => (
+          <span key={t} style={{ background: "var(--surface)", borderRadius: 999, padding: "8px 14px", font: "800 13px var(--body)", boxShadow: "var(--shadow)" }}>{t}</span>
         ))}
       </section>
       <span className="footer">Data: NASA GPM IMERG, GLDAS Noah, MERRA-2 via NASA GES DISC.</span>

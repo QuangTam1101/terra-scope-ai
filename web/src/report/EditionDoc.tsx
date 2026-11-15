@@ -199,7 +199,7 @@ function ExplorerCover({ p }: { p: EditionProps }) {
       <p className="xquestion">What changed in this part of Earth?</p>
       <div className="rtitle"><Terra size={58} />
         <div><h1 className={titleCls(titleOf(p))}>{titleOf(p)}</h1>
-          <p>{p.author.trim() && <span className="ruser">{p.author.trim()} · </span>}{m.generatedAt.slice(0, 10)} · Preliminary, not peer reviewed</p></div>
+          <p>{p.author.trim() && <span className="ruser">{p.author.trim()} · </span>}{m.generatedAt.slice(0, 10)} · Not peer reviewed</p></div>
       </div>
       <KV rows={[
         ...(regions ? [["Where", regions] as [string, string]] : []), ...(span ? [["When", span] as [string, string]] : []),
@@ -397,7 +397,7 @@ function ScientistCover({ p }: { p: EditionProps }) {
       <Head m={m} title="Scientist report" />
       <div className="rtitle"><Terra size={58} />
         <div><h1 className={titleCls(titleOf(p))}>{titleOf(p)}</h1>
-          <p>{p.author.trim() && <span className="ruser">{p.author.trim()} · </span>}Preliminary, not peer reviewed</p></div>
+          <p>{p.author.trim() && <span className="ruser">{p.author.trim()} · </span>}Not peer reviewed</p></div>
       </div>
       <KV rows={[
         ["Research question", researchQuestion(m)],

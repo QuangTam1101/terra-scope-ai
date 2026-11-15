@@ -194,7 +194,7 @@ export function ReportDoc({ m }: { m: ReportModel }) {
           ["Report ID", m.id], ["Generated", `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`],
           ["Analyses", `${m.analyses.length} trend ${m.analyses.length === 1 ? "analysis" : "analyses"}${m.comparisons.length ? `, ${m.comparisons.length} comparison${m.comparisons.length === 1 ? "" : "s"}` : ""}`],
           ["NASA products", m.datasets.map((d) => `${d.product} v${d.version}`).join(", ") || "n/a"],
-          ["Status", "Preliminary: not peer reviewed"],
+          ["Status", "Not peer reviewed"],
         ]} />
         <h2>Executive summary</h2>
         <ol className="rfind">
