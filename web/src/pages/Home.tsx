@@ -1,10 +1,11 @@
-import { useContext, type ReactNode } from "react";
+import { useContext, useEffect, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import { AppChrome } from "../chrome";
 import { useStore, WORLD } from "../store";
 import { Terra } from "../ui";
 import { GLOSSARY } from "../glossary";
 import { oppositeHash } from "../opposite";
 import { CaseStarter } from "../CaseStarter";
+import { GuideSections } from "./DetectiveGuide";
 
 /** Glossary list: plain definition for Explorer, technical definition for Scientist, the other one in a second line. */
 function ScienceWords() {
@@ -165,13 +166,22 @@ export function Home() {
     runAnalysis({ parameter: v.parameter, variableId: v.id, startYear: 2001, endYear: last, startMonth: 1, endMonth: 12, place });
   };
 
+  // #guide (the old Detective guide page) lands here: scroll to the guide part of Home
+  useEffect(() => {
+    if (!location.hash.startsWith("#guide")) return;
+    const id = location.hash.includes("proof") ? "guide-right" : "guide-cases";
+    const t = window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: "start" }), 60);
+    return () => window.clearTimeout(t);
+  }, []);
+  const jump = (id: string) => (e: ReactMouseEvent) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }); };
+
   return (
     <div className="page">
       {/* welcome */}
       <section className="card pad row" style={{ gap: 22, alignItems: "center" }}>
         <Terra size={130} label="Terra, a round Earth detective with a hat and a magnifying glass" />
         <div className="col" style={{ flex: 1, minWidth: 260 }}>
-          <a className="prelim" href="#guide" style={{ alignSelf: "flex-start" }}>Numbers checked · not peer reviewed</a>
+          <a className="prelim" href="#guide?proof" onClick={jump("guide-right")} style={{ alignSelf: "flex-start" }}>Numbers checked · not peer reviewed</a>
           <h1 style={{ fontSize: 38, lineHeight: 1.1 }}>Is it really changing?</h1>
           <p style={{ font: "700 17px/1.45 var(--body)", margin: 0 }}>Pick a clue and a place. Terra checks 25 years of NASA data (2001 to 2025) and tells you if the change is real.</p>
           <div className="row">
@@ -293,6 +303,16 @@ export function Home() {
         </div>
       </section>
 
+      {/* Detective guide: demo cases, how the test works, how we check the numbers (its own panel) */}
+      <section className="guide-panel" aria-labelledby="guide-panel-title">
+        <div className="guide-panel-head">
+          <span className="guide-panel-badge"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" /><path d="M15 15l6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>Detective guide</span>
+          <h2 id="guide-panel-title">Learn how Terra decides if a change is real</h2>
+          <p>Watch a finished case, see the three steps of the trend test, and how we check the numbers.</p>
+        </div>
+        <GuideSections />
+      </section>
+
       {/* pages */}
       <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
         {[
@@ -313,7 +333,7 @@ export function Home() {
       <section className="col" aria-labelledby="examples" style={{ gap: 10 }}>
         <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
           <h2 id="examples" style={{ fontSize: 22 }}>Try one</h2>
-          <a href="#guide" style={{ font: "800 14px var(--body)" }}>Watch how it works →</a>
+          <a href="#guide" onClick={jump("guide-cases")} style={{ font: "800 14px var(--body)" }}>Watch how it works →</a>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
           {[
@@ -340,7 +360,7 @@ export function Home() {
           <span key={t} style={{ background: "var(--surface)", borderRadius: 999, padding: "8px 14px", font: "800 13px var(--body)", boxShadow: "var(--shadow)" }}>{t}</span>
         ))}
       </section>
-      <span className="footer">Data: NASA GPM IMERG, GLDAS Noah, MERRA-2 (GES DISC), SMAP (NSIDC), SeaWiFS (OB.DAAC). Ground references, not NASA: GPCC (Deutscher Wetterdienst), CRU TS (University of East Anglia).</span>
+      <span className="footer">Data: NASA GPM IMERG, GLDAS Noah, MERRA-2 (GES DISC), MODIS (LP DAAC), SMAP (NSIDC), SeaWiFS (OB.DAAC). Ground references, not NASA: GPCC (Deutscher Wetterdienst), CRU TS (University of East Anglia).</span>
     </div>
   );
 }

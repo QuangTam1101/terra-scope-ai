@@ -7,7 +7,7 @@ import { LocatorMap } from "./report/ReportDoc";
 import { Term } from "./Term";
 import { InfoButton } from "./InfoButton";
 import { exploreHash, linkPlace } from "./urlState";
-import { plain, signed, verdictOf } from "./ui";
+import { plain, signed, Terra, verdictOf } from "./ui";
 import { convFor, convSeries, convTrend } from "./units";
 
 // A demo case: one question, one variable, one place, one period. Every number shown comes from the live /trends and
@@ -15,6 +15,26 @@ import { convFor, convSeries, convTrend } from "./units";
 export interface Demo { id: string; question: string; place: string; variable_id: string; region: RegionRef; start: string; end: string }
 
 const STEPS = ["The question", "What we measure", "Where", "Every month", "Seasons removed", "The verdict"];
+const SHORT = ["Question", "Measure", "Where", "Months", "No seasons", "Verdict"];
+
+// Small line icons for the fact tiles (decoration only).
+const ic = { fill: "none", stroke: "currentColor", strokeWidth: 2.2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+const ICONS = {
+  what: <><path {...ic} d="M4 18l5-6 4 3 7-9" /><path {...ic} d="M15 6h5v5" /></>,
+  where: <><path {...ic} d="M12 21s-6-6.2-6-11a6 6 0 1 1 12 0c0 4.8-6 11-6 11z" /><circle {...ic} cx="12" cy="10" r="2.2" /></>,
+  when: <><rect {...ic} x="4" y="5" width="16" height="15" rx="3" /><path {...ic} d="M4 10h16M9 3v4M15 3v4" /></>,
+  data: <><ellipse {...ic} cx="12" cy="6" rx="7" ry="2.6" /><path {...ic} d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6" /></>,
+  unit: <><path {...ic} d="M4 17h16M6 17v-3M10 17v-5M14 17v-3M18 17v-5" /></>,
+};
+function Fact({ icon, k, v }: { icon: keyof typeof ICONS; k: string; v: ReactNode }) {
+  return (
+    <div className="demo-fact">
+      <span className="demo-fact-ic"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">{ICONS[icon]}</svg></span>
+      <span className="demo-fact-k">{k}</span>
+      <b className="demo-fact-v">{v}</b>
+    </div>
+  );
+}
 const TICK_MS = 4000;
 
 /** p-values as text; a raw p of 0 is an underflow, never "exactly zero". */
@@ -85,11 +105,25 @@ export function DemoPlayer({ demo: d, extra }: { demo: Demo; extra?: ReactNode }
   const needData = (body: (t: TrendResponse, s: SeriesResponse) => ReactNode) => (t && s ? body(t, s) : error ? null : skel);
 
   const body: ReactNode[] = [
-    <p className="demo-cap">We look at {yearsOf(d)} years of monthly NASA data, {y0} to {y1}.</p>,
+    <div className="demo-hero">
+      <Terra size={104} />
+      <div className="col" style={{ gap: 12, flex: 1, minWidth: 220 }}>
+        <p className="demo-q">{d.question}</p>
+        <div className="demo-facts">
+          <Fact icon="what" k="What" v={v?.parameter_name ?? "…"} />
+          <Fact icon="where" k="Where" v={d.place} />
+          <Fact icon="when" k="When" v={`${y0} to ${y1}`} />
+        </div>
+        <p className="demo-cap muted">We look at {yearsOf(d)} years of monthly NASA data, {y0} to {y1}.</p>
+      </div>
+    </div>,
     v ? <>
-      <span className="chip demo-chip">{v.parameter_name}{sci && <span className="muted">· {v.dataset_name}</span>} <InfoButton id={v.id} /></span>
+      <div className="demo-facts">
+        <Fact icon="what" k="Variable" v={<>{v.parameter_name} <InfoButton id={v.id} /></>} />
+        <Fact icon="data" k="NASA data" v={v.dataset_name} />
+        <Fact icon="unit" k="Unit" v={c ? c.to : v.display_units} />
+      </div>
       <p className="demo-cap">{sci ? v.description_technical : v.description_simple}</p>
-      <p className="demo-cap muted">Measured in {c ? c.to : v.display_units}.</p>
     </> : ready ? <div className="warn">This dataset is not on the server yet.</div> : skel,
     <>
       {bbox ? <LocatorMap boxes={[{ bbox, label: d.place, color: "#e8735a" }]} height={200} /> : skel}
@@ -106,6 +140,13 @@ export function DemoPlayer({ demo: d, extra }: { demo: Demo; extra?: ReactNode }
       {sci && <p className="demo-cap muted">Anomaly = value minus that calendar month's mean; line = seasonal Sen slope through the anomaly mean.</p>}
     </>),
     needData((t) => { const p = verdictParts(t, v?.parameter_name ?? "The value"); return <>
+      <div className="demo-verdict-row">
+        <div className={`demo-rate ${t.slope_per_decade !== null && t.slope_per_decade < 0 ? "down" : "up"}`}>
+          <b className="num">{t.slope_per_decade === null ? "n/a" : signed(t.slope_per_decade, digits(t.slope_per_decade))}</b>
+          <span>{t.units} per decade</span>
+        </div>
+        <span className={`demo-stamp ${verdictOf(t)}`}>{p.label}</span>
+      </div>
       <p className="demo-verdict">{p.change} <Term id="significance">{p.label}</Term>: {p.rest}</p>
       {sci && <p className="demo-cap muted num">{methodLine(t)}</p>}
       {extra}
@@ -121,7 +162,9 @@ export function DemoPlayer({ demo: d, extra }: { demo: Demo; extra?: ReactNode }
         <h3>{d.question}</h3>
         <span className="small muted" aria-live="polite">Step {step + 1} of {STEPS.length}</span>
       </div>
-      <ol className="demo-dots" aria-hidden="true">{STEPS.map((x, i) => <li key={x} className={i <= step ? "on" : ""} />)}</ol>
+      <ol className="demo-dots" aria-hidden="true">{STEPS.map((x, i) => (
+        <li key={x} className={`${i <= step ? "on" : ""} ${i === step ? "now" : ""}`} onClick={() => move(i)}><span className="demo-bar" /><span className="demo-lbl">{SHORT[i]}</span></li>
+      ))}</ol>
       <div className="col demo-step">
         <b className="demo-title">{STEPS[step]}</b>
         {body[step]}

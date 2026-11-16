@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { forecastApi, type Confidence, type DataStatus, type ForecastPoint, type ForecastResponse, type Mode, type RealityCheck, type RealityRegion } from "../api";
-import { cellPlace, useStore } from "../store";
+import { areaPlace, cellPlace, useStore } from "../store";
 import { OutlookMap } from "../OutlookMap";
 import { PlacePicker } from "../PlacePicker";
 import { plain, signed, Stat } from "../ui";
@@ -347,7 +347,8 @@ export function Forecast() {
       {/* ---------- map ---------- */}
       {canForecast && (
         <OutlookMap variableId={variable.id} mode={mode} months={mapMonths} unitsLabel={variable.parameter_name.toLowerCase()}
-          onPick={(lat, lon) => { setSel({ place: cellPlace(lon, lat) }); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+          onPick={(lat, lon) => { setSel({ place: cellPlace(lon, lat) }); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+          onArea={(bbox) => { setSel({ place: areaPlace(bbox) }); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
       )}
 
       {/* ---------- glossary / method ---------- */}
