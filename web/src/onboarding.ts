@@ -1,7 +1,7 @@
 /** Guided tour definitions (one per audience) and persisted completion state. Pure module: no React, safe to unit test. */
 export const ONBOARDING_KEY = "terra-scope:onboarding:v1";
 
-export type TourPage = "explore" | "hunt" | "detective" | "report";
+export type TourPage = "explore" | "hunt" | "forecast" | "detective" | "report";
 export interface TourStep {
   id: string;
   page: TourPage;
@@ -34,11 +34,16 @@ export const TOUR_STEPS: TourStep[] = [
     body: "Press Run analysis when you are ready. The backend computes the trend and its p-value from the NASA data; nothing is guessed in the browser." },
   { id: "hunt", page: "hunt", target: '[data-tour="hunt"]', title: "7. Compare two regions",
     body: "Hunt tests whether two places change differently. Opposite arrows are not enough: a contradiction is confirmed only when the difference itself is statistically significant." },
-  { id: "detective", page: "detective", target: '[data-tour="detective-input"]', title: "8. Ask the Detective",
+  { id: "forecast", page: "forecast", target: '[data-tour="forecast"]', title: "8. Preview an outlook",
+    body: "Forecast is a separate, experimental tool. Pick a variable and a place to see the chance of a wetter, drier, warmer or cooler month than normal, with a confidence label. It is not a trend test." },
+  { id: "forecast-map", page: "forecast", target: '[data-tour="forecast-map"]', title: "9. The outlook map",
+    body: "Orange squares lean above normal, blue below, pale means no clear tilt. Click a square or drag a box to look at that place; zoom and move it like the Explore map.",
+    fallback: "The outlook map appears once you pick a variable that has a forecast model." },
+  { id: "detective", page: "detective", target: '[data-tour="detective-input"]', title: "10. Ask the Detective",
     body: "Ask a question in plain language. With Gemini connected, Terra chooses safe backend tools; otherwise Template Mode answers. Either way, the numbers come from the statistics engine." },
-  { id: "evidence", page: "detective", target: '[data-tour="detective-evidence"]', title: "9. Check the evidence",
+  { id: "evidence", page: "detective", target: '[data-tour="detective-evidence"]', title: "11. Check the evidence",
     body: "Each answer carries its evidence: rate, p-value, interval, data quality and source. p below 0.05 means the trend is unlikely to be chance; it never proves a cause." },
-  { id: "report", page: "report", target: '[data-tour="report"]', title: "10. Create a report",
+  { id: "report", page: "report", target: '[data-tour="report"]', title: "12. Create a report",
     body: "Analyses you run are collected here with their method and NASA source. Export them as Markdown or print to PDF." },
   { id: "finish", page: "explore", target: null, title: "You're ready, detective!",
     body: "Start exploring on your own. Want every statistic? Switch the Mode to Scientist at the top of the page. You can replay this tour any time from the menu." },
@@ -60,9 +65,11 @@ export const SCIENTIST_STEPS: TourStep[] = [
     body: "The verdict uses the raw Seasonal Mann-Kendall p-value at alpha 0.05. The Hamed-Rao adjusted p is a diagnostic only, and the OLS interval is not a confidence interval for Sen's slope." },
   { id: "hunt", page: "hunt", target: '[data-tour="hunt"]', title: "6. Contradiction Hunter",
     body: "Two regions: the difference series of monthly anomalies (A minus B) is tested with the Hamed-Rao Mann-Kendall test (p-value), its trend is the Sen slope, and a moving-block bootstrap (12-month blocks) gives the 95% interval. A difference counts only when p is below 0.05 and the interval excludes zero. Dataset pairs are descriptive only." },
-  { id: "detective", page: "detective", target: '[data-tour="detective-input"]', title: "7. Method Advisor",
+  { id: "forecast", page: "forecast", target: '[data-tour="forecast"]', title: "7. Experimental outlook",
+    body: "Separate from trend testing: ridge regression plus gradient boosting on NOAA climate indices (Outlook mode) or recent NASA anomalies (Satellite mode), with conformal 80% ranges and tercile probabilities. Every lead time shows its backtested skill; no skill means the seasonal norm." },
+  { id: "detective", page: "detective", target: '[data-tour="detective-input"]', title: "8. Method Advisor",
     body: "Ask method questions (serial dependence, FDR scope, interval estimator). Answers are grounded in backend tool results; the language model never computes numbers." },
-  { id: "report", page: "report", target: '[data-tour="report"]', title: "8. Reproducible report",
+  { id: "report", page: "report", target: '[data-tour="report"]', title: "9. Reproducible report",
     body: "The Scientific report lists product, version, region box, period, grid, method and trend IDs; the JSON export holds every request and result for re-running." },
   { id: "finish", page: "explore", target: null, title: "Ready",
     body: "Switch to Explorer at any time for plain-language explanations of the same results; numbers and verdicts never change between modes." },

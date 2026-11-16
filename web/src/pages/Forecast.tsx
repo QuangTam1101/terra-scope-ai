@@ -148,7 +148,7 @@ export function Forecast() {
   return (
     <div className="col" style={{ gap: 16 }}>
       {/* ---------- set-up ---------- */}
-      <section className="card pad col" aria-labelledby="fc-setup">
+      <section className="card pad col" aria-labelledby="fc-setup" data-tour="forecast">
         <div className="row" style={{ justifyContent: "space-between" }}>
           <h2 id="fc-setup" style={{ fontSize: 22, margin: 0 }}>Climate outlook</h2>
           <div className="seg" role="group" aria-label="Level of detail">
@@ -346,9 +346,11 @@ export function Forecast() {
 
       {/* ---------- map ---------- */}
       {canForecast && (
+        <div data-tour="forecast-map">
         <OutlookMap variableId={variable.id} mode={mode} months={mapMonths} unitsLabel={variable.parameter_name.toLowerCase()}
           onPick={(lat, lon) => { setSel({ place: cellPlace(lon, lat) }); window.scrollTo({ top: 0, behavior: "smooth" }); }}
           onArea={(bbox) => { setSel({ place: areaPlace(bbox) }); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+        </div>
       )}
 
       {/* ---------- glossary / method ---------- */}
