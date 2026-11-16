@@ -45,8 +45,10 @@ from NASA LP DAAC (each 0.5° cell is the mean of its valid 0.05° pixels). Ever
 | [MERRA-2 tavgM_2d_aer_Nx V5.12.4](https://doi.org/10.5067/FH9A0MLJPC7N) | Aerosol optical depth: total and dust | 0.5° x 0.625° |
 | [MiCASA v1 monthly](https://disc.gsfc.nasa.gov/datasets/MICASA_FLUX_M_1/summary) | Fire carbon emission (from MODIS burned area), 2001–2024 | 0.1° |
 | CRU TS 4.10 `tmx`/`tmn` (not NASA) | Daytime highs and night-time lows (stations, land only) | 0.5° |
+| [NASA FIRMS MODIS C6.1 (MCD14ML)](https://firms.modaps.eosdis.nasa.gov/download/) | Number of fires (vegetation-fire detections, Terra + Aqua), 2003 onward | 1 km detections |
+| [GRACE-DA-DM Global v3.0](https://disc.gsfc.nasa.gov/datasets/GRACEDADM_CLSM025GL_7D_3.0/summary) | Drought: share of weeks with root-zone soil water / groundwater in the driest 20 % (vs 1948–2012), 2003-02 onward | 0.25° |
 
-The variables added on 16/11/2026 (last five rows) are built straight from the raw files into 1° cubes by
+The variables added on 16/11/2026 (last seven rows) are built straight from the raw files into 1° cubes by
 `data-pipeline/build_extra_cubes.py`.
 
 Regional series were validated against [Giovanni](https://giovanni.gsfc.nasa.gov/giovanni/) Time Series,
@@ -58,6 +60,8 @@ The Outlook uses NOAA climate indices and NASA GISS GISTEMP v4 as a reality chec
 1. Area mean of the grid cells in the region, weighted by cos(latitude).
 2. Monthly anomalies (value minus the mean of the same calendar month).
 3. Seasonal Mann-Kendall test with the seasonal Sen slope, reported per decade; p below 0.05 is a clear trend.
+   Event counts with a short season (fires, drought weeks) use the Sen slope of yearly averages instead;
+   fire-count rates are shown per year (×12), while monthly values stay per month.
    A result needs at least 10 years and 70% of months.
 4. Extra checks shown alongside: Hamed-Rao autocorrelation-adjusted p-value and an OLS confidence interval.
 5. Maps test every 0.5° cell and mark a cell significant only after Benjamini-Hochberg false discovery rate control.

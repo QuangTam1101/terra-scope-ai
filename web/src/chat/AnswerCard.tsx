@@ -4,7 +4,7 @@ import type { ChatAction, ChatEvidence, ChatResponse, CompareResponse, Variable 
 import { ScientificPanel } from "../ScientificPanel";
 import { ToolDetails } from "../ToolDetails";
 import { signed, Terra, VerdictBadge } from "../ui";
-import { convAllText, convFor, type Conv } from "../units";
+import { convAllText, convFor, rateOf, rateUnit, type Conv } from "../units";
 import { XIcon } from "../report/EditionDoc";
 import { periodText } from "../period";
 import { readingFor } from "./sources";
@@ -36,8 +36,8 @@ function EvidenceCard({ evidence, fahrenheit, audience, variables }: { evidence:
   const t = evidence.trend;
   const v = variables.find((x) => x.id === t.variable_id);
   const conv = convFor(v?.display_units ?? (isC(t.units) ? "°C" : undefined), fahrenheit ? "F" : "C", audience), f = conv?.k ?? 1;
-  const units = shownUnits(t.units, v, conv);
-  const slope = t.slope_per_decade === null ? null : t.slope_per_decade * f;
+  const units = shownUnits(t.units, v, conv), ru = rateUnit(units), rf = rateOf(1, units)!;   // counts: yearly rate
+  const slope = t.slope_per_decade === null ? null : t.slope_per_decade * f * rf;
   const dir = !t.quality.sufficient || slope === null ? "none" : slope > 0 ? "up" : slope < 0 ? "down" : "flat";
   return (
     <article className="ev-card" aria-label={`Evidence for ${placeName(t.region)}`}>
@@ -50,7 +50,7 @@ function EvidenceCard({ evidence, fahrenheit, audience, variables }: { evidence:
       </div>
       <div className={`ev-rate ${dir}`}>
         <XIcon name={dir} size={28} />
-        <span className="ev-num">{signed(slope)}</span><span className="ev-unit">{units} per decade</span>
+        <span className="ev-num">{signed(slope)}</span><span className="ev-unit">{ru} per decade</span>
       </div>
       <div className="ev-facts">
         <span><b>{pText(t.p_value)}</b> p-value</span>
@@ -62,7 +62,7 @@ function EvidenceCard({ evidence, fahrenheit, audience, variables }: { evidence:
         <ul>
           <li>Trend test: Seasonal Mann-Kendall (raw p {pText(t.p_value)}, threshold {t.alpha}); the rate is Sen's slope per decade.</li>
           <li>Autocorrelation-adjusted p (diagnostic only): {pText(t.p_value_autocorr_adjusted)}.</li>
-          <li>95% OLS interval on anomalies: {t.slope_ci ? `${signed(t.slope_ci[0] * f)} to ${signed(t.slope_ci[1] * f)} ${units} per decade` : "unavailable"} (a different estimator from Sen's slope).</li>
+          <li>95% OLS interval on anomalies: {t.slope_ci ? `${signed(t.slope_ci[0] * f * rf)} to ${signed(t.slope_ci[1] * f * rf)} ${ru} per decade` : "unavailable"} (a different estimator from Sen's slope).</li>
           <li>Data: <a href={t.source.url} target="_blank" rel="noreferrer">{t.source.product} v{t.source.version}</a>, {t.source.provider}.</li>
           <li className="muted">Evidence ID {t.trend_id}</li>
         </ul>
@@ -75,7 +75,7 @@ function EvidenceCard({ evidence, fahrenheit, audience, variables }: { evidence:
 function CompareCard({ c, fahrenheit, audience, variables }: { c: CompareResponse; fahrenheit: boolean; audience: string; variables: Variable[] }) {
   const v = variables.find((x) => x.id === c.a.variable_id);
   const conv = convFor(v?.display_units ?? (isC(c.a.units) ? "°C" : undefined), fahrenheit ? "F" : "C", audience);
-  const d = c.difference, f = conv?.k ?? 1, u = shownUnits(c.a.units, v, conv);
+  const d = c.difference, raw = shownUnits(c.a.units, v, conv), f = (conv?.k ?? 1) * rateOf(1, raw)!, u = rateUnit(raw);
   const crosses = !!d.ci && d.ci[0] <= 0 && d.ci[1] >= 0;
   const st = d.p_value === null ? { t: "Not tested", cls: "ne" } : d.significant ? { t: "Difference confirmed", cls: "sig" }
     : d.p_value < 0.05 && crosses ? { t: "Inconclusive", cls: "inc" } : { t: "No significant difference", cls: "np" };

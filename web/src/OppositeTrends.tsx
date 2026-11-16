@@ -10,7 +10,7 @@ import { InfoButton } from "./InfoButton";
 import { clampPeriod, rowVerdict } from "./PlaceCompare";
 import { exploreHash } from "./urlState";
 import { ci, pval, signed, VerdictBadge } from "./ui";
-import { convCompare, convFor, convSeries } from "./units";
+import { convCompare, convFor, convSeries, rateCi, rateOf, rateUnit } from "./units";
 import {
   bestPair, boxName, mechanismFor, OPPOSITE_EXAMPLES, oppositeHash, pairStatus, SCAN, wholeYears,
   type OppositeExample, type OppositeRequest, type PairPlace,
@@ -88,8 +88,8 @@ export function OppositePair({ variableId, start, end, a, b, title, picked }: {
                   <span className="hunt-tag" style={{ background: COLOR[rv.tone] }}>{k}</span><b className="hunt-panel-t">{p.name}</b>
                 </div>
                 <div className="row" style={{ gap: 8, alignItems: "center" }}><b>{rv.label}</b><VerdictBadge t={t} /></div>
-                <span className="num hunt-slope">{signed(t.slope_per_decade)} <small>{u} per decade</small> <InfoButton id="sens-slope" /></span>
-                <span className="small num">{sci ? "95% least-squares interval on anomalies (not for the Sen slope)" : "95% range (a different method from the slope)"}: {ci(t.slope_ci)} {u} per decade <InfoButton id="confidence-interval" /></span>
+                <span className="num hunt-slope">{signed(rateOf(t.slope_per_decade, u))} <small>{rateUnit(u)} per decade</small> <InfoButton id="sens-slope" /></span>
+                <span className="small num">{sci ? "95% least-squares interval on anomalies (not for the Sen slope)" : "95% range (a different method from the slope)"}: {ci(rateCi(t.slope_ci, u))} {rateUnit(u)} per decade <InfoButton id="confidence-interval" /></span>
                 <span className="small num">{sci ? "Hamed-Rao adjusted p" : "p-value, allowing for linked months"}: {pval(adj)} <InfoButton id="autocorrelation" /></span>
                 {sci && <span className="small muted">Seasonal Mann-Kendall raw p {pval(t.p_value)} (decides the verdict); {t.n} months; {Math.round(t.quality.coverage_fraction * 100)}% of the box has data.</span>}
                 {t.significant && adj !== null && adj >= 0.05 && <span className="warn small">Careful: the check that allows for linked months does not confirm this trend.</span>}

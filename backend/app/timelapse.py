@@ -72,6 +72,9 @@ def frames(v, start: str, end: str, bbox: tuple | None, kind: str) -> dict:
     for m in (start, end):
         if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", m):
             raise ApiError(422, "VALIDATION_ERROR", "start and end must be 'YYYY-MM'.", {"value": m})
+    if (bridge.meta(v.pipeline_id) or {}).get("grid") == "polar":
+        raise ApiError(400, "NOT_SUPPORTED", "The time-lapse is not available for the polar sea-ice grid yet.",
+                       {"variable_id": v.id})
     p = bridge.cube_path(v.pipeline_id)
     out = _frames(v.pipeline_id, start, end, bbox, kind, p.stat().st_mtime if p.exists() else 0.0)
     note = ("Anomaly = this month minus the average of the same calendar month over the period shown. "

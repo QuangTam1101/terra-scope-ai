@@ -8,7 +8,7 @@ import { useStore } from "./store";
 import { EachYear, MonthGrid, Stripes } from "./Patterns";
 import { MAX_WINDOWS, SEASONS, seasonalYears, senPerDecade } from "./explore";
 import { pval, signed, VerdictBadge } from "./ui";
-import { convFor, convTrend } from "./units";
+import { convFor, convTrend, rateOf, rateUnit } from "./units";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const TABS = [["stripes", "Stripes"], ["grid", "Month by year"], ["years", "Each year"], ["season", "Seasons"], ["window", "Time window"]] as const;
@@ -124,7 +124,7 @@ function Windows() {
         <table className="rtable">
           <thead><tr><th scope="col">Window</th><th scope="col">Sen slope per decade</th><th scope="col">Raw Seasonal MK p</th><th scope="col">Verdict</th></tr></thead>
           <tbody>{shown.map((r) => (
-            <tr key={r.key}><td>{r.start} to {r.end}</td><td className="num">{signed(r.t.slope_per_decade)} {u}</td><td className="num">{pval(r.t.p_value)}</td><td><VerdictBadge t={r.t} /></td></tr>
+            <tr key={r.key}><td>{r.start} to {r.end}</td><td className="num">{signed(rateOf(r.t.slope_per_decade, u))} {rateUnit(u)}</td><td className="num">{pval(r.t.p_value)}</td><td><VerdictBadge t={r.t} /></td></tr>
           ))}</tbody>
         </table>
       )}

@@ -19,7 +19,7 @@ const COV = {
   gldas_evapotranspiration: ['2001-01', '2026-07'], merra2_air_temperature_2m: ['2001-01', '2024-12'], modis_ndvi: ['2001-01', '2025-12'],
   modis_lst_day: ['2001-01', '2025-12'], modis_lst_night: ['2001-01', '2025-12'], gldas_potential_evapotranspiration: ['2001-01', '2025-12'],
   gpcc_precip: ['2001-01', '2020-12'], smap_soil_moisture_surface: ['2015-04', '2025-12'], gldas_root_zone_moisture: ['2001-01', '2025-12'],
-  seawifs_chlorophyll: ['2001-01', '2010-12'], cru_precip: ['2001-01', '2025-12'], gldas_soil_moisture_10_40cm: ['2001-01', '2025-12'],
+  modisa_chlorophyll: ['2002-07', '2025-12'], nsidc_sea_ice: ['2001-01', '2025-12'], cru_precip: ['2001-01', '2025-12'], gldas_soil_moisture_10_40cm: ['2001-01', '2025-12'],
   gldas_soil_moisture_40_100cm: ['2001-01', '2025-12'], gldas_soil_moisture_100_200cm: ['2001-01', '2025-12'],
 };
 const vars = (cov = COV) => [...Object.entries(cov).map(([id, [start, end]]) => ({ id, available: true, coverage: { start, end } })),
@@ -37,7 +37,7 @@ test('every table id is a catalog variable with an "i" definition', () => {
 test('ranking is the table order, at most 3, deterministic', () => {
   assert.deepEqual(ids(W.rankVariables('heat', 'city', vars(), LONGEST)), ['modis_lst_night', 'modis_lst_day', 'merra2_air_temperature_2m']);
   assert.deepEqual(ids(W.rankVariables('water', 'desert', vars(), LONGEST)), ['imerg_precip', 'gpcc_precip', 'gldas_potential_evapotranspiration']);
-  assert.deepEqual(ids(W.rankVariables('plants', 'ocean', vars(), LONGEST)), ['seawifs_chlorophyll']);
+  assert.deepEqual(ids(W.rankVariables('plants', 'ocean', vars(), LONGEST)), ['modisa_chlorophyll']);
   assert.deepEqual(W.rankVariables('heat', 'city', vars(), LONGEST), W.rankVariables('heat', 'city', vars(), LONGEST));
   for (const t of W.TOPICS) for (const p of W.PLACES) {
     const r = W.rankVariables(t.id, p.id, vars(), LONGEST);
@@ -57,21 +57,21 @@ test('missing or unavailable variables are skipped (the preview may have fewer c
 });
 
 test('period: longest is the whole record; recent is the last 10 calendar years; custom is clamped', () => {
-  const imerg = { start: '2001-01', end: '2024-12' }, smap = { start: '2015-04', end: '2025-12' }, seawifs = { start: '2001-01', end: '2010-12' };
+  const imerg = { start: '2001-01', end: '2024-12' }, smap = { start: '2015-04', end: '2025-12' }, to2010 = { start: '2001-01', end: '2010-12' };
   assert.deepEqual(W.periodFor(smap, LONGEST), { start: '2015-04', end: '2025-12', clamped: false, short: false });
   assert.deepEqual(W.periodFor(imerg, { kind: 'recent' }), { start: '2015-01', end: '2024-12', clamped: false, short: false });
   assert.deepEqual(W.periodFor(smap, { kind: 'recent' }), { start: '2016-01', end: '2025-12', clamped: false, short: false });
   assert.deepEqual(W.periodFor(smap, { kind: 'custom', from: 2001, to: 2026 }), { start: '2015-04', end: '2025-12', clamped: true, short: false });
-  assert.equal(W.periodFor(seawifs, { kind: 'custom', from: 2005, to: 2020 }).short, true, '2005 to 2010 is under 10 years');
-  assert.equal(W.periodFor(seawifs, { kind: 'custom', from: 2015, to: 2025 }), null, 'no overlap');
+  assert.equal(W.periodFor(to2010, { kind: 'custom', from: 2005, to: 2020 }).short, true, '2005 to 2010 is under 10 years');
+  assert.equal(W.periodFor(to2010, { kind: 'custom', from: 2015, to: 2025 }), null, 'no overlap');
   assert.equal(W.periodFor(imerg, { kind: 'custom', from: 2020, to: 2010 }), null, 'reversed years');
   assert.equal(W.periodFor(null, LONGEST), null);
 });
 
 test('variables with no months in the chosen years drop out; the rest are clamped to their own record', () => {
-  const r = W.rankVariables('ocean', 'ocean', vars(), { kind: 'custom', from: 2015, to: 2026 });
-  assert.deepEqual(ids(r), ['merra2_air_temperature_2m', 'imerg_precip'], 'SeaWiFS stops in 2010');
-  assert.deepEqual(r.map((s) => [s.start, s.end, s.clamped]), [['2015-01', '2024-12', true], ['2015-01', '2024-12', true]]);
+  const r = W.rankVariables('ocean', 'ocean', vars(), { kind: 'custom', from: 2000, to: 2001 });
+  assert.deepEqual(ids(r), ['merra2_air_temperature_2m', 'imerg_precip'], 'MODIS-Aqua starts in July 2002');
+  assert.deepEqual(r.map((s) => [s.start, s.end, s.clamped]), [['2001-01', '2001-12', true], ['2001-01', '2001-12', true]]);
 });
 
 test('regions: example per place, ocean override, none for the map; clues match curated cases', () => {

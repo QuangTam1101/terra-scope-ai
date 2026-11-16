@@ -21,6 +21,16 @@ export function convFor(units: string | undefined, tempUnit: TempUnit, audience:
   return EXPLORER.find((c) => units === c.from || units === c.to) ?? null;
 }
 
+// Event counts per month (fires) read better as a yearly RATE: only rates of change (slopes, their intervals and
+// differences, map legend) are shown ×12 "a year". Exact, because their slope is fitted to yearly averages
+// (data-pipeline ANNUAL_SLOPE). Monthly values (charts, value maps, a single season) stay per month, and data objects
+// keep the API's numbers (saved cases, report evidence, chart trend lines), so convert only where the text is written.
+const PER_YEAR: Record<string, string> = { "fires/month": "fires a year" };
+export const rateUnit = (u: string) => PER_YEAR[u] ?? u;
+export const rateOf = (x: number | null | undefined, u: string) => (x === null || x === undefined ? null : x * (PER_YEAR[u] ? 12 : 1));
+export const rateCi = (c: [number, number] | null | undefined, u: string): [number, number] | null =>
+  (c ? [rateOf(c[0], u)!, rateOf(c[1], u)!] : null);
+
 /** Rewrite "+0.28 °C" style numbers inside sentences from the API (they are always changes, never absolute values). */
 export function convText(s: string, c: Conv): string {
   const drop = Math.round(Math.log10(c.k));   // ×100 moves the decimal point two places

@@ -23,9 +23,9 @@ def advise_trend(t: TrendResponse) -> MethodAdvice:
     if t.method == 'seasonal_mk' and t.p_value is not None:
         applied.append(method('seasonal_mk', 'applied', 'MONTHLY_SEASONAL_TEST',
             'The regional backend compares matching calendar months for a monotonic trend. Monthly cadence makes seasonal stratification relevant; it does not prove seasonality was detected.', ['method', 'p_value', 'start', 'end']))
-    if t.slope_method == 'sen_seasonal' and t.slope_per_decade is not None:
-        applied.append(method('sen_seasonal', 'applied', 'SLOPE_NOT_SIGNIFICANCE',
-            f'Seasonal Sen slope estimates rate of change in {t.units} per decade; its sign and size are distinct from statistical significance and practical importance.', ['slope_method', 'slope_per_decade', 'units']))
+    if t.slope_method in ('sen_seasonal', 'sen_annual') and t.slope_per_decade is not None:
+        applied.append(method(t.slope_method, 'applied', 'SLOPE_NOT_SIGNIFICANCE',
+            f'{"Seasonal Sen slope" if t.slope_method == "sen_seasonal" else "Sen slope of yearly averages"} estimates rate of change in {t.units} per decade; its sign and size are distinct from statistical significance and practical importance.', ['slope_method', 'slope_per_decade', 'units']))
     if t.p_value_autocorr_adjusted is not None:
         applied.append(method('hamed_rao_anomaly', 'applied', 'ADJUSTMENT_SEPARATE',
             'Hamed-Rao MK was computed on monthly anomalies. It is a separate adjusted result; the regional verdict still uses raw Seasonal MK p.', ['p_value_autocorr_adjusted', 'autocorrelation_adjusted']))

@@ -1,6 +1,6 @@
 import { convFor, convSeries, convTrend, convVariable, type TempUnit } from "./units";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { api, errorText, refOfRegion, type BBox, type ChatContext, type ChatHistoryTurn, type ChatResponse, type Region, type RegionRef, type SeriesResponse, type TrendResponse, type Variable } from "./api";
+import { api, ApiError, errorText, refOfRegion, type BBox, type ChatContext, type ChatHistoryTurn, type ChatResponse, type Region, type RegionRef, type SeriesResponse, type TrendResponse, type Variable } from "./api";
 import { pointPlace, setGridCell } from "./places";
 import { pageFromHash } from './pageRouting';
 import type { RegionalProgress } from "./progress";
@@ -21,6 +21,9 @@ interface Store {
   variables: Variable[]; regions: Region[]; ready: boolean;
   sel: Selection; setSel: (patch: Partial<Selection>) => void;
   run: Run | null; running: boolean; runAnalysis: (override?: Partial<Selection>) => Promise<boolean>;
+  /** The last analysis failed (e.g. a land-only dataset over the sea): its place and why. `run` is then null, so no page
+   * keeps showing the previous place's result under the new selection. */
+  failed: { place: Place; variable: Variable; message: string } | null;
   /** Real per-request state of the running regional analysis (Phase 8.5A); null when idle. */
   progress: RegionalProgress | null; cancelAnalysis: () => void;
   history: Run[];
@@ -78,6 +81,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     parameter: "air_temperature", variableId: "merra2_air_temperature_2m", startYear: 2001, endYear: 2024, place: WORLD,
   });
   const [run, setRun] = useState<Run | null>(null);
+  const [failed, setFailed] = useState<Store["failed"]>(null);
   const [running, setRunning] = useState(false);
   const [history, setHistory] = useState<Run[]>([]);
   const [comparisons, setComparisons] = useState<ReportComparison[]>([]);
@@ -169,7 +173,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const start = periodStart(s), end = periodEnd(s);
     const base: RegionalProgress = { place: s.place.label, parameter: variable.parameter_name, dataset: variable.dataset_name,
       start, end, series: "pending", trend: "pending" };
-    setProgress(base);
+    setProgress(base); setFailed(null);
     const mark = (k: "series" | "trend", st: "done" | "failed") => { if (id === reqId.current) setProgress((p) => p && { ...p, [k]: st }); };
     setRunning(true);
     try {
@@ -179,11 +183,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       ]);
       if (id !== reqId.current) return false;           // a newer run started meanwhile: never show a stale result
       const r: Run = { key: trend.trend_id, series, trend, variable, place: s.place };
-      setRun(r);
+      setRun(r); setFailed(null);
       setHistory((h) => [r, ...h.filter((x) => x.key !== r.key)].slice(0, 12));
       return true;
     } catch (e) {
-      if (id === reqId.current && !ctrl.signal.aborted) showError(e);
+      if (id === reqId.current && !ctrl.signal.aborted) {
+        setRun(null); setFailed({ place: s.place, variable, message: errorText(e) });
+        if (!(e instanceof ApiError && e.code === "NO_DATA")) showError(e);   // "no data here" is said in the result card
+      }
       return false;
     } finally {
       if (id === reqId.current) { setRunning(false); setProgress(null); runCtrl.current = null; }
@@ -257,11 +264,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [tempUnit, audience, variables, run, history]);
 
   const value = useMemo<Store>(() => ({
-    page, go, variables: shown.variables, regions, ready, sel, setSel, run: shown.run, running, runAnalysis, progress, cancelAnalysis, history: shown.history, comparisons, addComparison, removeReportItem, backendVersion, makeCase, openCase,
+    page, go, variables: shown.variables, regions, ready, sel, setSel, run: shown.run, failed, running, runAnalysis, progress, cancelAnalysis, history: shown.history, comparisons, addComparison, removeReportItem, backendVersion, makeCase, openCase,
     toast, showError, clearToast: () => setToast(null), tempUnit, setTempUnit, audience, setAudience,
     variable: shown.variables.find((v) => v.id === sel.variableId),
     chatTurns, chatBusy, sendChat, clearChat, chatContext, huntSelection, setHuntSelection,
-  }), [page, go, shown, regions, ready, sel, setSel, running, runAnalysis, progress, cancelAnalysis, comparisons, addComparison, removeReportItem, backendVersion, makeCase, openCase, toast, showError, tempUnit, setTempUnit, audience, setAudience,
+  }), [page, go, shown, failed, regions, ready, sel, setSel, running, runAnalysis, progress, cancelAnalysis, comparisons, addComparison, removeReportItem, backendVersion, makeCase, openCase, toast, showError, tempUnit, setTempUnit, audience, setAudience,
        chatTurns, chatBusy, sendChat, clearChat, chatContext, huntSelection]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

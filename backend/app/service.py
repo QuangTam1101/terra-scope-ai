@@ -164,6 +164,13 @@ def _region_values(v: catalog.Variable, bbox: tuple, start: str, end: str,
                    country: str | None = None) -> tuple[pd.Series, pd.Series, list]:
     """Chuỗi tháng của vùng. `country`: chỉ các ô có tâm trong đường viền quốc gia (catalog.COUNTRIES)."""
     cube = bridge.load_cube(v.pipeline_id)
+    if "cell" in cube.dims:          # lưới cực (băng biển): pixel có tâm trong vùng / đường viền, không có ô lat/lon
+        try:
+            value, frac = bridge.region_series(cube, bbox, catalog.COUNTRIES[country].rings if country else None)
+        except AssertionError:
+            raise ApiError(404, "NO_DATA", f"No {v.name.lower()} data here: it covers only polar seas that have ice.",
+                           {"bbox": list(bbox)})
+        return _finish_region(v, value, frac, bbox, start, end, [])
     m = bridge.meta(v.pipeline_id)
     w, s, e, n = bbox
     ew, es, ee, en = m["extent"]
@@ -192,6 +199,10 @@ def _region_values(v: catalog.Variable, bbox: tuple, start: str, end: str,
         value, frac = bridge.region_series(cube, bbox, rings)
     except AssertionError:
         raise ApiError(404, "NO_DATA", "The data grid has no cells inside this region.", {"bbox": list(bbox)})
+    return _finish_region(v, value, frac, bbox, start, end, extra)
+
+
+def _finish_region(v, value, frac, bbox, start, end, extra):
     idx = pd.date_range(f"{start}-01", f"{end}-01", freq="MS")
     value, frac = value.reindex(idx), frac.reindex(idx).fillna(0.0)
     if value.notna().sum() == 0:
@@ -205,6 +216,11 @@ def _quality(value: pd.Series, frac: pd.Series, insufficient: bool) -> dict:
     n = int(value.notna().sum())
     return {"n_months": n, "missing_months": int(len(value) - n),
             "coverage_fraction": round(float(frac.mean()), 3), "sufficient": not insufficient}
+
+
+def _annual(v: catalog.Variable) -> bool:
+    """Chuỗi đếm sự kiện theo mùa: độ dốc Sen trên trung bình năm (pipeline.api.ANNUAL_SLOPE)."""
+    return v.pipeline_id in bridge.papi.ANNUAL_SLOPE
 
 
 def _insufficient(value: pd.Series) -> bool:
@@ -245,12 +261,18 @@ def series(req: SeriesRequest) -> dict:
 
 
 # ---------------------------------------------------------------- /trends
+def _rate_units(u: str) -> tuple[int, str]:
+    """Đếm sự kiện / tháng → tốc độ đổi theo năm (×12, đúng vì độ dốc tính trên TB năm); khớp web/src/units.ts PER_YEAR."""
+    return (12, u.replace("/month", " a year")) if u == "fires/month" else (1, u)
+
+
 def _trend_summary(v, region, start, end, slope, p, significant, sufficient) -> str:
     where, period = _region_label(region), f"{start[:4]}–{end[:4]}"
     if slope is None:
         return f"No trend could be estimated for {v.name.lower()} in {where} ({period})."
     change = "increased" if slope > 0 else "decreased" if slope < 0 else "did not change"
-    s1 = f"{v.name} in {where} {change} by about {_fmt(abs(slope))} {v.display_units} per decade ({period})."
+    k, u = _rate_units(v.display_units)
+    s1 = f"{v.name} in {where} {change} by about {_fmt(abs(slope) * k)} {u} per decade ({period})."
     if not sufficient or p is None:
         return s1 + " There is not enough data to test whether this trend is statistically significant."
     if significant:
@@ -263,7 +285,7 @@ def _compute_trend(v, region, bbox, start, end, alpha, warnings) -> tuple[dict, 
     value, frac, extra = _region_values(v, bbox, start, end, _country_of(region))
     warnings = warnings + extra
     try:
-        tr = bridge.trend_one(value)
+        tr = bridge.trend_one(value, annual=_annual(v))
     except Exception:                       # chuỗi quá ngắn để pymannkendall chạy
         tr = None
     insufficient = tr is None or bool(tr["insufficient_data"]) or _insufficient(value)
@@ -294,7 +316,7 @@ def _compute_trend(v, region, bbox, start, end, alpha, warnings) -> tuple[dict, 
     trend_id = _make_id("tr", key)
     res = {
         "trend_id": trend_id, "variable_id": v.id, "region": region, "start": start, "end": end,
-        "units": v.units, "method": "seasonal_mk", "slope_method": "sen_seasonal",
+        "units": v.units, "method": "seasonal_mk", "slope_method": "sen_annual" if _annual(v) else "sen_seasonal",
         "slope_per_decade": slope, "slope_ci": slope_ci, "ci_method": "ols_anomaly", "ci_level": 0.95,
         "p_value": p, "p_value_autocorr_adjusted": None if insufficient else _num(tr["hr_p_value"]),
         "z": _num(tr["z"]) if tr else None, "tau": None, "alpha": alpha,
@@ -336,6 +358,27 @@ def _parse_bbox(text: str | None) -> tuple | None:
     return parts
 
 
+_POLAR_COLS = ["hemi", "row", "col"]
+
+
+def _crop(obj, bbox):
+    """Cắt theo bbox: lưới lat/lon bằng sel; lưới cực (cell) theo toạ độ lat/lon của từng pixel."""
+    w, s, e, n = bbox
+    if "cell" in obj.dims:
+        m = ((obj["lat"] >= s) & (obj["lat"] <= n) & (obj["lon"] >= w) & (obj["lon"] <= e)).values
+        return obj.isel(cell=np.nonzero(m)[0])
+    return obj.sel(lat=slice(s, n), lon=slice(w, e))
+
+
+def _pixel(pix) -> dict:
+    """hemi/row/col của pixel lưới cực (rỗng với lưới lat/lon): web vẽ pixel tại hàng/cột của bán cầu đó."""
+    return {"hemi": "N" if pix[0] > 0 else "S", "row": int(pix[1]), "col": int(pix[2])} if pix else {}
+
+
+def _polar_block(v, polar: bool) -> dict:
+    return {"grid": "polar", "polar": bridge.polar_info(v.pipeline_id)} if polar else {"grid": "latlon"}
+
+
 def trend_grid(variable_id: str, start: str, end: str, bbox_text: str | None, alpha: float) -> dict:
     v = get_variable(variable_id)
     for m in (start, end):
@@ -350,16 +393,17 @@ def trend_grid(variable_id: str, start: str, end: str, bbox_text: str | None, al
         warnings.append(f"The map uses whole calendar years: {s2} to {e2}.")
     _check_time(v, s2, e2)
     ds = bridge.grid_result(v.pipeline_id, s2, e2)
+    polar = "cell" in ds.dims
     if bbox:
-        w, s, e, n = bbox
-        ds = ds.sel(lat=slice(s, n), lon=slice(w, e))
+        ds = _crop(ds, bbox)
     df = ds[["slope_per_decade", "p_value", "p_value_fdr"]].to_dataframe().reset_index()
     if not bbox:
         df = df[np.isfinite(df["slope_per_decade"])]
         warnings.append("No bbox given: returning every grid cell that has data (cells with no data are omitted).")
 
     cells, valid_slopes = [], []
-    for lat, lon, slope, p, q in df[["lat", "lon", "slope_per_decade", "p_value", "p_value_fdr"]].itertuples(index=False):
+    cols = ["lat", "lon", "slope_per_decade", "p_value", "p_value_fdr"] + (_POLAR_COLS if polar else [])
+    for lat, lon, slope, p, q, *pix in df[cols].itertuples(index=False):
         valid = bool(np.isfinite(p) and np.isfinite(slope))
         if valid:
             valid_slopes.append(slope)
@@ -367,7 +411,7 @@ def trend_grid(variable_id: str, start: str, end: str, bbox_text: str | None, al
                       "slope_per_decade": _num(slope, 6) if valid else None,
                       "p_value": _num(p, 6) if valid else None, "q_value": _num(q, 6) if valid else None,
                       "significant_fdr": bool(q < alpha) if valid and np.isfinite(q) else None,
-                      "valid": valid})
+                      "valid": valid, **_pixel(pix)})
     if v.note:
         warnings.append(v.note)
     return {
@@ -376,7 +420,7 @@ def trend_grid(variable_id: str, start: str, end: str, bbox_text: str | None, al
         "alpha": alpha,
         "value_range": {"min_slope": float(min(valid_slopes, default=0.0)),
                         "max_slope": float(max(valid_slopes, default=0.0))},
-        "cells": cells, "precomputed": True, "warnings": warnings,
+        "cells": cells, "precomputed": True, "warnings": warnings, **_polar_block(v, polar),
     }
 
 
@@ -396,13 +440,17 @@ def value_grid(variable_id: str, start: str, end: str, bbox_text: str | None, mo
     if month is not None:
         cube = cube.where(cube["time"].dt.month == month, drop=True)
     if bbox:
-        w, s, e, n = bbox
-        cube = cube.sel(lat=slice(s, n), lon=slice(w, e))
+        cube = _crop(cube, bbox)
     mean = cube.mean("time", skipna=True)
     frac = cube.notnull().mean("time")
-    df = pd.DataFrame({"value": mean.values.ravel(), "frac": frac.values.ravel()},
-                      index=pd.MultiIndex.from_product([mean["lat"].values, mean["lon"].values], names=["lat", "lon"])
-                      ).reset_index()
+    polar = "cell" in mean.dims
+    if polar:                        # lưới cực: mỗi cell một pixel, toạ độ theo cell
+        df = pd.DataFrame({"lat": mean["lat"].values, "lon": mean["lon"].values, "value": mean.values,
+                           "frac": frac.values, **{c: mean[c].values for c in _POLAR_COLS}})
+    else:
+        df = pd.DataFrame({"value": mean.values.ravel(), "frac": frac.values.ravel()},
+                          index=pd.MultiIndex.from_product([mean["lat"].values, mean["lon"].values], names=["lat", "lon"])
+                          ).reset_index()
     warnings = []
     if not bbox:
         df = df[np.isfinite(df["value"])]
@@ -418,9 +466,9 @@ def value_grid(variable_id: str, start: str, end: str, bbox_text: str | None, mo
                         "p02": float(np.percentile(ok, 2)) if ok.size else 0.0,
                         "p98": float(np.percentile(ok, 98)) if ok.size else 0.0},
         "cells": [{"lon": round(float(lo), 4), "lat": round(float(la), 4), "value": _num(val, 6),
-                   "valid_fraction": round(float(fr), 3)}
-                  for la, lo, val, fr in df[["lat", "lon", "value", "frac"]].itertuples(index=False)],
-        "warnings": warnings,
+                   "valid_fraction": round(float(fr), 3), **_pixel(pix)}
+                  for la, lo, val, fr, *pix in df[["lat", "lon", "value", "frac"] + (_POLAR_COLS if polar else [])].itertuples(index=False)],
+        "warnings": warnings, **_polar_block(v, polar),
     }
 
 
@@ -555,7 +603,7 @@ def variables() -> dict:
                     "spatial_resolution_deg": m["cell_size_deg"] if m else config.CELL_SIZE_DEG,
                     "native_resolution_deg": v.native_resolution_deg,
                     "coverage": {"start": m["start"], "end": m["end"]} if m else None,
-                    "extent": list(m["extent"]) if m else None,
+                    "extent": list(m["extent"]) if m else None, "grid": (m or {}).get("grid", "latlon"),
                     "available": m is not None, "source": v.source})
     return {"variables": out}
 
@@ -631,7 +679,7 @@ def trend_sensitivity(req: TrendRequest) -> dict:
         if s.index.year.nunique() < 10:             # >= 10 năm tới `end`, cùng cách đếm năm với _insufficient
             continue
         try:
-            tr = bridge.trend_one(s)
+            tr = bridge.trend_one(s, annual=_annual(v))
         except Exception:                           # giống _compute_trend: chuỗi quá ngắn cho pymannkendall
             tr = None
         insufficient = tr is None or bool(tr["insufficient_data"]) or _insufficient(s)

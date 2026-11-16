@@ -5,7 +5,8 @@ import xarray as xr
 
 from pipeline.contradictions import hunt_global
 from pipeline.giovanni_adapter import build_cube, convert_cube
-from pipeline.grid import bin_to_grid, grid_trend, hotspot_regions, region_series, shape_mask
+from pipeline.grid import bin_to_grid, grid_trend, hotspot_regions, points_in, region_series, shape_mask
+from pipeline.trends import trend_one
 
 TIME = pd.date_range("2001-01-01", "2024-12-01", freq="MS")
 
@@ -41,6 +42,19 @@ def test_grid_trend_matches_pymannkendall():
             got = tr.sel(lat=la, lon=lo)
             assert np.isclose(got.z, ref.z) and np.isclose(got.p_value, ref.p)
             assert np.isclose(got.slope_per_decade, ref.slope * 10)
+
+
+def test_annual_slope_for_seasonal_counts():
+    """Sự kiện chỉ rơi vào 2 tháng/năm và tăng dần: Sen theo mùa = 0, Sen trên TB năm > 0; lưới khớp trend_one."""
+    rng = np.random.default_rng(1)
+    v = np.zeros((len(TIME), 1, 1))
+    v[np.isin(TIME.month, [8, 9]), 0, 0] = rng.poisson(np.repeat(np.linspace(0.5, 3, len(TIME) // 12), 2))
+    cube = xr.DataArray(v, coords={"time": TIME, "lat": [0.5], "lon": [0.5]}, dims=("time", "lat", "lon"))
+    s = cube.isel(lat=0, lon=0).to_series()
+    seasonal, annual = trend_one(s), trend_one(s, annual=True)
+    assert seasonal["slope_per_decade"] == 0 and annual["slope_per_decade"] > 0
+    assert annual["p_value"] == seasonal["p_value"]                  # kiểm định không đổi, chỉ độ dốc đổi
+    assert np.isclose(grid_trend(cube, annual=True).slope_per_decade.item(), annual["slope_per_decade"])
 
 
 def test_grid_trend_custom_window_and_insufficient():
@@ -79,6 +93,26 @@ def test_region_series_with_border_ignores_cells_outside():
     jul = cube.sel(time="2010-07-01", lon=0.5).values
     assert np.isclose(v["2010-07-01"], (jul * w).sum() / w.sum())
     assert (frac == 1.0).all()
+
+
+def test_polar_cell_cube_trend_and_region():
+    """Lưới cực băng biển: cube (time, cell) với lat/lon theo cell cho cùng xu hướng như lưới lat/lon, và trung bình vùng
+    chỉ lấy pixel có tâm trong bbox / đường viền."""
+    lat, lon = np.array([70.5, 71.5]), np.array([10.5, 11.5, 12.5])
+    grid = _cube(lat, lon, lambda y, la, lo: (la - 71) * y)            # hàng 70,5° giảm, hàng 71,5° tăng
+    cells = grid.stack(cell=("lat", "lon")).reset_index("cell").assign_coords(cell=np.arange(6))
+    tg, tc = grid_trend(grid), grid_trend(cells)
+    assert set(tc.dims) == {"cell"} and "lat" in tc.coords and "lon" in tc.coords
+    np.testing.assert_allclose(tc["slope_per_decade"].values, tg["slope_per_decade"].values.ravel())
+    v, frac = region_series(cells, (10, 71, 12, 72))                 # chỉ 2 pixel: (71,5; 10,5) và (71,5; 11,5)
+    want = grid.sel(lat=71.5, lon=[10.5, 11.5]).mean("lon").values
+    np.testing.assert_allclose(v.values, want)
+    np.testing.assert_allclose(frac.values, 1.0)
+    ring = [np.array([[10, 70], [11, 70], [11, 72], [10, 72], [10, 70]])]   # chỉ cột lon 10,5
+    assert points_in([70.5, 71.5, 71.5], [10.5, 10.5, 11.5], ring).tolist() == [True, True, False]
+    v2, _ = region_series(cells, (10, 70, 13, 72), ring)
+    np.testing.assert_allclose(v2.values, grid.sel(lon=10.5).mean("lat").values)
+
 
 def test_hunt_global_finds_opposite_hotspots():
     lat, lon = np.arange(0.5, 12), np.arange(0.5, 20)

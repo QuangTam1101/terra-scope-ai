@@ -17,6 +17,8 @@ export interface Variable {
   description_simple: string; description_technical: string; units: string; display_units: string;
   spatial_resolution_deg: number; native_resolution_deg: number;
   coverage: { start: string; end: string } | null; extent: BBox | null; available: boolean; source: DataSource;
+  /** "polar": NSIDC polar stereographic pixels (sea ice), drawn on PolarMap instead of the lat/lon WorldMap. */
+  grid?: "latlon" | "polar";
 }
 export interface Region { id: string; name: string; bbox: BBox; is_demo: boolean }
 export interface RegionsResponse { regions: Region[]; limits: { max_bbox_area_deg2: number; min_cells: number; cell_size_deg: number } }
@@ -44,10 +46,14 @@ export interface SensitivityResponse {
   points: SensitivityPoint[];
   years_needed: { estimate: number | null; basis: string; caveat: string };   // extra years of data; null when already significant or not estimable
 }
-export interface GridCell { lon: number; lat: number; slope_per_decade: number | null; q_value: number | null; significant_fdr: boolean | null; valid: boolean }
-export interface TrendGrid { variable_id: string; units: string; start: string; end: string; cell_size_deg: number; value_range: { min_slope: number; max_slope: number }; cells: GridCell[]; warnings: string[] }
-export interface ValueCell { lon: number; lat: number; value: number | null; valid_fraction: number }
-export interface ValueGrid { variable_id: string; units: string; cell_size_deg: number; value_range: { min: number; max: number; p02: number; p98: number }; cells: ValueCell[]; warnings: string[] }
+/** A polar-grid pixel also carries its hemisphere and row/column in that hemisphere's grid. */
+export interface PolarPixel { hemi?: "N" | "S"; row?: number; col?: number }
+/** Polar grids of a sea-ice map: size per hemisphere and its land/coast mask (np.packbits by row, base64). */
+export type PolarGrids = Record<"N" | "S", { rows: number; cols: number; land_b64: string }>;
+export interface GridCell extends PolarPixel { lon: number; lat: number; slope_per_decade: number | null; q_value: number | null; significant_fdr: boolean | null; valid: boolean }
+export interface TrendGrid { variable_id: string; units: string; start: string; end: string; cell_size_deg: number; value_range: { min_slope: number; max_slope: number }; cells: GridCell[]; warnings: string[]; polar?: PolarGrids }
+export interface ValueCell extends PolarPixel { lon: number; lat: number; value: number | null; valid_fraction: number }
+export interface ValueGrid { variable_id: string; units: string; cell_size_deg: number; value_range: { min: number; max: number; p02: number; p98: number }; cells: ValueCell[]; warnings: string[]; polar?: PolarGrids }
 export interface CompareResponse {
   compare_id: string; a: TrendResponse; b: TrendResponse;
   difference: { slope_diff_per_decade: number | null; ci: [number, number] | null; p_value: number | null; significant: boolean; stable_halves: boolean | null; test: string };
@@ -216,7 +222,7 @@ export const api = {
 export function errorText(e: unknown): string {
   if (!(e instanceof ApiError)) return "Something went wrong.";
   const map: Record<string, string> = {
-    NO_DATA: "No data for this place and period. Land-only datasets have no values over the sea.",
+    NO_DATA: "This dataset has no values here for this period: some datasets cover only land, others only the sea.",
     REGION_TOO_SMALL: "This area is smaller than one grid cell. Pick a larger area.",
     REGION_TOO_LARGE: "This area is too large.",
     DATA_NOT_READY: "This dataset is not on the server yet.",

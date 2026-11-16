@@ -76,7 +76,7 @@ function explain(a: AnalysisEntry, m: ReportModel): Record<Topic, { q: string; b
   return {
     trend: { q: "What is a trend?", body: <>
       <p>A trend is the overall direction across many years, looking past the normal ups and downs. Here the estimated rate is{" "}
-        <b>{a.slope !== null && a.sufficient ? `${signedNum(a.slope)} ${a.units} every 10 years` : "not available"}</b> for {w.noun} in {a.place}.</p>
+        <b>{a.slope !== null && a.sufficient ? `${signedNum(a.rate)} ${a.rateUnits} every 10 years` : "not available"}</b> for {w.noun} in {a.place}.</p>
       <p className="small">Example: if every July were a little {w.up} than the July before, the trend would be upward even though each year still has its cool and warm months.</p>
       {proj && <p className="small">{proj}</p>}</> },
     p: { q: "What is a p-value?", body: <>
@@ -143,7 +143,7 @@ export function ExplorerCompanion({ m }: { m: ReportModel }) {
       <div className="xc-head">
         <div className={`xrate ${dirIcon(a)}`}><XIcon name={dirIcon(a)} size={34} />
           <div><span className="xrate-k">{dirWord(a)} · estimated rate</span>
-            <span className="xrate-v">{a.slope !== null && a.sufficient ? <>{signedNum(a.slope)} <small>{a.units} every 10 years</small></> : <small>not available</small>}</span></div></div>
+            <span className="xrate-v">{a.slope !== null && a.sufficient ? <>{signedNum(a.rate)} <small>{a.rateUnits} every 10 years</small></> : <small>not available</small>}</span></div></div>
         <div className="col" style={{ gap: 6, minWidth: 0 }}>
           <span className={`badge rstamp ${trendStamp(a).cls}`} style={{ alignSelf: "flex-start" }}>{trendStamp(a).text}</span>
           <p style={{ margin: 0 }}>{plainFinding(a)}</p>

@@ -2,13 +2,15 @@
 data/raw/ của thư mục dự án (giữ nguyên như nhà phát hành giao): mỗi nguồn một hàm đọc → bin_to_grid → cube_<id>.nc.
 Chạy từ data-pipeline/:  <python có xarray> build_extra_cubes.py [id ...]     (mặc định: mọi id trong BUILDERS)
 Thư mục thô: biến môi trường TERRA_RAW, mặc định ../../data/raw (worktree nằm trong thư mục dự án).
-Kết quả: processed_data/grid/cube_<id>.nc, float32, nhãn đầu tháng, trục tháng liền từ tháng có dữ liệu đầu tiên tới
+Kết quả: processed_data/grid/cube_<id>.nc (lưới 1° (time, lat, lon); riêng băng biển: lưới cực (time, cell)), float32, nhãn đầu tháng, trục tháng liền từ tháng có dữ liệu đầu tiên tới
          cuối cùng (bridge đọc coverage từ trục; grid_trend cần đủ 12 tháng mỗi năm, tháng thiếu là NaN)."""
 import os
 import sys
+import zipfile
 from multiprocessing import Pool
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -17,6 +19,8 @@ from pipeline.grid import bin_to_grid, global_coords
 
 RAW = Path(os.environ.get("TERRA_RAW", "../../data/raw")).resolve()
 OUT = Path("processed_data/grid")
+FIRE_MIN_CONF = 30       # độ tin cậy FIRMS MODIS < 30 % = "low", hay là báo nhầm
+DROUGHT_PCT = 20         # phần trăm vị ≤ 20 = hạn vừa trở lên (ngưỡng D1 của US Drought Monitor)
 SWE_ICE_MM = 10          # ô có tuyết ≥ 10 mm nước ở mọi tháng 2001–2025 = băng vĩnh cửu (1.167 ô 1°)
 
 
@@ -86,8 +90,114 @@ def fire():
     return cube.where(_land()).assign_attrs(units="gC/m2/month", dataset="MICASA_FLUX_M.1 FIRE")
 
 
+def _firms_year(path):
+    """Một năm FIRMS (zip các CSV theo quốc gia) → số điểm cháy theo (tháng, ô 1°)."""
+    with zipfile.ZipFile(path) as z:
+        df = pd.concat([pd.read_csv(z.open(n), usecols=["latitude", "longitude", "acq_date", "confidence", "type"])
+                        for n in z.namelist() if n.endswith(".csv")])
+    df = df[(df["type"] == 0) & (df["confidence"] >= FIRE_MIN_CONF)]
+    return df.assign(time=pd.to_datetime(df["acq_date"].str[:7] + "-01"),
+                     lat=np.floor(df["latitude"].clip(-90, 90 - 1e-9)) + 0.5,
+                     lon=np.floor((df["longitude"] + 180) % 360 - 180) + 0.5).groupby(["time", "lat", "lon"]).size()
+
+
+def fire_count():
+    """NASA FIRMS MODIS C6.1 (Terra + Aqua): số điểm cháy thảm thực vật (type 0, độ tin cậy ≥ 30 %) mỗi tháng trong ô 1°.
+    Từ 2003: trước 07/2002 chỉ có Terra, số điểm thấp giả tạo. Ô đất liền không có điểm nào trong tháng = 0."""
+    files = [f for f in sorted((RAW / "firms").glob("modis_*_all_countries.zip")) if int(f.name[6:10]) >= 2003]
+    with Pool(6) as pool:
+        s = pd.concat(pool.map(_firms_year, files))
+    lat, lon = global_coords()
+    cube = xr.DataArray.from_series(s.astype("float32")).reindex(lat=lat, lon=lon)
+    return cube.fillna(0).where(_land()).assign_attrs(units="fires/month", dataset="FIRMS MODIS C6.1 MCD14ML")
+
+
+def _drought_month(args):
+    month, files, var = args
+    weeks = xr.concat([xr.open_dataset(f)[var] for f in files], "time")
+    frac = (weeks <= DROUGHT_PCT).where(weeks.notnull()).mean("time") * 100
+    return bin_to_grid(frac.expand_dims(time=[month]))
+
+
+def drought(var):
+    """GRACE-DA-DM v3.0 (NASA GSFC, mô hình Catchment đồng hoá GRACE): % số bản đồ tuần trong tháng có phần trăm vị của
+    `var` ≤ 20 (so với 1948–2012 của chính mô hình = hạn vừa trở lên), TB khối 1°. Tuần thuộc tháng của ngày ghi trên tên file."""
+    by = {}
+    for f in sorted((RAW / "grace_da").glob("GRACEDADM_CLSM025GL_7D.A*.nc4")):
+        by.setdefault(pd.Timestamp(f.name.split(".A")[1][:6] + "01"), []).append(f)
+    with Pool(6) as pool:
+        cube = xr.concat(pool.map(_drought_month, [(m, fs, var) for m, fs in by.items()]), "time")
+    lat, lon = global_coords()
+    return cube.reindex(lat=lat, lon=lon, method="nearest", tolerance=1e-6).assign_attrs(
+        units="% of weeks", dataset=f"GRACEDADM_CLSM025GL_7D v3.0 {var}")
+
+
+def _chl_month(path):
+    """Một tháng MODIS-Aqua L3m 9 km (2160 × 4320, lat giảm dần, đúng 12 × 12 pixel mỗi ô 1°) → TB khối 1°; ô có < 50 %
+    pixel hợp lệ (0,001–100 mg/m³) → NaN, như MIN_COVER của preprocess/clean.py cho SeaWiFS (pixel đất tính là thiếu)."""
+    a = xr.open_dataset(path)["chlor_a"].values
+    assert a.shape == (2160, 4320), a.shape
+    a = np.where((a >= 0.001) & (a <= 100), a, np.nan).reshape(180, 12, 360, 12)[::-1]   # hàng 0 = 89,5°S sau khi lật
+    n = np.isfinite(a).sum(axis=(1, 3))
+    with np.errstate(invalid="ignore"):
+        m = np.nansum(a, axis=(1, 3)) / n
+    lat, lon = global_coords()
+    t = pd.Timestamp(path.name.split(".")[1][:6] + "01")
+    return xr.DataArray(np.where(n >= 72, m, np.nan)[None], coords={"time": [t], "lat": lat, "lon": lon},
+                        dims=("time", "lat", "lon"))
+
+
+def chlor_a_modis():
+    """MODIS-Aqua chlorophyll-a (OB.DAAC MODISA_L3m_CHL R2022.0), nối tiếp SeaWiFS: từ 07/2002, chỉ trên biển."""
+    files = sorted((RAW / "modis_chl").glob("AQUA_MODIS.*.L3m.MO.CHL.chlor_a.9km.nc"))
+    assert len(files) >= 280, f"MODIS-Aqua mới có {len(files)} file"
+    with Pool(6) as pool:
+        cube = xr.concat(pool.map(_chl_month, files), "time")
+    return cube.assign_attrs(units="mg/m3", dataset="MODISA_L3m_CHL R2022.0 chlor_a 9km")
+
+
+SEAICE_MIN = 15          # % : ô từng có băng ≥ 15 % (ngưỡng mép băng của NSIDC) mới giữ; biển không bao giờ có băng bị bỏ
+
+
+def seaice():
+    """NSIDC-0051 v2: mật độ băng biển (%) trên LƯỚI GỐC cực stereographic 25 km, không nội suy về lat/lon (người dùng
+    yêu cầu 16/11: bản đồ đổi sang lưới cực). Cube (time, cell): mỗi cell một pixel biển, kèm lat/lon tâm pixel (pyproj),
+    hemi (+1 Bắc / −1 Nam), row/col trong lưới của bán cầu. Bỏ pixel đất, ven bờ (cờ 253/254) và pixel từng nằm trong lỗ
+    cực ở BẤT KỲ tháng nào (lỗ cực co lại khi đổi cảm biến, giữ thì trung bình vùng nhảy theo cảm biến).
+    Mặt nạ đất + ven bờ của cả lưới lưu ở attrs land_n/land_s (np.packbits theo hàng), kích thước ở shape_n/shape_s."""
+    import pyproj
+    parts, attrs = [], {}
+    for hemi, h in ((1, "N"), (-1, "S")):
+        files = sorted((RAW / "seaice").glob(f"NSIDC0051_SEAICE_PS_{h}25km_??????_v2.0.nc"))
+        assert len(files) >= 300, f"sea ice {h}: mới có {len(files)} file"
+        frames, months = [], []
+        for f in files:
+            ds = xr.open_dataset(f)
+            frames.append(ds[next(v for v in ds.data_vars if v.endswith("_ICECON"))].values[0].astype("float32"))
+            months.append(pd.Timestamp(f.name.split("_")[4] + "01"))
+        a = np.stack(frames)                                   # (time, y, x): 0–1 hợp lệ, > 1 là cờ (×0,004 của 251–254)
+        land = ((a > 1.01) & (a < 1.02)).any(axis=0)           # 253 ven bờ, 254 đất
+        pole = (np.abs(a - 1.004) < 1e-3).any(axis=0)          # 251 lỗ cực
+        conc = np.where(a <= 1.0, a * 100, np.nan)
+        with np.errstate(invalid="ignore"):
+            keep = ~land & ~pole & (np.nanmax(conc, axis=0) >= SEAICE_MIN)
+        rows, cols = np.nonzero(keep)
+        x, y = ds["x"].values[cols], ds["y"].values[rows]
+        lon, lat = pyproj.Transformer.from_crs(pyproj.CRS.from_proj4(ds["crs"].attrs["proj4text"]), "EPSG:4326",
+                                               always_xy=True).transform(x, y)
+        parts.append(xr.DataArray(conc[:, rows, cols], dims=("time", "cell"), coords={
+            "time": months, "lat": ("cell", lat.astype("float32")), "lon": ("cell", lon.astype("float32")),
+            "hemi": ("cell", np.full(len(rows), hemi, "int8")), "row": ("cell", rows.astype("int16")),
+            "col": ("cell", cols.astype("int16"))}))
+        attrs[f"shape_{h.lower()}"] = np.array(land.shape, "int16")
+        attrs[f"land_{h.lower()}"] = np.packbits(land.ravel())
+    cube = xr.concat(parts, "cell")
+    return cube.assign_coords(cell=np.arange(cube.sizes["cell"])).assign_attrs(
+        units="%", dataset="NSIDC-0051 v2 25 km polar stereographic", projection="nsidc_polar_stereo_25km", **attrs)
+
+
 # AOD phủ cả biển, float32 đầy đủ nén kém (55 MB/cube): giữ 4 chữ số thập phân (xu hướng ~0,01/thập kỷ)
-LSD = {"aod_merra2": 4, "dust_aod_merra2": 4}
+LSD = {"aod_merra2": 4, "dust_aod_merra2": 4, "chlor_a_modis": 4, "seaice_nsidc": 1}
 
 BUILDERS = {
     "tws_grace": grace,
@@ -97,12 +207,17 @@ BUILDERS = {
     "tmax_cru": lambda: cru("tmx"),
     "tmin_cru": lambda: cru("tmn"),
     "fire_micasa": fire,
+    "fire_count_firms": fire_count,
+    "drought_rtz_grace": lambda: drought("rtzsm_inst"),
+    "drought_gws_grace": lambda: drought("gws_inst"),
+    "chlor_a_modis": chlor_a_modis,
+    "seaice_nsidc": seaice,
 }
 
 if __name__ == "__main__":
     for name in sys.argv[1:] or BUILDERS:
         cube = BUILDERS[name]()
-        has = cube.notnull().any(("lat", "lon")).values        # cắt tháng rỗng ở hai đầu; tháng rỗng ở giữa (khoảng
+        has = cube.notnull().any([d for d in cube.dims if d != "time"]).values   # cắt tháng rỗng ở hai đầu; tháng rỗng ở giữa (khoảng
         cube = cube.isel(time=slice(int(has.argmax()), len(has) - int(has[::-1].argmax())))   # trống GRACE) giữ NaN:
         cube = cube.reindex(time=pd.date_range(cube["time"].values[0], cube["time"].values[-1], freq="MS"))  # grid_trend cần trục tháng liền
         cube = cube.rename(name).astype("float32").assign_attrs(grid="1deg_block_mean", source_variable=name)

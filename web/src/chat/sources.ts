@@ -37,7 +37,7 @@ export const READING: ReadingSource[] = [
     title: "Phytoplankton Bloom in the Gulf of Mexico", publisher: "NASA Earth Observatory", year: 2004,
     url: "https://science.nasa.gov/earth/earth-observatory/phytoplankton-bloom-in-the-gulf-of-mexico-14372/",
     why: "SeaWiFS saw a plume of algae off the Mississippi Delta after floods; the article says farm runoff may have supplied the nutrients.",
-    variables: ["seawifs_chlorophyll"], bbox: [-95, 27, -85, 31],
+    variables: ["modisa_chlorophyll"], bbox: [-95, 27, -85, 31],
   },
   {
     title: "Utilizing Landsat imageries to monitor urban heat islands in Hanoi, Vietnam from 2009 to 2021",
@@ -65,7 +65,7 @@ export const READING: ReadingSource[] = [
     publisher: "Journal of Geophysical Research: Oceans", year: 2009,
     url: "https://doi.org/10.1029/2008JC004979",
     why: "Satellite data showed peak chlorophyll blooms rising along the California coast over 1997–2007; the authors say the reasons are not clear.",
-    variables: ["seawifs_chlorophyll"], bbox: [-126, 32, -117, 42],
+    variables: ["modisa_chlorophyll"], bbox: [-126, 32, -117, 42],
   },
   {
     title: "European State of the Climate 2024", publisher: "Copernicus Climate Change Service and WMO", year: 2025,

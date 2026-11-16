@@ -2,7 +2,7 @@
 from typing import Literal
 from pydantic import BaseModel, Field
 
-MethodId = Literal['ordinary_mk', 'seasonal_mk', 'sen_seasonal', 'hamed_rao_anomaly', 'ols_anomaly', 'bh_fdr', 'hac', 'sen_interval']
+MethodId = Literal['ordinary_mk', 'seasonal_mk', 'sen_seasonal', 'sen_annual', 'hamed_rao_anomaly', 'ols_anomaly', 'bh_fdr', 'hac', 'sen_interval']
 
 
 class MethodGuidance(BaseModel):

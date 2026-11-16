@@ -20,7 +20,7 @@ const COVERAGE = {
   gldas_air_temperature: ['2001-01', '2025-12'], gldas_evapotranspiration: ['2001-01', '2025-12'],
   merra2_air_temperature_2m: ['2001-01', '2025-12'],
   gpcc_precip: ['2001-01', '2020-12'], smap_soil_moisture_surface: ['2015-04', '2025-12'],
-  gldas_root_zone_moisture: ['2001-01', '2025-12'], seawifs_chlorophyll: ['2001-01', '2010-12'], cru_precip: ['2001-01', '2025-12'],
+  gldas_root_zone_moisture: ['2001-01', '2025-12'], modisa_chlorophyll: ['2002-07', '2025-12'], cru_precip: ['2001-01', '2025-12'],
   gldas_soil_moisture_10_40cm: ['2001-01', '2025-12'], gldas_soil_moisture_40_100cm: ['2001-01', '2025-12'],
   gldas_soil_moisture_100_200cm: ['2001-01', '2025-12'],
 };

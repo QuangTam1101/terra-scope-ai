@@ -1,5 +1,7 @@
 """Lưới toàn cầu (docs/01 S5–S8b, mục 7): gộp mọi nguồn về ô 1°, xu hướng cả lưới trong vài giây,
 chuỗi cho vùng BẤT KỲ người dùng vẽ, và gom ô significant thành "điểm nóng" cho Contradiction Hunter."""
+import warnings
+
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -53,12 +55,15 @@ def points_to_cube(obs, variable, step=STEP):
     return xr.DataArray.from_series(s).reindex(lat=lat, lon=lon).rename(variable)
 
 
-def grid_trend(cube, start=None, end=None, min_years=10, chunk=4096):
+def grid_trend(cube, start=None, end=None, min_years=10, chunk=4096, annual=False):
     """Seasonal Mann-Kendall + Sen theo mùa cho MỌI ô cùng lúc (numpy), cho khoảng thời gian người dùng chọn.
-    cube: DataArray (time, lat, lon), nhãn đầu tháng; khoảng chọn phải gồm trọn năm.
+    annual=True: độ dốc = Sen trên trung bình anomaly từng năm, như trends.trend_one(annual=True).
+    cube: DataArray (time, lat, lon), nhãn đầu tháng; khoảng chọn phải gồm trọn năm. Cũng nhận cube lưới cực (time, cell)
+    của băng biển: kết quả giữ nguyên các chiều không phải time và mọi toạ độ theo chúng (lat/lon/row/col của cell).
     Khớp pymannkendall.seasonal_test khi không có giá trị trùng; bỏ hiệu chỉnh trùng (ties) → phương sai
     lớn hơn thật một chút ở ô sa mạc nhiều tháng mưa = 0, tức là THẬN TRỌNG hơn (p lớn hơn)."""
-    c = cube.sel(time=slice(start, end)).transpose("lat", "lon", "time")
+    dims = [d for d in cube.dims if d != "time"]
+    c = cube.sel(time=slice(start, end)).transpose(*dims, "time")
     t = pd.DatetimeIndex(c["time"].values)
     assert len(t) % 12 == 0 and t[0].month == 1, "khoảng thời gian phải gồm trọn năm (tháng 1 → tháng 12)"
     ny = len(t) // 12
@@ -71,7 +76,13 @@ def grid_trend(cube, start=None, end=None, min_years=10, chunk=4096):
         s_stat[a:a + chunk] = np.nansum(np.sign(d), axis=(1, 2))
         n = np.isfinite(b).sum(axis=1)                         # (ô, tháng)
         var[a:a + chunk] = (n * (n - 1) * (2 * n + 5) / 18).sum(axis=1)
-        r = (d / (j - i)[None, :, None]).reshape(len(b), -1)
+        if annual:                                             # (ô, năm): TB anomaly năm, rồi Sen theo cặp năm
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)  # ô không có dữ liệu: nanmean rỗng → NaN
+                ya = np.nanmean(b - np.nanmean(b, axis=1, keepdims=True), axis=2)
+            r = (ya[:, j] - ya[:, i]) / (j - i)[None, :]
+        else:
+            r = (d / (j - i)[None, :, None]).reshape(len(b), -1)
         ok = np.isfinite(r).any(axis=1)
         slope[a:a + chunk][ok] = np.nanmedian(r[ok], axis=1)
     with np.errstate(invalid="ignore", divide="ignore"):
@@ -79,11 +90,12 @@ def grid_trend(cube, start=None, end=None, min_years=10, chunk=4096):
     p = 2 * stats.norm.sf(np.abs(z))
     n_years = np.isfinite(x).any(axis=2).sum(axis=1)
     p[(n_years < min_years) | ~np.isfinite(z)] = np.nan       # thiếu dữ liệu → không kết luận
-    shape = (c.sizes["lat"], c.sizes["lon"])
+    shape = tuple(c.sizes[d] for d in dims)
     out = {"slope_per_decade": slope * 10, "z": z, "p_value": p, "p_value_fdr": bh_fdr(p), "n_years": n_years}
-    return xr.Dataset({k: (("lat", "lon"), v.reshape(shape)) for k, v in out.items()},
-                      coords={"lat": c["lat"], "lon": c["lon"]},
-                      attrs={"start": str(t[0].date()), "end": str(t[-1].date()), "method": "seasonal_mk_sen"})
+    return xr.Dataset({k: (dims, v.reshape(shape)) for k, v in out.items()},
+                      coords={k: v for k, v in c.coords.items() if "time" not in v.dims},
+                      attrs={"start": str(t[0].date()), "end": str(t[-1].date()),
+                             "method": "seasonal_mk_sen_annual" if annual else "seasonal_mk_sen"})
 
 
 def shape_mask(lat, lon, rings):
@@ -103,10 +115,44 @@ def shape_mask(lat, lon, rings):
     return out
 
 
+def points_in(lat, lon, rings, chunk=4096):
+    """Như shape_mask nhưng cho danh sách điểm rời (tâm pixel lưới cực): điểm nào nằm trong đường viền (chẵn-lẻ)."""
+    edges = np.concatenate([np.column_stack([r[:-1], r[1:]]) for r in map(np.asarray, rings)])
+    x1, y1, x2, y2 = edges.T
+    lat, lon = np.asarray(lat, dtype=float), np.asarray(lon, dtype=float)
+    out = np.zeros(len(lat), dtype=bool)
+    for a in range(0, len(lat), chunk):                     # ponytail: điểm × cạnh theo khối, ~4096 × vài nghìn cạnh
+        la, lo = lat[a:a + chunk, None], lon[a:a + chunk, None]
+        hit = (y1 <= la) != (y2 <= la)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            xs = x1 + (la - y1) * (x2 - x1) / (y2 - y1)
+        out[a:a + chunk] = (hit & (xs < lo)).sum(axis=1) % 2 == 1
+    return out
+
+
+def _cell_series(cube, bbox, rings):
+    """region_series cho cube lưới cực (time, cell): pixel có tâm trong bbox (và trong đường viền nếu có).
+    ponytail: trọng số đều; pixel 25 km của lưới cực NSIDC lệch diện tích ±10 % (đúng tỉ lệ ở vĩ độ 70°), cần chính xác
+    hơn thì nhân diện tích pixel (file pixel-area của NSIDC)."""
+    w, s, e, n = bbox
+    lat, lon = cube["lat"].values, cube["lon"].values
+    inside = (lat >= s) & (lat <= n) & (lon >= w) & (lon <= e)
+    if rings is not None and inside.any():
+        inside[inside] = points_in(lat[inside], lon[inside], rings)
+    assert inside.any(), "không pixel nào có tâm trong vùng"
+    sub = cube.isel(cell=np.nonzero(inside)[0])
+    frac = sub.notnull().sum("cell") / sub.sizes["cell"]
+    idx = pd.DatetimeIndex(sub["time"].values)
+    return pd.Series(sub.mean("cell").values, index=idx).where(frac.values > 0), pd.Series(frac.values, index=idx)
+
+
 def region_series(cube, bbox, rings=None):
     """Chuỗi tháng của vùng người dùng chọn: trung bình có trọng số cos(vĩ độ) các ô có tâm trong bbox,
     hoặc, khi có `rings` (đường viền quốc gia), chỉ các ô có tâm nằm trong đường viền (`shape_mask`).
-    Trả (value, valid_frac) để báo chất lượng dữ liệu trên web; valid_frac tính trên các ô được chọn."""
+    Trả (value, valid_frac) để báo chất lượng dữ liệu trên web; valid_frac tính trên các ô được chọn.
+    Cube lưới cực (time, cell) của băng biển: xem _cell_series."""
+    if "cell" in cube.dims:
+        return _cell_series(cube, bbox, rings)
     w, s, e, n = bbox
     assert w < e and s < n, "bbox phải là (W, S, E, N), W < E (chưa hỗ trợ vùng cắt kinh tuyến 180°)"
     sub = cube.sel(lat=slice(s, n), lon=slice(w, e))

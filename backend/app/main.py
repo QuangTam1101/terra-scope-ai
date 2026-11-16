@@ -114,7 +114,8 @@ def _grid_bytes(kind: str, *args) -> tuple[bytes, str]:
         return path.read_bytes(), key
     data = service.trend_grid(*args) if kind == "trend" else service.value_grid(*args)
     model = GridResponse if kind == "trend" else ValueGridResponse
-    packed = gzip.compress(model.model_validate(data).model_dump_json().encode(), compresslevel=5)
+    # exclude_unset: lat/lon cells carry no hemi/row/col (only polar-grid cells set them)
+    packed = gzip.compress(model.model_validate(data).model_dump_json(exclude_unset=True).encode(), compresslevel=5)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_suffix(".part")

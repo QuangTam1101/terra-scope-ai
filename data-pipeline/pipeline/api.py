@@ -34,7 +34,6 @@ VARIABLES = {
     "sm_40_100cm_gldas": ("Độ ẩm đất 40–100 cm", "m3/m3", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) SoilMoi40_100cm_inst qua Giovanni/Harmony"),
     "sm_100_200cm_gldas": ("Độ ẩm đất 100–200 cm", "m3/m3", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) SoilMoi100_200cm_inst qua Giovanni/Harmony"),
     "rootmoist_gldas": ("Nước trong đất vùng rễ", "kg/m2", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) RootMoist_inst qua Giovanni/Harmony"),
-    "chlor_a_seawifs": ("Chlorophyll-a mặt biển", "mg/m3", "SeaWiFS Level-3 mapped monthly CHL 9 km, bản 2022.0 (SeaWiFS_L3m_CHL), NASA OB.DAAC"),
     # Cube 1° thêm 16/11/2026 (build_extra_cubes.py)
     "tws_grace": ("Tổng lượng nước lục địa (GRACE)", "cm", "GRACE/GRACE-FO JPL Mascon RL06.3 CRI v04 (TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4), NASA JPL / PO.DAAC; doi:10.5067/TEMSC-3JC634"),
     "swe_gldas": ("Nước trong tuyết (GLDAS)", "kg/m2", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) SWE_inst qua Giovanni/Harmony"),
@@ -42,8 +41,15 @@ VARIABLES = {
     "dust_aod_merra2": ("Độ dày quang học bụi (MERRA-2)", "1", "MERRA-2 M2TMNXAER v5.12.4 DUEXTTAU (550 nm), NASA GMAO / GES DISC qua Harmony"),
     "tmax_cru": ("Nhiệt độ cao nhất ngày (CRU TS)", "degC", "CRU TS 4.10 tmx, University of East Anglia (không phải NASA; nội suy từ trạm)"),
     "tmin_cru": ("Nhiệt độ thấp nhất ngày (CRU TS)", "degC", "CRU TS 4.10 tmn, University of East Anglia (không phải NASA; nội suy từ trạm)"),
+    "fire_count_firms": ("Số điểm cháy (MODIS, NASA FIRMS)", "fires/month", "NASA FIRMS MODIS Collection 6.1 active fire detections (MCD14ML, Terra + Aqua); điểm cháy thảm thực vật (type 0), độ tin cậy ≥ 30 %, đếm theo ô 1°, từ 2003"),
+    "drought_rtz_grace": ("Tỉ lệ tuần hạn hán vùng rễ (GRACE-DA)", "% of weeks", "GRACE-DA-DM Global v3.0 (GRACEDADM_CLSM025GL_7D), NASA GSFC / GES DISC; tuần có rtzsm_inst ≤ phần trăm vị 20 (so với 1948–2012)"),
+    "drought_gws_grace": ("Tỉ lệ tuần hạn hán nước ngầm (GRACE-DA)", "% of weeks", "GRACE-DA-DM Global v3.0 (GRACEDADM_CLSM025GL_7D), NASA GSFC / GES DISC; tuần có gws_inst ≤ phần trăm vị 20 (so với 1948–2012)"),
+    "chlor_a_modis": ("Chlorophyll-a mặt biển (MODIS-Aqua)", "mg/m3", "MODIS-Aqua Level-3 mapped monthly CHL 9 km, bản 2022.0 (MODISA_L3m_CHL), NASA OB.DAAC; doi:10.5067/AQUA/MODIS/L3M/CHL/2022.0; TB khối 1°, ô cần ≥ 50 % pixel hợp lệ"),
+    "seaice_nsidc": ("Mật độ băng biển (NSIDC)", "%", "NSIDC-0051 v2 Sea Ice Concentrations from Nimbus-7 SMMR and DMSP SSM/I-SSMIS Passive Microwave Data (thuật toán NASA Team), lưới cực stereographic 25 km, NASA NSIDC DAAC; doi:10.5067/MPYG15WAA4WX"),
     "fire_micasa": ("Phát thải carbon do cháy (MiCASA)", "gC/m2/month", "MiCASA v1 monthly 0.1° (MICASA_FLUX_M.1) FIRE, tính từ diện tích cháy MODIS MCD64A1, NASA GES DISC"),
 }
+# Chuỗi đếm sự kiện theo mùa: độ dốc = Sen trên trung bình năm (trends.trend_one annual=True), vì Sen theo mùa ra 0.
+ANNUAL_SLOPE = {"fire_count_firms", "drought_rtz_grace", "drought_gws_grace", "fire_micasa"}
 METHOD = ("Trung bình vùng trên lưới 1° (trọng số cos vĩ độ); Seasonal Mann-Kendall + Sen's slope theo mùa; "
           "Hamed-Rao MK trên anomaly (hiệu chỉnh tự tương quan); OLS trên anomaly ± CI 95%; FDR Benjamini–Hochberg cho bản đồ")
 LIMITATIONS = [
@@ -51,7 +57,8 @@ LIMITATIONS = [
     "Lưới 1°: vùng nhỏ hơn ~100 km không phân tích được; ô ven biển có thể lẫn biển (IMERG, MERRA-2).",
     "Biến MODIS (NDVI, LST, ET) trên lưới là 1 pixel mẫu mỗi ô, không phải trung bình ô; thiếu khi trời nhiều mây.",
     "GLDAS và MERRA-2 là mô hình / tái phân tích, không phải quan sát trực tiếp.",
-    "Chlorophyll SeaWiFS chỉ có 2001–2010 (vệ tinh ngừng cuối 2010) và chỉ trên biển.",
+    "Chlorophyll MODIS-Aqua chỉ có từ 07/2002 và chỉ trên biển; mây và đêm cực để lại tháng trống.",
+    "Băng biển nằm trên lưới cực 25 km của NSIDC (không nội suy về lat/lon); giá trị vùng là TB mật độ băng của các pixel từng có băng ≥ 15 %.",
 ]
 
 
@@ -94,7 +101,7 @@ def list_variables():
 
 def trend_map(variable, start=None, end=None, q=0.05):
     """Heatmap: mọi ô có kết quả → [lat, lon, slope/thập kỷ, q-value FDR]; significant = q < 0.05."""
-    tr = grid_trend(load_cube(variable), start, end)
+    tr = grid_trend(load_cube(variable), start, end, annual=variable in ANNUAL_SLOPE)
     df = tr[["slope_per_decade", "p_value_fdr"]].to_dataframe().dropna().reset_index()
     return _clean({**_meta(variable), "start": tr.attrs["start"], "end": tr.attrs["end"], "q_threshold": q,
                    "columns": ["lat", "lon", "slope_per_decade", "q_value"],
@@ -110,7 +117,7 @@ def _region(variable, bbox, start, end):
 def analyze_region(variable, bbox, start=None, end=None):
     """Một vùng bất kỳ người dùng vẽ: chuỗi tháng + xu hướng (p, CI) + chất lượng dữ liệu + nguồn + giới hạn."""
     s, frac = _region(variable, bbox, start, end)
-    tr = trend_one(s)
+    tr = trend_one(s, annual=variable in ANNUAL_SLOPE)
     return _clean({**_meta(variable), "bbox": list(bbox), "start": str(s.index[0].date()), "end": str(s.index[-1].date()),
                    "series": {"time": s.index.strftime("%Y-%m").tolist(), "value": s.round(4).tolist(),
                               "valid_frac": frac.round(3).tolist()},
@@ -126,8 +133,8 @@ def compare_regions(variable, bbox_a, bbox_b, start=None, end=None, alpha=0.05):
     b, _ = _region(variable, bbox_b, start, end)
     diff = pair_difference_test(a, b)
     reliable = diff["p_diff"] < alpha and (diff["ci95_low"] > 0 or diff["ci95_high"] < 0)
-    return _clean({**_meta(variable), "region_a": {"bbox": list(bbox_a), "trend": trend_one(a)},
-                   "region_b": {"bbox": list(bbox_b), "trend": trend_one(b)},
+    return _clean({**_meta(variable), "region_a": {"bbox": list(bbox_a), "trend": trend_one(a, annual=variable in ANNUAL_SLOPE)},
+                   "region_b": {"bbox": list(bbox_b), "trend": trend_one(b, annual=variable in ANNUAL_SLOPE)},
                    "difference": diff, "reliable": bool(reliable),
                    "method": METHOD + "; khác biệt: Hamed-Rao MK + Sen trên hiệu anomaly A − B, CI bootstrap khối 12 tháng",
                    "limitations": LIMITATIONS})

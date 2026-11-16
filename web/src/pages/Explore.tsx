@@ -12,6 +12,7 @@ import { periodEnd, periodMonths, periodStart } from "../period";
 import { PlacePicker } from "../PlacePicker";
 import { countryPlace, placeShape } from "../places";
 import { Legend, WorldMap, type Layer } from "../WorldMap";
+import { PolarMap } from "../PolarMap";
 import { TrendChart } from "../TrendChart";
 import { byTheme, ParamIcon, paramShort, Terra } from "../ui";
 import { ExplorerResult, ScientistResult } from "../ResultViews";
@@ -31,7 +32,7 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 /** Selection fields for a "YYYY-MM" to "YYYY-MM" period. */
 const periodSel = (start: string, end: string): Partial<Selection> =>
   ({ startYear: +start.slice(0, 4), startMonth: +start.slice(5, 7), endYear: +end.slice(0, 4), endMonth: +end.slice(5, 7) });
-/** The period clamped to a variable's record (GPCC, SMAP and SeaWiFS are shorter); the whole record when they do not overlap. */
+/** The period clamped to a variable's record (GPCC, SMAP and MODIS-Aqua chlorophyll are shorter); the whole record when they do not overlap. */
 const fitPeriod = (v: Variable, start: string, end: string): Partial<Selection> => {
   if (!v.coverage) return {};
   const p = clampPeriod(start, end, v.coverage) ?? { start: v.coverage.start, end: v.coverage.end };
@@ -39,7 +40,7 @@ const fitPeriod = (v: Variable, start: string, end: string): Partial<Selection> 
 };
 
 export function Explore() {
-  const { variables, sel, setSel, variable, runAnalysis, running, run, showError, go, tempUnit, setTempUnit, progress, cancelAnalysis, audience, regions, ready, page } = useStore();
+  const { variables, sel, setSel, variable, runAnalysis, running, run, failed, showError, go, tempUnit, setTempUnit, progress, cancelAnalysis, audience, regions, ready, page } = useStore();
   const sci = audience === "scientist";
   const [layer, setLayer] = useState<Layer>("trend");
   const [timelapse, setTimelapse] = useState(false);   // 2D time-lapse replaces the static map while on
@@ -64,6 +65,9 @@ export function Explore() {
     return Array.from({ length: b - a + 1 }, (_, i) => a + i);
   }, [variable]);
   const units = variable?.display_units ?? "";
+  // Sea ice lives on NSIDC's polar grids: its map is PolarMap (both poles); every other dataset uses the world map.
+  const polar = variable?.grid === "polar";
+  useEffect(() => { if (polar && timelapse) setTimelapse(false); }, [polar, timelapse]);   // no time-lapse on the polar grid
   // Large map mode: the map card fills the workspace (and optionally the screen). Escape leaves it first,
   // before the map's own Escape (clear selection) handler runs.
   const mapRef = useRef<HTMLElement>(null);
@@ -127,14 +131,19 @@ export function Explore() {
     cells: globalCells(variable.spatial_resolution_deg), month: month ? MONTHS[month - 1] : undefined,
   }) : null, [gridOp, variable, sel.startYear, sel.endYear, sel.startMonth, sel.endMonth, month]);
 
+  /** Change what to analyse. Once a result is showing (or on its way), re-run it for the same place so the result,
+   * chart and tables never show the previous variable, dataset or period (a "no data here" answer counts as a result);
+   * an impossible period only updates the pickers. */
+  const update = (patch: Partial<typeof sel>) =>
+    (run || running || failed) && periodMonths({ ...sel, ...patch }) >= 1 ? void runAnalysis(patch) : setSel(patch);
   /** Choosing a variable or a dataset resets the period to that dataset's whole record. */
-  const pickVariable = (v: Variable) => setSel({ parameter: v.parameter, variableId: v.id, ...(v.coverage ? periodSel(v.coverage.start, v.coverage.end) : {}) });
+  const pickVariable = (v: Variable) => update({ parameter: v.parameter, variableId: v.id, ...(v.coverage ? periodSel(v.coverage.start, v.coverage.end) : {}) });
   const pickParameter = (p: string) => {
     const first = variables.find((v) => v.parameter === p && v.available) ?? variables.find((v) => v.parameter === p);
     if (first) pickVariable(first);
   };
   const result = run;
-  // A dataset with a shorter record (SeaWiFS 2001-2010, GPCC 2001-2020, SMAP 2015-2025) pulls the chosen period inside it.
+  // A dataset with a shorter record (MODIS-Aqua chlorophyll from 2002-07, GPCC 2001-2020, SMAP 2015-2025) pulls the chosen period inside it.
   useEffect(() => {
     if (!variable?.coverage) return;
     const fit = fitPeriod(variable, periodStart(sel), periodEnd(sel)), s = sel;
@@ -226,7 +235,7 @@ export function Explore() {
               </button>
             ))}
           </div>
-          {datasets.filter((d) => d.available).length > 1 && sel.parameter !== "air_haze" && (   // haze lists different quantities, not rival datasets
+          {datasets.filter((d) => d.available).length > 1 && !["air_haze", "fire", "drought"].includes(sel.parameter) && (   // these list different quantities, not rival datasets
             <span className="warn small">Datasets can disagree{sel.parameter === "air_temperature"
               ? ". For the Sahel, MERRA-2 and GLDAS give opposite temperature trends, so compare both" : ", so compare them"} before you trust one.</span>
           )}
@@ -235,19 +244,19 @@ export function Explore() {
           <span className="label">{sci ? "3 · Period (monthly series)" : "3 · Which years"}</span>
           <div className="row period-row">
             <span className="small muted">From</span>
-            <select className="select" aria-label="Start month" value={sel.startMonth ?? 1} onChange={(e) => setSel({ startMonth: Number(e.target.value) })}>
+            <select className="select" aria-label="Start month" value={sel.startMonth ?? 1} onChange={(e) => update({ startMonth: Number(e.target.value) })}>
               {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m.slice(0, 3)}</option>)}
             </select>
-            <select className="select" aria-label="Start year" value={sel.startYear} onChange={(e) => setSel({ startYear: Number(e.target.value) })}>
+            <select className="select" aria-label="Start year" value={sel.startYear} onChange={(e) => update({ startYear: Number(e.target.value) })}>
               {years.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
           <div className="row period-row">
             <span className="small muted">to</span>
-            <select className="select" aria-label="End month" value={sel.endMonth ?? 12} onChange={(e) => setSel({ endMonth: Number(e.target.value) })}>
+            <select className="select" aria-label="End month" value={sel.endMonth ?? 12} onChange={(e) => update({ endMonth: Number(e.target.value) })}>
               {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m.slice(0, 3)}</option>)}
             </select>
-            <select className="select" aria-label="End year" value={sel.endYear} onChange={(e) => setSel({ endYear: Number(e.target.value) })}>
+            <select className="select" aria-label="End year" value={sel.endYear} onChange={(e) => update({ endYear: Number(e.target.value) })}>
               {years.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
@@ -274,7 +283,7 @@ export function Explore() {
           <div className="seg" role="group" aria-label="Map layer">
             <button type="button" className={!timelapse && layer === "values" ? "on" : ""} aria-pressed={!timelapse && layer === "values"} onClick={() => { setTimelapse(false); setLayer("values"); }}>Values</button>
             <button type="button" className={!timelapse && layer === "trend" ? "on" : ""} aria-pressed={!timelapse && layer === "trend"} onClick={() => { setTimelapse(false); setLayer("trend"); }}>Trend</button>
-            <button type="button" className={timelapse ? "on" : ""} aria-pressed={timelapse} onClick={() => setTimelapse(true)}>Time-lapse</button>
+            {!polar && <button type="button" className={timelapse ? "on" : ""} aria-pressed={timelapse} onClick={() => setTimelapse(true)}>Time-lapse</button>}
           </div>
           <span style={{ font: "800 14px var(--body)" }}>{variable?.parameter_name} · {variable?.dataset_name} · {periodLabel(periodStart(sel))} to {periodLabel(periodEnd(sel))}</span>
           {!timelapse && layer === "values" && (
@@ -292,16 +301,22 @@ export function Explore() {
             </button>
           </div>
         </div>
-        {timelapse && variable?.available ? (
+        {timelapse && variable?.available && !polar ? (
           <Timelapse variable={variable} start={periodStart(sel)} end={periodEnd(sel)} conv={conv}
             bbox={sel.place.bbox[2] - sel.place.bbox[0] >= 360 ? null : sel.place.bbox} />
         ) : <>
+        {polar ? (
+          <PolarMap layer={layer} trend={shownTrend} values={shownValues} loading={gridLoading} loadingInfo={gridInfo} units={units}
+            selected={sel.place.bbox} selectedLabel={sel.place.label} onClear={() => runAnalysis({ place: WORLD })}
+            onPick={(lon, lat) => runAnalysis({ place: cellPlace(lon, lat) })} />
+        ) : (
         <WorldMap layer={layer} trend={shownTrend} values={shownValues} loading={gridLoading} loadingInfo={gridInfo} units={units}
           selected={sel.place.bbox[2] - sel.place.bbox[0] >= 360 && sel.place.ref.type !== "country" ? null : sel.place.bbox}
           shape={placeShape(sel.place)} selectedLabel={sel.place.label}
           onClear={() => runAnalysis({ place: WORLD })}
           onPick={(lon, lat) => { const p = cellPlace(lon, lat); runAnalysis({ place: p }); }}
           onArea={(bbox) => runAnalysis({ place: areaPlace(bbox) })} />
+        )}
         <Legend layer={layer} trend={shownTrend} values={shownValues} units={units} />
         {variable && sci && (
           <span className="small muted">
@@ -335,7 +350,14 @@ export function Explore() {
             </div>
           );
         })()}
-        {!running && !result && (
+        {!running && !result && failed && (
+          <div className="col" role="status" style={{ gap: 6 }}>
+            <b style={{ font: "700 17px var(--display)" }}>No data for {failed.place.label}</b>
+            <p style={{ font: "600 14.5px/1.5 var(--body)", margin: 0 }}>{failed.message}</p>
+            <span className="small muted">{failed.variable.parameter_name} · {failed.variable.dataset_name}. Pick another place or another dataset.</span>
+          </div>
+        )}
+        {!running && !result && !failed && (
           <div className="col" style={{ alignItems: "center", textAlign: "center", padding: "20px 0" }}>
             <Terra size={110} label="Terra the detective" />
             <p style={{ font: "700 15px/1.5 var(--body)", margin: 0 }}>Pick a place on the map or from the list, then press Run analysis. I'll check if the change is real or just noise.</p>
@@ -344,17 +366,20 @@ export function Explore() {
         {!running && result && <ResultBody share={share} />}
       </section>
       <ChartCard />
-      {!running && result && (
-        <section className="card pad col" aria-labelledby="compare-title">
-          <h2 id="compare-title" style={{ fontSize: 20 }}>What's changing here?</h2>
-          <PlaceCompare place={result.place} start={result.trend.start} end={result.trend.end} variables={variables}
-            onOpen={(id) => openVariable(id, result.place, result.trend.start, result.trend.end)} />
-        </section>
-      )}
+      {!running && (result || failed) && (() => {      // a "no data" place still shows what the other datasets say there
+        const place = result?.place ?? failed!.place;
+        const start = result?.trend.start ?? periodStart(sel), end = result?.trend.end ?? periodEnd(sel);
+        return (
+          <section className="card pad col" aria-labelledby="compare-title">
+            <h2 id="compare-title" style={{ fontSize: 20 }}>What's changing here?</h2>
+            <PlaceCompare place={place} start={start} end={end} variables={variables} onOpen={(id) => openVariable(id, place, start, end)} />
+          </section>
+        );
+      })()}
       <MoreYears />
       {!running && <ExploreFurther />}
       <span className="footer explore-foot">
-        <a href="#guide">Numbers checked against an independent recalculation</a> · not peer reviewed · NASA data: GPM IMERG, GLDAS Noah, MERRA-2, MODIS, SMAP, SeaWiFS; ground references (not NASA): GPCC, CRU TS ({variable?.spatial_resolution_deg ?? 0.5}° global grid, {years[0]} to {years[years.length - 1]}).{" "}
+        <a href="#guide">Numbers checked against an independent recalculation</a> · not peer reviewed · NASA data: GPM IMERG, GLDAS Noah, MERRA-2, MODIS, SMAP, NSIDC sea ice, GRACE, MiCASA, FIRMS; not NASA: GPCC, CRU TS ({polar ? "25 km polar grids" : `${variable?.spatial_resolution_deg ?? 0.5}° global grid`}, {years[0]} to {years[years.length - 1]}).{" "}
         <button type="button" className="btn soft" style={{ minHeight: 32, padding: "0 12px", fontSize: 12.5 }} onClick={() => go("report")}>Open report</button>
       </span>
     </div>

@@ -31,7 +31,7 @@ export const MECHANISMS: Mechanism[] = [
   { id: "vegetation", variables: ["modis_ndvi"],
     text: "Extra carbon dioxide in the air helps plants grow, so many places have turned greener. Warmer air is also thirstier, and where it dries plants out, greening can stall or reverse.",
     source: { cite: "Yuan and others, 2019, Science Advances", title: "Increased atmospheric vapor pressure deficit reduces global vegetation growth", url: "https://doi.org/10.1126/sciadv.aax1396" } },
-  { id: "algae", variables: ["seawifs_chlorophyll"],
+  { id: "algae", variables: ["modisa_chlorophyll"],
     text: "Warming makes the sunlit top of the ocean float more firmly on the cold water below. Fewer nutrients reach warm seas, so algae there drop, while cold seas can get a longer growing season.",
     caveat: "This explanation comes from computer models of a warming ocean.",
     source: { cite: "Sarmiento and others, 2004, Global Biogeochemical Cycles", title: "Response of ocean ecosystems to climate warming", url: "https://doi.org/10.1029/2003GB002134" } },
@@ -46,10 +46,10 @@ export interface OppositeExample { id: string; question: string; variable_id: st
 // Each one met the bar on the public 1° cubes (2026-11-16): each place alone has a Hamed-Rao adjusted p < 0.05 and a
 // 95% interval that excludes zero, in opposite directions, and /compare says opposite_significant. Numbers in the report.
 export const OPPOSITE_EXAMPLES: OppositeExample[] = [
-  { id: "algae-atlantic", question: "Ocean algae: more in the cold south, less in the warm tropics?", variable_id: "seawifs_chlorophyll",
-    start: "2001-01", end: "2010-12",
-    up: { name: "South Atlantic, east of Patagonia", bbox: [-50, -50, -40, -40] },
-    down: { name: "Tropical North Atlantic", bbox: [-40, 10, -30, 20] } },
+  { id: "algae-atlantic", question: "Ocean algae: more off cold Patagonia, less in the warm subtropical Atlantic?", variable_id: "modisa_chlorophyll",
+    start: "2003-01", end: "2025-12",
+    up: { name: "Patagonian shelf, off Argentina", bbox: [-70, -50, -60, -40] },
+    down: { name: "Atlantic off Portugal and Morocco", bbox: [-20, 30, -10, 40] } },
   { id: "rain-pacific", question: "Rain: wetter in the rainy tropics, drier in a dry ocean zone?", variable_id: "imerg_precip",
     start: "2001-01", end: "2024-12",
     up: { name: "Seas of eastern Indonesia", bbox: [120, -10, 130, 0] },

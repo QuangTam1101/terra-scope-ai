@@ -5,7 +5,7 @@ import { api, ApiError, errorText, type SeriesResponse, type TrendResponse, type
 import { InfoButton } from "./InfoButton";
 import { useStore, type Place } from "./store";
 import { pval, signed, verdictOf } from "./ui";
-import { convFor, convSeries, convTrend } from "./units";
+import { convFor, convSeries, convTrend, rateOf, rateUnit } from "./units";
 import { clampPeriod } from "./period";
 
 export { clampPeriod };   // moved to period.ts (pure) so the start wizard can use it without React
@@ -136,8 +136,8 @@ export function PlaceCompare({ place, start, end, variables, onOpen }: {
           <span className="small muted">{v.dataset_name}{p?.clamped ? ` · ${years(p.start, p.end)} only` : ""}</span>
         </td>
         {status ? <td colSpan={cols - 1}><span className="small muted">{status}</span></td> : t && s && verdict && <>
-          <td><Chip v={verdict} /><span className="pc-rate-m small num">{signed(t.slope_per_decade)} {units} {sci ? "per decade" : "every 10 years"}</span></td>
-          <td className="num pc-rate" style={{ whiteSpace: "nowrap" }}>{signed(t.slope_per_decade)} {units}</td>
+          <td><Chip v={verdict} /><span className="pc-rate-m small num">{signed(rateOf(t.slope_per_decade, units))} {rateUnit(units)} {sci ? "per decade" : "every 10 years"}</span></td>
+          <td className="num pc-rate" style={{ whiteSpace: "nowrap" }}>{signed(rateOf(t.slope_per_decade, units))} {rateUnit(units)}</td>
           <td className="pc-spark"><Spark series={s} tone={verdict.tone} /></td>
           {sci && <>
             <td className="num">{pval(t.p_value)}</td>

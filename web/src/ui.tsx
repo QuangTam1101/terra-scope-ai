@@ -5,6 +5,7 @@ import type { TrendResponse } from "./api";
 const MINUS = "−";
 export function signed(x: number | null | undefined, digits?: number): string {
   if (x === null || x === undefined || !isFinite(x)) return "n/a";
+  if (x === 0 && digits === undefined) return "0";   // a flat Sen slope (rare events, sea ice that never changes), not "0.00000"
   const d = digits ?? (Math.abs(x) >= 10 ? 1 : Math.abs(x) >= 0.1 ? 2 : Math.abs(x) >= 0.001 ? 4 : 5);
   const s = Math.abs(x).toFixed(d);
   return (x > 0 ? "+" : x < 0 ? MINUS : "") + s;
@@ -90,14 +91,16 @@ const PARAM_ICON: Record<string, [string, ReactNode, string]> = {
   ocean_chlorophyll: ["#d8f0f3", <><path {...P} d="M3 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0M3 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0M7 19h.01M12 19.5h.01M17 19h.01" /></>, "Ocean algae"],
   water_storage: ["#dfe6ff", <><path {...P} d="M3 8h18M6 8l-1-2.5M8.5 8l.6-2.5M15.5 8l-.6-2.5M18 8l1-2.5" /><path {...P} d="M3 12.5c2-1.4 4-1.4 6 0s4 1.4 6 0 4-1.4 6 0M3 17c2-1.4 4-1.4 6 0s4 1.4 6 0 4-1.4 6 0" /><path {...P} d="M3 21h18" /></>, "Land water"],
   snow: ["#e8f1ff", <><path {...P} d="M12.0 20.8L12.0 3.2M12.0 6.9L10.2 5.1M12.0 6.9L13.8 5.1M19.6 16.4L4.4 7.6M7.6 9.4L5.1 10.1M7.6 9.4L6.9 6.9M19.6 7.6L4.4 16.4M7.6 14.6L6.9 17.1M7.6 14.6L5.1 13.9M12.0 17.1L13.8 18.9M12.0 17.1L10.2 18.9M16.4 14.6L18.9 13.9M16.4 14.6L17.1 17.1M16.4 9.4L17.1 6.9M16.4 9.4L18.9 10.1" /></>, "Snow"],
+  sea_ice: ["#e4eef7", <><path {...P} d="M3 15c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0M3 19.5c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0M5 11l2-5h6l2 5M15 11l1.5-3h3L21 11" /></>, "Sea ice"],
   air_haze: ["#ece9e4", <><path {...P} d="M4 7h10M7 11h13M4 15h11M8 19h9M18 7h.01M18 15h.01" /></>, "Air haze"],
+  drought: ["#fbe3c4", <><circle {...P} cx="12" cy="7" r="3" /><path {...P} d="M3 14h18M6 14l2 3-1 3M13 14l-1 3 2 3M18 14l-1 2" /></>, "Drought"],
   fire: ["#ffd9cc", <><path {...P} d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-6 1.5 1 2 2 2 3 1-2 1-4 1-7z" /></>, "Fire"],
 };
 export const paramShort = (id: string, name: string) => PARAM_ICON[id]?.[2] ?? name;
 
 // Tiles in three themes, so 14 choices read as 3 small groups. A parameter missing here joins the last theme.
 const THEMES: [string, string[]][] = [
-  ["Water", ["precipitation", "soil_moisture", "root_zone_water", "water_storage", "snow", "evapotranspiration", "potential_evapotranspiration"]],
+  ["Water", ["precipitation", "soil_moisture", "root_zone_water", "water_storage", "drought", "snow", "sea_ice", "evapotranspiration", "potential_evapotranspiration"]],
   ["Heat", ["air_temperature", "land_surface_temperature"]],
   ["Life, fire and air", ["vegetation", "ocean_chlorophyll", "fire", "air_haze"]],
 ];

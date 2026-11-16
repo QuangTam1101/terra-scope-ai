@@ -7,7 +7,7 @@ import { useStore } from "../store";
 import { periodEnd, periodStart } from "../period";
 import { TrendChart } from "../TrendChart";
 import { ci, pval, signed, Stat, VerdictBadge } from "../ui";
-import { convCompare, convFor, convSeries, convTrend } from "../units";
+import { convCompare, convFor, convSeries, convTrend, rateCi, rateOf, rateUnit } from "../units";
 import { LocatorMap } from "../report/ReportDoc";
 import { compatiblePartner, EXTENTS } from "../explore";
 import { clampPeriod } from "../PlaceCompare";
@@ -399,7 +399,7 @@ function Workspace({ mode, reopen, onReopened, onSaved }: { mode: HuntMode; reop
                 <span className="small muted">{s.variable.dataset_name} · {s.trend.start} to {s.trend.end}</span>
                 {mode === "regions" && <LocatorMap height={150} boxes={[{ bbox: s.trend.region.bbox, label: k, color: k === "A" ? "#5b4e94" : "#2b2540" }]} />}
                 <VerdictBadge t={s.trend} />
-                <span className="num hunt-slope">{signed(s.trend.slope_per_decade)} <small>{u} per decade</small></span>
+                <span className="num hunt-slope">{signed(rateOf(s.trend.slope_per_decade, u))} <small>{rateUnit(u)} per decade</small></span>
                 <div className="grid2"><Stat value={pval(s.trend.p_value)} label="Raw Seasonal MK p" /><Stat value={`${s.trend.quality.n_months} months, ${Math.round(s.trend.quality.coverage_fraction * 100)}% area`} label="Coverage" /></div>
                 {s.trend.warnings.map((w) => <span key={w} className="warn small">{w}</span>)}
               </div>
@@ -572,10 +572,10 @@ function Discover({ onInspect }: { onInspect: (mode: HuntMode, a: Opt, b: Opt | 
                       {candCategories(res.mode, c).map((k) => <span key={k} className="chip-cat">{CATEGORY_LABEL[k][sci ? "scientist" : "explorer"]}</span>)}</div>
                     <span className="small">{res.mode === "regions" ? <>A: {boxName(c.a.bbox)} · B: {boxName(c.b.bbox)} · {c.metrics.distance_deg}° apart</> : <>Tile: {boxName(c.a.bbox)}</>}</span>
                     {c.regional && (
-                      <span className="num small"><b>{res.mode === "regions" ? "A" : v?.dataset_name}</b> {signed(c.regional.a.slope_per_decade === null ? null : c.regional.a.slope_per_decade * f)} {u}/decade (p {pval(c.regional.a.p_value)}) ·{" "}
-                        <b>{res.mode === "regions" ? "B" : variables.find((x) => x.id === res.variable_id_b)?.dataset_name}</b> {signed(c.regional.b.slope_per_decade === null ? null : c.regional.b.slope_per_decade * f)} {u}/decade (p {pval(c.regional.b.p_value)})</span>
+                      <span className="num small"><b>{res.mode === "regions" ? "A" : v?.dataset_name}</b> {signed(rateOf(c.regional.a.slope_per_decade === null ? null : c.regional.a.slope_per_decade * f, u))} {rateUnit(u)}/decade (p {pval(c.regional.a.p_value)}) ·{" "}
+                        <b>{res.mode === "regions" ? "B" : variables.find((x) => x.id === res.variable_id_b)?.dataset_name}</b> {signed(rateOf(c.regional.b.slope_per_decade === null ? null : c.regional.b.slope_per_decade * f, u))} {rateUnit(u)}/decade (p {pval(c.regional.b.p_value)})</span>
                     )}
-                    {c.test && <span className="num small">Difference test: p {pval(c.test.difference.p_value)}, 95% interval {ci(c.test.difference.ci ? [c.test.difference.ci[0] * f, c.test.difference.ci[1] * f] : null)} {u}/decade</span>}
+                    {c.test && <span className="num small">Difference test: p {pval(c.test.difference.p_value)}, 95% interval {ci(rateCi(c.test.difference.ci ? [c.test.difference.ci[0] * f, c.test.difference.ci[1] * f] : null, u))} {rateUnit(u)}/decade</span>}
                     <span className="small">{c.classification_text}</span>
                     <details><summary className="small">Why it was flagged</summary><ul className="small">{c.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
                       <span className="small muted">Map tiles share {Math.round(c.metrics.weaker_share * 100)}% FDR-significant cells on the weaker side. Further investigation is justified when the regional test agrees.</span></details>

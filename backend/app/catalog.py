@@ -46,12 +46,14 @@ class Variable:
 
 _MODIS_NOTE = ("MODIS is an optical satellite sensor: it cannot see through cloud, so very cloudy months (and snow for "
                "NDVI) can be missing. Each 0.5° cell is the mean of its clear 0.05° MODIS pixels.")
-_ZERO_NOTE = (" The trend slope is a median, so it can read 0 when most months have no events: then trust the "
-              "p-value and look at Month by year.")
+_ZERO_NOTE = (" Events come in a short season, so the rate of change is measured on yearly averages (the "
+              "significance test still compares matching months).")
 _LST_NOTE = (_MODIS_NOTE + " Terra's overpass time has drifted earlier since 2020 (its last orbit adjustment) as the "
              "satellite ends its mission, which can make recent daytime surface temperatures read slightly cooler "
              "(night-time slightly warmer); check whether a trend holds when the period ends in 2019.")
 _MODEL_NOTE = "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+_DROUGHT_NOTE = (_MODEL_NOTE + " Drought here means drier than 4 in 5 of the same weeks in 1948–2012 (the 20th "
+                 "percentile, the US Drought Monitor's moderate drought or worse). Starts February 2003.")
 
 _VARS = [
     Variable("imerg_precip", "precip", "Precipitation", "water",
@@ -132,14 +134,22 @@ _VARS = [
              "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
              _MODEL_NOTE + " Root depth changes with the type of plants, so compare places by their trend, "
              "not their amounts."),
-    Variable("seawifs_chlorophyll", "chlor_a_seawifs", "Ocean chlorophyll", "ocean",
+    Variable("modisa_chlorophyll", "chlor_a_modis", "Ocean chlorophyll", "ocean",
              "How much green algae floats near the sea surface; more algae makes the water greener.",
-             "SeaWiFS Level-3 mapped monthly chlorophyll-a (9 km, reprocessing 2022.0), ocean only, "
-             "on a common global grid.",
-             "mg/m³", 0.083, "SeaWiFS_L3m_CHL", "2022.0", "NASA OB.DAAC",
-             "https://doi.org/10.5067/ORBVIEW-2/SeaWiFS/L3M/CHL/2022.0",
-             "Ocean only. The satellite stopped in December 2010, so this covers 2001–2010. Values are very uneven: "
-             "a regional average is dominated by coastal blooms."),
+             "MODIS-Aqua Level-3 mapped monthly chlorophyll-a (9 km, reprocessing 2022.0), ocean only, averaged to "
+             "1° (a cell needs at least half of its 9 km pixels valid).",
+             "mg/m³", 0.083, "MODISA_L3m_CHL", "2022.0", "NASA OB.DAAC",
+             "https://doi.org/10.5067/AQUA/MODIS/L3M/CHL/2022.0",
+             "Ocean only, from July 2002. Clouds and the polar night leave gaps (no winter values near the poles). "
+             "Values are very uneven: a regional average is dominated by coastal blooms."),
+    Variable("nsidc_sea_ice", "seaice_nsidc", "Sea ice", "ocean",
+             "How much of the sea surface is covered by ice, from 0 % (open water) to 100 % (solid ice).",
+             "NSIDC-0051 v2 sea ice concentration from passive microwave satellites (DMSP SSM/I and SSMIS, NASA Team "
+             "algorithm), monthly, kept on NSIDC's own 25 km polar stereographic grids (no regridding). Sea pixels "
+             "that never reach 15 % ice, coast pixels and the pole hole are left out.",
+             "%", 0.25, "NSIDC-0051", "2", "NASA NSIDC DAAC", "https://doi.org/10.5067/MPYG15WAA4WX",
+             "Polar seas only, shown on maps centred on the North and South Poles. A regional value is the average "
+             "ice cover of the sea pixels there that ever have ice (each about 25 km across)."),
     Variable("cru_precip", "precip_cru", "Precipitation (station grid)", "water",
              "Monthly rain from weather stations, spread onto a map grid.",
              "CRU TS 4.10 monthly precipitation (0.5°), interpolated from weather stations, land only; "
@@ -210,6 +220,16 @@ _VARS = [
              "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/",
              "Not NASA data: built from weather stations by the University of East Anglia. Part of CRU's "
              "minimum temperature is derived from mean temperature and daily range where stations are sparse."),
+    Variable("firms_fire_count", "fire_count_firms", "Number of fires (MODIS active fires)", "fire",
+             "How many fires satellites spot each month: every burning hot spot seen from space counts once.",
+             "NASA FIRMS MODIS Collection 6.1 active-fire detections (MCD14ML, Terra and Aqua, 1 km), vegetation "
+             "fires only (type 0) with confidence of at least 30 %, counted per 1° cell per month from 2003.",
+             "fires/month", 0.01, "MCD14ML (FIRMS)", "6.1", "NASA FIRMS (LANCE)",
+             "https://firms.modaps.eosdis.nasa.gov/download/",
+             "Counts start in 2003, the first full year with both Terra and Aqua. A fire is counted only if it burns "
+             "during one of the four daily overpasses and is not hidden by thick cloud or smoke. Terra (since 2020) "
+             "and Aqua (since 2022) are drifting to new overpass times as their missions end, which can change how "
+             "many fires they catch: check whether a trend holds when the period ends in 2019." + _ZERO_NOTE),
     Variable("micasa_fire", "fire_micasa", "Fire activity (MiCASA, from MODIS burned area)", "fire",
              "How much carbon wildfires and other fires release each month: more and bigger fires mean a higher value.",
              "MiCASA v1 monthly fire carbon emission (FIRE, 0.1°), driven by MODIS MCD64A1 burned area; converted "
@@ -218,6 +238,20 @@ _VARS = [
              "https://disc.gsfc.nasa.gov/datasets/MICASA_FLUX_M_1/summary",
              _MODEL_NOTE + " Covers 2001–2024. Fire years are very uneven: one record season (Canada 2023) can "
              "dominate a regional trend, so read Each year as well as the slope." + _ZERO_NOTE),
+    Variable("graceda_drought_rootzone", "drought_rtz_grace", "Drought in the root zone (GRACE-DA)", "drought",
+             "How much of each month the soil where plants drink is in drought.",
+             "GRACE-DA-DM Global v3.0 (NASA GSFC, Catchment land model assimilating GRACE/GRACE-FO): share of weekly "
+             "maps in the month with root-zone soil moisture at or below the 20th percentile of 1948–2012, averaged to 1°.",
+             "% of weeks", 0.25, "GRACEDADM_CLSM025GL_7D", "3.0", "NASA GES DISC",
+             "https://disc.gsfc.nasa.gov/datasets/GRACEDADM_CLSM025GL_7D_3.0/summary", _DROUGHT_NOTE + _ZERO_NOTE),
+    Variable("graceda_drought_groundwater", "drought_gws_grace", "Groundwater drought (GRACE-DA)", "drought",
+             "How much of each month the water stored deep underground is in drought.",
+             "GRACE-DA-DM Global v3.0 (NASA GSFC, Catchment land model assimilating GRACE/GRACE-FO): share of weekly "
+             "maps in the month with groundwater storage at or below the 20th percentile of 1948–2012, averaged to 1°.",
+             "% of weeks", 0.25, "GRACEDADM_CLSM025GL_7D", "3.0", "NASA GES DISC",
+             "https://disc.gsfc.nasa.gov/datasets/GRACEDADM_CLSM025GL_7D_3.0/summary",
+             _DROUGHT_NOTE + " Groundwater reacts to years of rain, not weeks, so its droughts start late and last long."
+             + _ZERO_NOTE),
 ]
 VARIABLES: dict[str, Variable] = {v.id: v for v in _VARS}
 
@@ -233,10 +267,12 @@ PARAMETERS = {
     "land_surface_temperature": "Land surface temperature",
     "root_zone_water": "Root-zone soil water",
     "ocean_chlorophyll": "Ocean chlorophyll (algae)",
+    "sea_ice": "Sea ice",
     "water_storage": "Land water storage",
     "snow": "Snow water",
     "air_haze": "Air haze (aerosols)",
     "fire": "Fire activity",
+    "drought": "Drought",
 }
 # variable id → (parameter, tên dataset ngắn để hiển thị)
 VARIABLE_PARAMETER = {
@@ -257,14 +293,18 @@ VARIABLE_PARAMETER = {
     "gldas_soil_moisture_40_100cm": ("soil_moisture", "GLDAS Noah 40–100 cm (land model)"),
     "gldas_soil_moisture_100_200cm": ("soil_moisture", "GLDAS Noah 100–200 cm (land model)"),
     "gldas_root_zone_moisture": ("root_zone_water", "GLDAS Noah (land model)"),
-    "seawifs_chlorophyll": ("ocean_chlorophyll", "SeaWiFS (satellite, ocean only)"),
+    "modisa_chlorophyll": ("ocean_chlorophyll", "MODIS-Aqua (satellite, ocean only)"),
+    "nsidc_sea_ice": ("sea_ice", "NSIDC passive microwave (satellite, polar seas)"),
     "grace_water_storage": ("water_storage", "GRACE / GRACE-FO (satellite gravity)"),
     "gldas_snow_water": ("snow", "GLDAS Noah (land model)"),
     "merra2_aerosol": ("air_haze", "MERRA-2, all aerosols"),
     "merra2_dust": ("air_haze", "MERRA-2, desert dust only"),
     "cru_tmax": ("air_temperature", "CRU TS daytime highs (stations, not NASA)"),
     "cru_tmin": ("air_temperature", "CRU TS night-time lows (stations, not NASA)"),
-    "micasa_fire": ("fire", "MiCASA (from MODIS burned area)"),
+    "firms_fire_count": ("fire", "MODIS active fires: number of fires"),
+    "micasa_fire": ("fire", "MiCASA: carbon released (from burned area)"),
+    "graceda_drought_rootzone": ("drought", "GRACE-DA: root-zone soil"),
+    "graceda_drought_groundwater": ("drought", "GRACE-DA: groundwater"),
 }
 # Chat: câu hỏi chung chung ("precipitation", "soil moisture") không nêu dataset/độ sâu thì chọn biến mặc định này.
 DEFAULT_VARIABLE = {"precipitation": "imerg_precip", "soil_moisture": "gldas_soil_moisture_0_10cm"}
@@ -308,6 +348,9 @@ def _load_regions() -> dict[str, Region]:
     regions["southern_amazon"] = Region("southern_amazon", "Southern Amazon", (-65.0, -15.0, -45.0, -5.0))
     regions["europe"] = Region("europe", "Europe", (-10.0, 36.0, 40.0, 70.0))
     regions["mediterranean"] = Region("mediterranean", "Mediterranean", (-10.0, 30.0, 40.0, 45.0))
+    # Vùng cực cho băng biển (lưới cực NSIDC), dùng được cho mọi biến.
+    regions["arctic"] = Region("arctic", "Arctic (north of 60°N)", (-180.0, 60.0, 180.0, 90.0))
+    regions["antarctic"] = Region("antarctic", "Antarctic seas (south of 50°S)", (-180.0, -90.0, 180.0, -50.0))
     return regions
 
 

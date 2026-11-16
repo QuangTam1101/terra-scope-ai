@@ -10,7 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 # Absolute path works with either backend or repository-root uvicorn commands.
 # Existing process variables take precedence; never log environment contents.
 load_dotenv(REPO_ROOT / "backend" / ".env", override=False)
-VERSION = "0.2.0"
+VERSION = "0.2.2"
 
 # Thư mục data-pipeline của Long (chứa package `pipeline`) và thư mục cube lưới 1°.
 PIPELINE_DIR = Path(os.getenv("PIPELINE_DIR", str(REPO_ROOT / "data-pipeline"))).resolve()

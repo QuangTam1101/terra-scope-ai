@@ -2,6 +2,7 @@
 // (trend, series, compare); nothing is estimated here. Pure functions, so exports can be tested offline.
 import { refOfRegion, type CompareResponse, type SeriesResponse, type TrendResponse, type Variable } from "../api";
 import { plainFinding } from "../audience";
+import { rateCi, rateOf, rateUnit } from "../units";
 
 /** Report presentation: same model and numbers, different wording and order. */
 export type ReportStyle = "plain" | "scientific";
@@ -24,7 +25,10 @@ export interface AnalysisEntry {
   parameter: string; dataset: string; variableId: string; units: string;
   product: string; version: string; provider: string; url: string;
   start: string; end: string; nMonths: number; missingMonths: number; coveragePct: number; sufficient: boolean;
-  slope: number | null; olsInterval: [number, number] | null; pRaw: number | null; pAdjusted: number | null;
+  slope: number | null; olsInterval: [number, number] | null;
+  /** Shown rate (counts per month → per year; units.ts rateOf). slope/olsInterval stay in API units for charts and evidence. */
+  rate: number | null; rateInterval: [number, number] | null; rateUnits: string;
+  pRaw: number | null; pAdjusted: number | null;
   alpha: number; significant: boolean | null; verdict: string; method: string; slopeMethod: string; ciMethod: string;
   gridDeg: number; nativeDeg: number; finding: string; warnings: string[];
   series: SeriesResponse; trend: TrendResponse;
@@ -64,10 +68,10 @@ export function verdictText(t: Pick<TrendResponse, "quality" | "significant">): 
 }
 
 /** One plain sentence built only from the numbers. A positive slope is never called significant by itself. */
-export function findingSentence(e: Pick<AnalysisEntry, "parameter" | "place" | "dataset" | "units" | "start" | "end" | "slope" | "pRaw" | "alpha" | "significant" | "sufficient">): string {
+export function findingSentence(e: Pick<AnalysisEntry, "parameter" | "place" | "dataset" | "units" | "start" | "end" | "slope" | "rate" | "rateUnits" | "pRaw" | "alpha" | "significant" | "sufficient">): string {
   if (!e.sufficient || e.slope === null) return `${e.parameter} in ${e.place} (${e.dataset}, ${e.start} to ${e.end}): not enough data to test a trend (at least 10 years and 70% of months are needed).`;
   const dir = e.slope > 0 ? "an increase" : e.slope < 0 ? "a decrease" : "no change";
-  const head = `${e.parameter} in ${e.place} (${e.dataset}, ${e.start} to ${e.end}): the estimated Sen slope is ${signedNum(e.slope)} ${e.units} per decade (${dir}).`;
+  const head = `${e.parameter} in ${e.place} (${e.dataset}, ${e.start} to ${e.end}): the estimated Sen slope is ${signedNum(e.rate)} ${e.rateUnits} per decade (${dir}).`;
   const sig = e.significant
     ? ` The raw Seasonal Mann-Kendall p-value is ${pText(e.pRaw)}, below α = ${e.alpha}, so the trend is statistically significant under this test.`
     : ` The raw Seasonal Mann-Kendall p-value is ${pText(e.pRaw)}, not below α = ${e.alpha}, so the trend is not statistically significant; the change could be natural variability, and a longer record may help.`;
@@ -82,7 +86,8 @@ function analysis(r: ReportRun): AnalysisEntry {
     product: t.source.product, version: t.source.version, provider: t.source.provider, url: t.source.url,
     start: t.start, end: t.end, nMonths: q.n_months, missingMonths: q.missing_months,
     coveragePct: Math.round(q.coverage_fraction * 100), sufficient: q.sufficient,
-    slope: t.slope_per_decade, olsInterval: t.slope_ci, pRaw: t.p_value, pAdjusted: t.p_value_autocorr_adjusted,
+    slope: t.slope_per_decade, olsInterval: t.slope_ci, rate: rateOf(t.slope_per_decade, v.display_units),
+    rateInterval: rateCi(t.slope_ci, v.display_units), rateUnits: rateUnit(v.display_units), pRaw: t.p_value, pAdjusted: t.p_value_autocorr_adjusted,
     alpha: t.alpha ?? 0.05, significant: t.significant, verdict: verdictText(t),
     method: t.method ?? "seasonal_mk", slopeMethod: t.slope_method ?? "sen_seasonal", ciMethod: t.ci_method,
     gridDeg: v.spatial_resolution_deg, nativeDeg: v.native_resolution_deg, finding: "", warnings: t.warnings,
@@ -98,7 +103,7 @@ function judge(c: ReportComparison): ComparisonEntry {
   if (sa !== null && sb !== null) {
     if (sa * sb > 0) agrees.push("Both estimated trends point in the same direction.");
     else if (sa * sb < 0) disagrees.push("The estimated trends point in opposite directions.");
-    disagrees.push(`The two seasonal Sen slopes differ by ${signedNum(sa - sb)} ${c.units} per decade (A minus B, simple subtraction; the difference test estimates the trend of the anomaly difference series instead).`);
+    disagrees.push(`The two seasonal Sen slopes differ by ${signedNum(rateOf(sa - sb, c.units))} ${rateUnit(c.units)} per decade (A minus B, simple subtraction; the difference test estimates the trend of the anomaly difference series instead).`);
   }
   const la = verdictText(a), lb = verdictText(b);
   if (la === lb) agrees.push(`Both are classified "${la}".`);
@@ -109,7 +114,7 @@ function judge(c: ReportComparison): ComparisonEntry {
   let strength: string;
   if (c.kind === "regions" && c.test) {
     const d = c.test.difference;
-    const iv = d.ci ? `${num(d.ci[0])} to ${num(d.ci[1])} ${c.units} per decade` : "not available";
+    const iv = d.ci ? `${num(rateOf(d.ci[0], c.units)!)} to ${num(rateOf(d.ci[1], c.units)!)} ${rateUnit(c.units)} per decade` : "not available";
     const crossesZero = !!d.ci && d.ci[0] <= 0 && d.ci[1] >= 0;
     // Backend rule: significant only when p < alpha AND the 95% bootstrap interval of the difference excludes zero.
     strength = d.p_value === null
@@ -170,10 +175,10 @@ export function toMarkdown(m: ReportModel, style: ReportStyle = "scientific"): s
       `| Dataset | ${a.dataset}: ${a.product} v${a.version}, ${a.provider} |`,
       `| Period | ${a.start} to ${a.end} (${a.nMonths} months with data, ${a.missingMonths} missing, ${a.coveragePct}% of the area covered) |`,
       `| Grid | ${a.gridDeg}° processed grid (native ${a.nativeDeg}°) |`,
-      `| Sen slope | ${signedNum(a.slope)} ${a.units} per decade (${a.slopeMethod}) |`,
+      `| Sen slope | ${signedNum(a.rate)} ${a.rateUnits} per decade (${a.slopeMethod}) |`,
       `| Raw Seasonal MK p (decision basis) | ${pText(a.pRaw)} with α = ${a.alpha} |`,
       `| Autocorrelation-adjusted p (diagnostic only) | ${pText(a.pAdjusted)} |`,
-      `| OLS anomaly slope 95% interval (not a Sen interval) | ${a.olsInterval ? `${num(a.olsInterval[0])} to ${num(a.olsInterval[1])}` : "n/a"} ${a.units} per decade |`,
+      `| OLS anomaly slope 95% interval (not a Sen interval) | ${a.rateInterval ? `${num(a.rateInterval[0])} to ${num(a.rateInterval[1])}` : "n/a"} ${a.rateUnits} per decade |`,
       `| Verdict | ${a.verdict} |`,
       `| Method | ${a.method} + ${a.slopeMethod}, interval ${a.ciMethod} (backend ${m.backendVersion}) |`,
       `| Trend ID | ${a.trendId} |`, "");
@@ -182,7 +187,7 @@ export function toMarkdown(m: ReportModel, style: ReportStyle = "scientific"): s
   for (const c of m.comparisons) {
     L.push(`## Comparison: ${c.title}`, "",
       `| | A: ${c.a.label} (${c.a.dataset}) | B: ${c.b.label} (${c.b.dataset}) |`, `|---|---|---|`,
-      `| Sen slope per decade | ${signedNum(c.a.trend.slope_per_decade)} ${c.units} | ${signedNum(c.b.trend.slope_per_decade)} ${c.units} |`,
+      `| Sen slope per decade | ${signedNum(rateOf(c.a.trend.slope_per_decade, c.units))} ${rateUnit(c.units)} | ${signedNum(rateOf(c.b.trend.slope_per_decade, c.units))} ${rateUnit(c.units)} |`,
       `| Raw Seasonal MK p | ${pText(c.a.trend.p_value)} | ${pText(c.b.trend.p_value)} |`,
       `| Verdict | ${verdictText(c.a.trend)} | ${verdictText(c.b.trend)} |`, "",
       "What agrees:", ...c.agrees.map((x) => `- ${x}`), "", "What disagrees:", ...c.disagrees.map((x) => `- ${x}`), "",

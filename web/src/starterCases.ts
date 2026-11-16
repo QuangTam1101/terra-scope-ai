@@ -50,8 +50,8 @@ export const STARTER_CASES: StarterCase[] = [
   {
     id: "mississippi-algae", placeType: "river delta", curiosity: "ocean life",
     question: "Is algae growing off the Mississippi River Delta?",
-    variable_id: "seawifs_chlorophyll", place: { type: "bbox", bbox: [-95, 27, -85, 31] }, placeName: "Gulf of Mexico by the Mississippi Delta",
-    start: "2001-01", end: "2010-12",
+    variable_id: "modisa_chlorophyll", place: { type: "bbox", bbox: [-95, 27, -85, 31] }, placeName: "Gulf of Mexico by the Mississippi Delta",
+    start: "2003-01", end: "2025-12",
     hypothesis: "Farm runoff carried by the Mississippi feeds algae, so algae near its delta may have increased.",
     source: { title: "Phytoplankton Bloom in the Gulf of Mexico", publisher: "NASA Earth Observatory",
       url: "https://science.nasa.gov/earth/earth-observatory/phytoplankton-bloom-in-the-gulf-of-mexico-14372/", year: 2004 },
@@ -88,9 +88,9 @@ export const STARTER_CASES: StarterCase[] = [
   {
     id: "california-coast-algae", placeType: "coast", curiosity: "ocean life",
     question: "Are algae blooms growing along California's coast?",
-    variable_id: "seawifs_chlorophyll", place: { type: "bbox", bbox: [-126, 32, -117, 42] }, placeName: "California coast",
-    start: "2001-01", end: "2010-12",
-    hypothesis: "An earlier satellite study found bigger algae blooms along California's coast; check whether 2001 to 2010 agrees.",
+    variable_id: "modisa_chlorophyll", place: { type: "bbox", bbox: [-126, 32, -117, 42] }, placeName: "California coast",
+    start: "2003-01", end: "2025-12",
+    hypothesis: "An earlier satellite study found bigger algae blooms along California's coast; check whether 2003 to 2025 agrees.",
     source: { title: "Trends in primary production in the California Current detected with satellite data",
       publisher: "Journal of Geophysical Research (copy at CCE LTER, UC San Diego)",
       url: "https://ccelter.ucsd.edu/wp-content/uploads/bibliodocs/077ccelter.pdf", year: 2009 },
