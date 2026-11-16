@@ -13,7 +13,7 @@ import { PlacePicker } from "../PlacePicker";
 import { countryPlace, placeShape } from "../places";
 import { Legend, WorldMap, type Layer } from "../WorldMap";
 import { TrendChart } from "../TrendChart";
-import { Terra } from "../ui";
+import { ParamIcon, Terra } from "../ui";
 import { ExplorerResult, ScientistResult } from "../ResultViews";
 import { convFor, convTrendGrid, convValueGrid } from "../units";
 import { APPEEARS_URL, giovanniUrl } from "../config/giovanni";
@@ -188,12 +188,14 @@ export function Explore() {
         <h2 id="setup" style={{ fontSize: 22 }}>{sci ? "Analysis parameters" : "Set up your case"}</h2>
         <div className="col" style={{ gap: 8 }} data-tour="variable">
           <span className="label">{sci ? "1 · Variable" : "1 · What would you like to investigate?"}</span>
-          <select className="select param-select" aria-label={sci ? "Variable" : "What would you like to investigate?"}
-            value={sel.parameter} onChange={(e) => pickParameter(e.target.value)}>
+          <div className="param-tiles" role="group" aria-label={sci ? "Variable" : "What would you like to investigate?"}>
             {parameters.map(([id, p]) => (
-              <option key={id} value={id} disabled={!p.available}>{p.name}{p.available ? "" : " (not available yet)"}</option>
+              <button key={id} type="button" className={`param-tile ${sel.parameter === id ? "on" : ""}`} disabled={!p.available}
+                aria-pressed={sel.parameter === id} title={p.description} onClick={() => pickParameter(id)}>
+                <ParamIcon id={id} /><span>{p.name}{!p.available && <span className="soon">soon</span>}</span>
+              </button>
             ))}
-          </select>
+          </div>
           {variable && <span className="small muted">{sci ? variable.description_technical : variable.description_simple} <InfoButton id={variable.id} /></span>}
           {(units === "°C" || units === "°F") && (
             <div className="row" style={{ gap: 8 }}>
@@ -215,8 +217,9 @@ export function Explore() {
               </button>
             ))}
           </div>
-          {datasets.filter((d) => d.available).length > 1 && (
-            <span className="warn small">Datasets can disagree. For the Sahel, MERRA-2 and GLDAS give opposite temperature trends, so compare both before you trust one.</span>
+          {datasets.filter((d) => d.available).length > 1 && !["air_haze", "extreme_days"].includes(sel.parameter) && (   // those list different quantities, not rival datasets
+            <span className="warn small">Datasets can disagree{sel.parameter === "air_temperature"
+              ? ". For the Sahel, MERRA-2 and GLDAS give opposite temperature trends, so compare both" : ", so compare them"} before you trust one.</span>
           )}
         </div>
         <div className="col" style={{ gap: 8 }} data-tour="years">

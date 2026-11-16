@@ -32,6 +32,15 @@
 !data-pipeline/processed_data/grid/cube_sm_100_200cm_gldas.nc
 !data-pipeline/processed_data/grid/cube_rootmoist_gldas.nc
 !data-pipeline/processed_data/grid/cube_chlor_a_seawifs.nc
+!data-pipeline/processed_data/grid/cube_tws_grace.nc
+!data-pipeline/processed_data/grid/cube_swe_gldas.nc
+!data-pipeline/processed_data/grid/cube_aod_merra2.nc
+!data-pipeline/processed_data/grid/cube_dust_aod_merra2.nc
+!data-pipeline/processed_data/grid/cube_tmax_cru.nc
+!data-pipeline/processed_data/grid/cube_tmin_cru.nc
+!data-pipeline/processed_data/grid/cube_fire_micasa.nc
+!data-pipeline/processed_data/grid/cube_heavy_rain_days_gsom.nc
+!data-pipeline/processed_data/grid/cube_hot_days_gsom.nc
 !data-pipeline/processed_data/indices/
 !data-pipeline/processed_data/indices/climate_indices.csv
 !data-pipeline/models/

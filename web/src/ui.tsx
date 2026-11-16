@@ -74,3 +74,26 @@ export const Icon = {
   detective: () => <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle {...P} cx="11" cy="11" r="6" /><path {...P} d="M16 16l5 5" /></svg>,
   report: () => <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path {...P} d="M6 3h9l4 4v14H6z" /><path {...P} d="M9 12h7M9 16h7" /></svg>,
 };
+
+// ---------- parameter icons (Explore "What would you like to investigate?" tiles) ----------
+// Key = catalog.PARAMETERS id. Fixed pastel badge + dark ink (#2b2540) so the icon reads in light and dark mode.
+const PARAM_ICON: Record<string, [string, ReactNode]> = {
+  precipitation: ["#dcecff", <><path {...P} d="M7 14a4 4 0 1 1 .9-7.9A5 5 0 0 1 17.6 7.5 3.3 3.3 0 0 1 17 14z" /><path {...P} d="M8 17.5l-1 2.5M12 17.5l-1 2.5M16 17.5l-1 2.5" /></>],
+  soil_moisture: ["#f3e3cf", <><path {...P} d="M12 3c-2.5 3.2-4 5.4-4 7.3a4 4 0 0 0 8 0C16 8.4 14.5 6.2 12 3z" /><path {...P} d="M4 17.5h16M7 21h10" /></>],
+  air_temperature: ["#ffe1d6", <><path {...P} d="M10 13.5V5a2 2 0 1 1 4 0v8.5a4 4 0 1 1-4 0z" /><path {...P} d="M12 9v7" /></>],
+  evapotranspiration: ["#dff3e6", <><path {...P} d="M12 21v-6M12 15c-3.5 0-5.5-2-5.5-5.5 3.5 0 5.5 2 5.5 5.5zM12 15c0-3.5 2-5.5 5.5-5.5 0 3.5-2 5.5-5.5 5.5z" /><path {...P} d="M9 2.5c1 1 1 2 0 3M15 2.5c1 1 1 2 0 3" /></>],
+  potential_evapotranspiration: ["#fff1c9", <><circle {...P} cx="12" cy="15" r="3.5" /><path {...P} d="M4 21h16M8 3c1 1 1 2 0 3M12 2c1 1 1 2 0 3M16 3c1 1 1 2 0 3" /></>],
+  vegetation: ["#dcf3dc", <><path {...P} d="M12 21v-9M12 12C12 8 9 5 4 5c0 5 3 7 8 7zM12 12c0-3.5 3-6 8-6 0 4-3 6-8 6z" /></>],
+  land_surface_temperature: ["#ffe8c7", <><circle {...P} cx="12" cy="10" r="3.5" /><path {...P} d="M12 3v1.5M5 10h1.5M17.5 10H19M7 5l1 1M17 5l-1 1M3 19h18M7 16h10" /></>],
+  root_zone_water: ["#eadfce", <><path {...P} d="M12 11V4M12 7c-2 0-4-1.5-4-4 2 0 4 1.5 4 4zM4 11h16M12 11v9M12 14.5l-3.5 3.5M12 14.5l3.5 3.5" /></>],
+  ocean_chlorophyll: ["#d8f0f3", <><path {...P} d="M3 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0M3 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0M7 19h.01M12 19.5h.01M17 19h.01" /></>],
+  water_storage: ["#dfe6ff", <><path {...P} d="M12 7c-2 2.6-3.5 4.4-3.5 6a3.5 3.5 0 0 0 7 0c0-1.6-1.5-3.4-3.5-6z" /><path {...P} d="M3.5 15.5c2 4 15 4 17 0M17 3h3v3h-3zM15.5 6.5l1.5-1.5" /></>],
+  snow: ["#e8f1ff", <><path {...P} d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M10 4.5l2 1.5 2-1.5M10 19.5l2-1.5 2 1.5" /></>],
+  air_haze: ["#ece9e4", <><path {...P} d="M4 7h10M7 11h13M4 15h11M8 19h9M18 7h.01M18 15h.01" /></>],
+  fire: ["#ffd9cc", <><path {...P} d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-6 1.5 1 2 2 2 3 1-2 1-4 1-7z" /></>],
+  extreme_days: ["#ede6fb", <><path {...P} d="M13 2L5 13h6l-1 9 8-11h-6l1-9z" /></>],
+};
+export function ParamIcon({ id }: { id: string }) {
+  const [tint, glyph] = PARAM_ICON[id] ?? ["#ece9e4", <circle {...P} cx="12" cy="12" r="7" />];
+  return <span className="param-icon" style={{ background: tint }}><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">{glyph}</svg></span>;
+}

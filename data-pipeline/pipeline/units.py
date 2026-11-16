@@ -13,6 +13,13 @@ GIOVANNI_UNITS = {
         ({"kg/m^2/s", "kg m-2 s-1", "kg/m2/s"}, "mm/day", lambda v, t: v * 86400),
     "M2IMNXASM_5_12_4_T2M":
         ({"K"}, "degC", lambda v, t: v - 273.15),
+    # 16/11/2026: biến web thêm (build_extra_cubes.py)
+    "GLDAS_NOAH025_M_2_1_SWE_inst":
+        ({"kg/m^2", "kg m-2", "kg/m2"}, "kg/m2", lambda v, t: v),           # = mm nước trong tuyết
+    "M2TMNXAER_5_12_4_TOTEXTTAU":
+        ({"1", ""}, "1", lambda v, t: v),
+    "M2TMNXAER_5_12_4_DUEXTTAU":
+        ({"1", ""}, "1", lambda v, t: v),
 }
 
 

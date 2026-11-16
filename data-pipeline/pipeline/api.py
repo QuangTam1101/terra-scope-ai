@@ -35,6 +35,16 @@ VARIABLES = {
     "sm_100_200cm_gldas": ("Độ ẩm đất 100–200 cm", "m3/m3", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) SoilMoi100_200cm_inst qua Giovanni/Harmony"),
     "rootmoist_gldas": ("Nước trong đất vùng rễ", "kg/m2", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) RootMoist_inst qua Giovanni/Harmony"),
     "chlor_a_seawifs": ("Chlorophyll-a mặt biển", "mg/m3", "SeaWiFS Level-3 mapped monthly CHL 9 km, bản 2022.0 (SeaWiFS_L3m_CHL), NASA OB.DAAC"),
+    # Cube 1° thêm 16/11/2026 (build_extra_cubes.py)
+    "tws_grace": ("Tổng lượng nước lục địa (GRACE)", "cm", "GRACE/GRACE-FO JPL Mascon RL06.3 CRI v04 (TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4), NASA JPL / PO.DAAC; doi:10.5067/TEMSC-3JC634"),
+    "swe_gldas": ("Nước trong tuyết (GLDAS)", "kg/m2", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) SWE_inst qua Giovanni/Harmony"),
+    "aod_merra2": ("Độ dày quang học sol khí (MERRA-2)", "1", "MERRA-2 M2TMNXAER v5.12.4 TOTEXTTAU (550 nm), NASA GMAO / GES DISC qua Harmony"),
+    "dust_aod_merra2": ("Độ dày quang học bụi (MERRA-2)", "1", "MERRA-2 M2TMNXAER v5.12.4 DUEXTTAU (550 nm), NASA GMAO / GES DISC qua Harmony"),
+    "tmax_cru": ("Nhiệt độ cao nhất ngày (CRU TS)", "degC", "CRU TS 4.10 tmx, University of East Anglia (không phải NASA; nội suy từ trạm)"),
+    "tmin_cru": ("Nhiệt độ thấp nhất ngày (CRU TS)", "degC", "CRU TS 4.10 tmn, University of East Anglia (không phải NASA; nội suy từ trạm)"),
+    "fire_micasa": ("Phát thải carbon do cháy (MiCASA)", "gC/m2/month", "MiCASA v1 monthly 0.1° (MICASA_FLUX_M.1) FIRE, tính từ diện tích cháy MODIS MCD64A1, NASA GES DISC"),
+    "heavy_rain_days_gsom": ("Số ngày mưa ≥ 25,4 mm (trạm GSOM)", "days", "NOAA NCEI Global Summary of the Month DP1X, trạm GHCN có ≥ 20 năm số liệu 2001–2025, TB theo ô 1°"),
+    "hot_days_gsom": ("Số ngày nóng ≥ 32,2 °C (trạm GSOM)", "days", "NOAA NCEI Global Summary of the Month DX90, trạm GHCN có ≥ 20 năm số liệu 2001–2025, TB theo ô 1°"),
 }
 METHOD = ("Trung bình vùng trên lưới 1° (trọng số cos vĩ độ); Seasonal Mann-Kendall + Sen's slope theo mùa; "
           "Hamed-Rao MK trên anomaly (hiệu chỉnh tự tương quan); OLS trên anomaly ± CI 95%; FDR Benjamini–Hochberg cho bản đồ")

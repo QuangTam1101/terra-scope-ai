@@ -25,7 +25,7 @@ def test_variables(client):
     # bước chọn biến môi trường → dataset
     assert p["parameter"] == "precipitation" and p["dataset_name"].startswith("GPM IMERG")
     temps = {v["dataset_name"] for v in vs.values() if v["parameter"] == "air_temperature"}
-    assert len(temps) == 2                                            # GLDAS (đất liền) và MERRA-2 (đất + biển)
+    assert len(temps) == 4                    # GLDAS (đất liền), MERRA-2 (đất + biển), CRU cao nhất/thấp nhất ngày
     assert vs["merra2_air_temperature_2m"]["available"] is False and vs["merra2_air_temperature_2m"]["coverage"] is None
 
 
