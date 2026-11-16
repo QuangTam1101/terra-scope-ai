@@ -19,7 +19,7 @@ time series, removes the seasonal cycle, tests the trend and tells you in plain 
 | Tool | What you can do |
 | --- | --- |
 | **Explore** | Choose a variable, a region (preset, country, city, point, or a box drawn on the map or 3D globe) and a month range. See a global trend or value map, the monthly series with its Sen trend line, and a result card: change per decade, p-value, data coverage. Play a month-by-month time-lapse. |
-| **Contradiction Hunter** | Compare two regions, two NASA datasets or two periods. Two regions count as truly different only when a test on the difference series passes. |
+| **Contradiction Hunter** | Compare two regions, two NASA datasets or two periods. Two regions count as truly different only when a test on the difference series passes. "Same cause, opposite trends" (also one click from an Explore result) finds a rising and a falling place for one variable, tests both and the gap, and shows one source-checked explanation without testing the cause. |
 | **AI Detective** | Ask in everyday language. Gemini explains the result using only numbers computed by the statistics engine; the backend checks every number and falls back to a fixed template if a check fails. |
 | **Outlook (experimental)** | Short-range outlook from climate indices, shown with its backtested skill ("No skill" where there is none). |
 | **Report** | Export PDF, Markdown or JSON in an Explorer edition (plain language) or a Scientist edition (methods, tables, reproduction details). |
@@ -40,6 +40,14 @@ from NASA LP DAAC (each 0.5° cell is the mean of its valid 0.05° pixels). Ever
 | [MODIS Terra MOD13C2 V061](https://doi.org/10.5067/MODIS/MOD13C2.061) | Vegetation greenness (NDVI), good and marginal pixels only | 0.05° |
 | [MODIS Terra MOD11C3 V061](https://doi.org/10.5067/MODIS/MOD11C3.061) | Land surface temperature, day and night (clear sky) | 0.05° |
 | [GLDAS Noah Monthly V2.1](https://doi.org/10.5067/SXAVCZFAQLNO) `PotEvap_tavg` | Potential evapotranspiration (land only) | 0.25° |
+| [GRACE/GRACE-FO JPL Mascon RL06.3 v04](https://doi.org/10.5067/TEMSC-3JC634) | Land water storage change (cm), 2002-04 onward | 0.5° (mascons ~3°) |
+| [GLDAS Noah Monthly V2.1](https://doi.org/10.5067/SXAVCZFAQLNO) `SWE_inst` | Snow water (land only) | 0.25° |
+| [MERRA-2 tavgM_2d_aer_Nx V5.12.4](https://doi.org/10.5067/FH9A0MLJPC7N) | Aerosol optical depth: total and dust | 0.5° x 0.625° |
+| [MiCASA v1 monthly](https://disc.gsfc.nasa.gov/datasets/MICASA_FLUX_M_1/summary) | Fire carbon emission (from MODIS burned area), 2001–2024 | 0.1° |
+| CRU TS 4.10 `tmx`/`tmn` (not NASA) | Daytime highs and night-time lows (stations, land only) | 0.5° |
+
+The variables added on 16/11/2026 (last five rows) are built straight from the raw files into 1° cubes by
+`data-pipeline/build_extra_cubes.py`.
 
 Regional series were validated against [Giovanni](https://giovanni.gsfc.nasa.gov/giovanni/) Time Series,
 Area-Averaged (r = 0.9996 over 293 months), and each Explore result links to the same query in Giovanni.

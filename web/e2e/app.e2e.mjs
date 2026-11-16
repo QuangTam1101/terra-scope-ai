@@ -43,8 +43,7 @@ describe("Terra-scope full feature E2E", { skip: !up && "servers not running", c
 
   it("explore: regional analysis shows real progress, matches the backend and offers Giovanni", async () => {
     await page.waitFor(`document.querySelector("#place-q")`);
-    await page.evaluate(`const b = document.querySelector('[data-tour="variable"] .dd-btn'); b.click(); await new Promise((r) => setTimeout(r, 50));
-      [...document.querySelectorAll('.dd-list [role="option"]')].find((o) => o.innerText.trim().endsWith("Precipitation")).click(); return true;`);
+    await page.click(`document.querySelector('[data-tour="variable"] button[aria-label="Precipitation"]')`);
     await page.click(`document.querySelector("#place-q")`);
     await page.type("Mekong Delta");
     await page.waitFor(`document.querySelector("#place-list")`);

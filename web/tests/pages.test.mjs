@@ -17,6 +17,22 @@ test('sampled normal-text palette pairs meet 4.5:1 contrast',()=>{
   }
 });
 
+// Fixed pastel backgrounds keep their colour in both themes; a theme token (var(--ink)) on their text turns
+// near-white in dark mode and the text vanishes (chat result chips, Home's last step marker). Text on them must
+// use a fixed colour that is readable on that background.
+test('text on fixed pastel backgrounds uses fixed, readable ink in both themes',()=>{
+  const luminance=(hex)=>{const v=[1,3,5].map((i)=>parseInt(hex.slice(i,i+2),16)/255).map((c)=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4);return .2126*v[0]+.7152*v[1]+.0722*v[2];};
+  const rule=(sel)=>css.match(new RegExp(sel.replace(/[.>]/g,(c)=>'\\'+c)+'\\s*\\{([^}]*)\\}'))?.[1]??'';
+  for(const [bgSel,fgSel] of [['.ev-facts > span','.ev-facts > span'],['.ev-facts > span','.ev-facts b'],['.hstep-num.last','.hstep-num.last']]){
+    const bg=rule(bgSel).match(/background:\s*(#[\da-f]{6})/i)?.[1];
+    assert.ok(bg,`${bgSel} background is a fixed colour`);
+    const fg=rule(fgSel).match(/(?:^|;)\s*color:\s*(#[\da-f]{6})/i)?.[1];
+    assert.ok(fg,`${fgSel} uses a fixed colour, not a theme token`);
+    const a=luminance(fg),b=luminance(bg);
+    assert.ok((Math.max(a,b)+.05)/(Math.min(a,b)+.05)>=4.5,`${fgSel} on ${bg}`);
+  }
+});
+
 // Offline component integration only: no browser, effects, network, or Gemini calls.
 const region = { id:'mekong_delta',name:'Mekong Delta',bbox:[104.4,8.5,106.9,11.1],is_demo:false };
 const variable = { id:'imerg_precip',parameter:'precipitation',parameter_name:'Precipitation',dataset_name:'GPM IMERG',name:'Precipitation',category:'water',description_simple:'Monthly precipitation',description_technical:'Monthly estimate',units:'mm/month',display_units:'mm/month',spatial_resolution_deg:1,native_resolution_deg:.1,coverage:{start:'2001-01',end:'2024-12'},extent:[-180,-90,180,90],available:true,source:{product:'GPM_3IMERGM',version:'07',provider:'NASA GES DISC',url:'https://gpm.nasa.gov/data/imerg'} };

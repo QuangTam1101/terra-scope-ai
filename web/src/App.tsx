@@ -81,7 +81,8 @@ function Shell() {
   useEffect(() => {
     const entered = page === "hunt" && lastPage.current !== "hunt";
     lastPage.current = page;
-    if (!entered || huntTour || !shouldAutoStartHunt(true, tourOpen, running, huntShown.current.has(audience), undefined, audience)) return;
+    // Arriving on the opposite-trends view (Explore's "other way" button, Home, a shared link): no tour over the scan.
+    if (!entered || huntTour || location.hash.includes("opposite") || !shouldAutoStartHunt(true, tourOpen, running, huntShown.current.has(audience), undefined, audience)) return;
     huntShown.current.add(audience);
     openHuntTour(audience);
   }, [page]); // eslint-disable-line react-hooks/exhaustive-deps

@@ -1,6 +1,6 @@
 // Phase 8.5B: the Scientific Evidence Report as data. Every sentence and number comes from backend responses
 // (trend, series, compare); nothing is estimated here. Pure functions, so exports can be tested offline.
-import type { CompareResponse, SeriesResponse, TrendResponse, Variable } from "../api";
+import { refOfRegion, type CompareResponse, type SeriesResponse, type TrendResponse, type Variable } from "../api";
 import { plainFinding } from "../audience";
 
 /** Report presentation: same model and numbers, different wording and order. */
@@ -201,7 +201,7 @@ export function toReproJson(m: ReportModel) {
     schema: "terra-scope-report/1", report_id: m.id, generated_at: m.generatedAt, backend_version: m.backendVersion,
     analyses: m.analyses.map((a) => ({
       request: { endpoint: "POST /api/v1/trends", variable_id: a.variableId,
-        region: a.regionKind === "preset" && a.regionId ? { type: "preset", id: a.regionId } : { type: "bbox", bbox: a.bbox },
+        region: refOfRegion({ type: a.regionKind, id: a.regionId, bbox: a.bbox }),
         start: a.start, end: a.end, method: a.method, alpha: a.alpha },
       context: { place: a.place, dataset: `${a.product} v${a.version}`, provider: a.provider, source_url: a.url, grid_deg: a.gridDeg, native_deg: a.nativeDeg },
       result: { trend_id: a.trendId, slope_per_decade: a.slope, slope_method: a.slopeMethod, p_value_raw: a.pRaw,

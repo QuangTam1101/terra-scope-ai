@@ -1,6 +1,6 @@
 import { convFor, convSeries, convTrend, convVariable, type TempUnit } from "./units";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { api, errorText, type BBox, type ChatContext, type ChatHistoryTurn, type ChatResponse, type Region, type RegionRef, type SeriesResponse, type TrendResponse, type Variable } from "./api";
+import { api, errorText, refOfRegion, type BBox, type ChatContext, type ChatHistoryTurn, type ChatResponse, type Region, type RegionRef, type SeriesResponse, type TrendResponse, type Variable } from "./api";
 import { pointPlace, setGridCell } from "./places";
 import { pageFromHash } from './pageRouting';
 import type { RegionalProgress } from "./progress";
@@ -180,8 +180,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [sel, variables, showError]);
 
-  const refOf = (r: { type: string; id?: string | null; bbox: BBox }): RegionRef =>
-    r.type === "preset" && r.id ? { type: "preset", id: r.id } : { type: "bbox", bbox: r.bbox };
+  const refOf = refOfRegion;
 
   const makeCase = useCallback((title: string): SavedCase | null => {
     const items: CaseItem[] = [
@@ -205,7 +204,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const openCase = useCallback(async (c: SavedCase) => {
     let ok = 0, failed = 0; const changed: string[] = [];
     const close = (a: number | null | undefined, b: number | null | undefined) => a === b || (a != null && b != null && Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a)));
-    const label = (r: RegionRef, fallback: string) => (r.type === "preset" ? regions.find((x) => x.id === r.id)?.name ?? fallback : fallback);
+    const label = (r: RegionRef, fallback: string) => (r.type === "preset" ? regions.find((x) => x.id === r.id)?.name ?? fallback : r.type === "country" ? r.id : fallback);
     for (const it of c.items) {
       const variable = variables.find((v) => v.id === it.variable_id);
       if (!variable) { failed++; continue; }

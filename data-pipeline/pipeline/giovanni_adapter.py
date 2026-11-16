@@ -26,6 +26,9 @@ VARIABLES = {
     "GLDAS_NOAH025_M_2_1_Tair_f_inst": ("tair_land", "GLDAS_NOAH025_M.2.1"),
     "GLDAS_NOAH025_M_2_1_Evap_tavg": ("evap_gldas", "GLDAS_NOAH025_M.2.1"),
     "M2IMNXASM_5_12_4_T2M": ("t2m", "M2IMNXASM.5.12.4"),
+    "GLDAS_NOAH025_M_2_1_SWE_inst": ("swe_gldas", "GLDAS_NOAH025_M.2.1"),
+    "M2TMNXAER_5_12_4_TOTEXTTAU": ("aod_merra2", "M2TMNXAER.5.12.4"),
+    "M2TMNXAER_5_12_4_DUEXTTAU": ("dust_aod_merra2", "M2TMNXAER.5.12.4"),
 }
 
 
@@ -36,6 +39,9 @@ HOSS_VARIABLES = {
     "GLDAS_NOAH025_M_2_1_Tair_f_inst": "Tair_f_inst",
     "GLDAS_NOAH025_M_2_1_Evap_tavg": "Evap_tavg",
     "M2IMNXASM_5_12_4_T2M": "T2M",
+    "GLDAS_NOAH025_M_2_1_SWE_inst": "SWE_inst",
+    "M2TMNXAER_5_12_4_TOTEXTTAU": "TOTEXTTAU",
+    "M2TMNXAER_5_12_4_DUEXTTAU": "DUEXTTAU",
 }
 
 

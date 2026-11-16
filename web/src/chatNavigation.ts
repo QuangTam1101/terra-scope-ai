@@ -1,11 +1,13 @@
 import type { ChatAction, Region, Variable } from "./api";
-import type { Selection } from "./store";
+import type { Place, Selection } from "./store";
 
 type Plan = { ok: true; page: ChatAction["page"]; selection: Partial<Selection>; hunt?: { a: string; b: string } }
   | { ok: false; reason: string };
 
-/** Pages currently select complete years. Never round month-specific chat evidence. */
-export function planChatNavigation(action: ChatAction, variables: Variable[], regions: Region[]): Plan {
+/** Pages currently select complete years. Never round month-specific chat evidence.
+ * `country` looks up a country place by name (places.countryPlace; passed in so this module stays standalone). */
+export function planChatNavigation(action: ChatAction, variables: Variable[], regions: Region[],
+  country: (name: string) => Place | undefined = () => undefined): Plan {
   const p = action.params;
   if (!/^\d{4}-01$/.test(p.start) || !/^\d{4}-12$/.test(p.end) || p.start > p.end) {
     return { ok: false, reason: "This period cannot be represented exactly on the selected page. Keep the evidence in Detective." };
@@ -15,6 +17,7 @@ export function planChatNavigation(action: ChatAction, variables: Variable[], re
   const region = p.region;
   const preset = region.type === "preset" ? regions.find((r) => r.id === region.id) : undefined;
   const place = region.type === "bbox" ? { ref: region, label: "Selected area", bbox: region.bbox }
+    : region.type === "country" ? country(region.id)
     : preset ? { ref: region, label: preset.name, bbox: preset.bbox } : undefined;
   if (!place) return { ok: false, reason: "The region is not in the current catalog." };
   const selection = { parameter: variable.parameter, variableId: variable.id, place,

@@ -14,7 +14,7 @@ Last checked against the code: 14/11/2026 (backend `app/service.py`, data-pipeli
 Terra-scope helps people check whether an environmental variable is really changing in a place, using NASA Earth
 data. The user picks four things:
 
-1. **What to check**: a variable (precipitation, soil moisture, air temperature, evapotranspiration).
+1. **What to check**: a variable (for example precipitation, soil moisture, air temperature, land water storage, fire).
 2. **Which data**: the NASA dataset that measured or modelled it.
 3. **When**: a start year and an end year (at least 10 years are needed for a test).
 4. **Where**: a country, a city, coordinates, a box drawn on the map, a preset area, or the whole world.
@@ -51,6 +51,16 @@ forecast the future.
 | Vegetation greenness (NDVI) | **MODIS Terra MOD13C2** v061, monthly 0.05° Climate Modeling Grid, NASA LP DAAC | Satellite index of how green and dense plants are, from about −0.2 (water, bare) to 1 (dense forest); only good and marginal pixels used | unitless | Land only; months with persistent cloud or snow can be missing |
 | Land surface temperature (day / night) | **MODIS Terra MOD11C3** v061, monthly 0.05° Climate Modeling Grid, NASA LP DAAC | Temperature of the ground surface itself (not the air) seen by the satellite at about 10:30 and 22:30 local time, clear-sky only | °C | Land only; cloudy months can be missing |
 
+| Land water storage | **GRACE / GRACE-FO** JPL Mascon RL06.3 v04 (CRI), NASA JPL / PO.DAAC | Change in all water on and under the land (groundwater, soil water, snow, ice, lakes) from tiny changes in Earth's gravity, relative to the 2004–2009 average | cm of water | Land only; April 2002 onward, 11-month gap 2017-07 to 2018-05; each mascon is about 300 km wide |
+| Snow water | **GLDAS Noah** v2.1 (`SWE_inst`) | Water stored in the snowpack | kg/m² (= mm of water) | Land only, 60°S to 90°N; ice sheets and glaciers (never snow-free) removed |
+| Air haze: all aerosols / desert dust | **MERRA-2** (`M2TMNXAER` v5.12.4, `TOTEXTTAU` / `DUEXTTAU`), NASA GMAO | Aerosol optical depth at 550 nm: how much smoke, dust, pollution and sea salt dim sunlight (0 = clear, about 1 = very hazy) | unitless | Land and sea, whole globe |
+| Daytime highs / night-time lows | **CRU TS 4.10** `tmx` / `tmn`, University of East Anglia (not NASA) | Monthly mean of daily maximum / minimum air temperature, interpolated from weather stations | °C | Land only; cells with no nearby station removed |
+| Fire activity | **MiCASA v1** (`MICASA_FLUX_M`, `FIRE`), NASA GES DISC, driven by MODIS burned area | Carbon released by fires each month | g C/m²/month | Land only, 2001–2024 |
+
+Fire activity is zero in most months in many places. Its trend slope is a
+median and can be exactly 0 while the p-value is still significant: then say the number of events is changing but
+the typical month is still zero, and point to the Month by year view.
+
 MODIS evapotranspiration (marked "not available yet" in the app) has **no data on the server**. Never describe results
 for it. Land surface temperature is the skin of the ground and is usually hotter than the air by day; do not compare
 it with air temperature as if they were the same quantity.
@@ -78,11 +88,13 @@ it with air temperature as if they were the same quantity.
   variables (see `quality.coverage_fraction` in FACTS).
 - **MODIS is an optical satellite sensor**: it cannot see through clouds. Very cloudy months (monsoon seasons,
   the humid tropics) and snow-covered months (for NDVI) can be missing, so coverage can be lower than for model data.
-- **Terra orbit drift:** since 2022 the Terra satellite crosses the equator earlier than 10:30 / 22:30 as it ends its
-  mission. Recent MODIS land surface temperatures can therefore read slightly cooler. When FACTS show a land surface
-  temperature trend, mention that checking a period ending in 2021 is a good robustness test.
-- **There is no salinity, river flow, groundwater or air pollution data** in Terra-scope at the moment.
-  Questions about them cannot be answered from this data.
+- **Terra orbit drift:** since its last orbit adjustment in February 2020 the Terra satellite crosses the equator
+  earlier than 10:30 / 22:30 as it ends its mission. Recent daytime MODIS land surface temperatures can therefore read
+  slightly cooler (night-time ones slightly warmer). When FACTS show a land surface temperature trend, mention that
+  checking a period ending in 2019 is a good robustness test.
+- **There is no salinity or river flow data** in Terra-scope at the moment. Groundwater is only seen inside GRACE land
+  water storage (which also includes soil water, snow and ice); air pollution only as aerosol haze (MERRA-2).
+- **Lightning has no continuous record in Terra-scope**: NASA's LIS/OTD lightning climatology ends in 2015.
 
 ---
 
@@ -91,8 +103,12 @@ it with air temperature as if they were the same quantity.
 ### 3.1 From a place to a monthly series
 - The backend takes every grid cell whose **centre** lies inside the chosen box and averages them for each month,
   weighting each cell by cos(latitude) so cells near the poles (which are smaller) count less.
-- A single point (city, coordinates, map click) becomes the one grid cell that contains it. A drawn shape is analysed
-  using its bounding box. Areas that cross the 180° meridian are not supported.
+- A single point (city, coordinates, map click) becomes the one grid cell that contains it. A box drawn on the map uses
+  every cell whose centre is inside the box. Drawn boxes that cross the 180° meridian are not supported.
+- A **country** follows its real border (Natural Earth 1:110m): only cells whose centre is inside the border count, so
+  a neighbour or the sea inside the country's bounding box is left out. Countries split by the 180° meridian (Russia,
+  Fiji) work. A country smaller than one grid cell (Luxembourg or Cyprus on the 1° grid) uses the cell nearest its
+  centre, and the result says so.
 
 ### 3.2 Removing the seasons (anomalies)
 - The **anomaly** of a month is its value minus the average of that same calendar month over all years

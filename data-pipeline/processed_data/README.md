@@ -82,6 +82,34 @@ vì backend đọc khoảng thời gian từ trục `time`, nên số tháng kh�
 
 Muốn file vào container backend thì phải thêm tên file vào `.dockerignore` (danh sách cho phép từng file).
 
+### 3.1c Bảy cube 1° thêm ngày 16/11/2026 (cho web: nước trên đất liền, tuyết, sol khí, nhiệt độ cao/thấp nhất, cháy)
+
+Dựng thẳng từ file thô (`data/raw/` của thư mục dự án, giữ nguyên như nhà phát hành giao) bằng `build_extra_cubes.py`, không qua
+`preprocess/clean.py`. Mỗi nguồn một hàm đọc, rồi `bin_to_grid` (trung bình khối về 1°) từng tháng. Trục thời gian là **trục tháng liền**
+từ tháng có dữ liệu đầu tiên tới tháng cuối: `grid_trend` cần đủ 12 tháng mỗi năm, nên tháng thiếu ở giữa (khoảng trống GRACE) là NaN,
+không bị bỏ (bỏ thì backend lỗi 500).
+
+| File | Nội dung | Thời gian | Đơn vị | Ô có dữ liệu | Dung lượng |
+|---|---|---|---|---|---|
+| `grid/cube_tws_grace.nc` | Dị thường tổng lượng nước trên đất liền, GRACE/GRACE-FO JPL Mascon RL06.3 (so với TB 2004–2009; tháng có 2 lời giải thì lấy TB) | 2002-04 → 2026-09 | cm | 22.794 | 12 MB |
+| `grid/cube_swe_gldas.nc` | Nước trong tuyết, GLDAS Noah `SWE_inst`; bỏ 1.167 ô không bao giờ hết tuyết (min cả chuỗi > 10 mm: băng, sông băng; Noah cộng dồn tuyết ở đó, Greenland ~43 000 mm và tăng mãi) | 2001-01 → 2025-12 | kg/m² | 16.117 | 10 MB |
+| `grid/cube_aod_merra2.nc` | Độ dày quang học sol khí tổng 550 nm, MERRA-2 `TOTEXTTAU` | 2001-01 → 2025-12 | không thứ nguyên | 64.800 | 27 MB |
+| `grid/cube_dust_aod_merra2.nc` | Độ dày quang học bụi 550 nm, MERRA-2 `DUEXTTAU` | 2001-01 → 2025-12 | không thứ nguyên | 64.800 | 16 MB |
+| `grid/cube_tmax_cru.nc` | TB tháng của nhiệt độ cao nhất ngày, CRU TS 4.10 `tmx` (bỏ ô `stn = 0`; không phải NASA) | 2001-01 → 2025-12 | °C | 17.457 | 13 MB |
+| `grid/cube_tmin_cru.nc` | TB tháng của nhiệt độ thấp nhất ngày, CRU TS 4.10 `tmn` (bỏ ô `stn = 0`; không phải NASA) | 2001-01 → 2025-12 | °C | 17.457 | 13 MB |
+| `grid/cube_fire_micasa.nc` | Carbon phát thải do cháy, MiCASA v1 `FIRE` (từ diện tích cháy MODIS), × 1000 × số giây của tháng; chỉ ô đất liền | 2001-01 → 2024-12 | g C/m²/tháng | 17.392 | 6 MB |
+
+- Chuỗi cháy phần lớn là 0 ở nhiều ô và tháng: hệ số Sen (trung vị) có thể bằng 0 trong khi Mann-Kendall có ý nghĩa.
+  Catalog ghi chú điều này cho người dùng. Số ngày cực đoan GSOM (`DP1X`/`DX90`) từng có cube, đã bỏ khỏi web theo yêu cầu người dùng (16/11).
+- AOD lưu với `least_significant_digit = 4` (lệch tối đa 3·10⁻⁵ so với float32 đầy đủ; 55 → 27 MB và 16 MB).
+- **Sét không có**: chuỗi sét toàn cầu của NASA (LIS/OTD `lolrmts`) chỉ chạy 1995-05 → 2015-04, không phủ 2001–2025.
+- Kiểm nhanh (16/11/2026, `/api/v1/trends`): GRACE Bắc Ấn Độ (70–90°E, 22–32°N) −11,9 cm/thập kỷ, Greenland −110,5; cháy châu Phi
+  −0,46 g C/m²/tháng/thập kỷ (p = 7·10⁻⁸); CRU toàn cầu tmax +0,081 °C/thập kỷ (có ý nghĩa), tmin +0,021 (không có ý nghĩa). Sol khí Hoa Đông (110–122°E, 28–40°N) +0,194/thập kỷ
+  2001–2011 rồi −0,137 2012–2024 (cả hai p < 10⁻¹²); bụi Sahara −0,016 (p = 1,4·10⁻⁷); tuyết Alps −0,28 kg/m²/thập kỷ (p ≈ 0).
+
+**Code:** `build_extra_cubes.py` (`python build_extra_cubes.py [id ...]`, chạy từ `data-pipeline/`; thư mục thô đọc từ biến môi
+trường `TERRA_RAW`, mặc định `../../data/raw`).
+
 ### 3.2 Đã xử lý thế nào
 
 1. **Tải** qua NASA Harmony (dịch vụ HOSS của GES DISC). Mỗi biến gồm 288 file tháng NetCDF-4 (3 biến GLDAS: 307, thêm 2025 và 2026-01 → 2026-07), toàn cầu, ở lưới gốc.

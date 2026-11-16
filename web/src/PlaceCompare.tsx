@@ -1,19 +1,15 @@
 // "What's changing here?": the same place and years, one row per available variable (F2).
 // Every number and verdict comes from POST /trends and POST /series; this file only clamps periods and formats.
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { api, ApiError, errorText, type SeriesResponse, type TrendResponse, type Variable } from "./api";
 import { InfoButton } from "./InfoButton";
 import { useStore, type Place } from "./store";
 import { pval, signed, verdictOf } from "./ui";
 import { convFor, convSeries, convTrend } from "./units";
+import { clampPeriod } from "./period";
 
-/** Clamp the chosen period to a variable's coverage. null: no overlap. short: under 10 calendar years (the backend's test needs 10 years with data). */
-export function clampPeriod(start: string, end: string, coverage: Variable["coverage"]) {
-  if (!coverage) return null;
-  const s = start > coverage.start ? start : coverage.start, e = end < coverage.end ? end : coverage.end;
-  if (s > e) return null;
-  return { start: s, end: e, clamped: s !== start || e !== end, short: Number(e.slice(0, 4)) - Number(s.slice(0, 4)) + 1 < 10 };
-}
+export { clampPeriod };   // moved to period.ts (pure) so the start wizard can use it without React
+
 
 export type Tone = "up" | "down" | "flat" | "none";
 /** Chip for one API result. Direction from the Sen slope sign; "could be chance" whenever the backend says not significant. */
@@ -81,6 +77,7 @@ export function PlaceCompare({ place, start, end, variables, onOpen }: {
   const { audience, tempUnit } = useStore();
   const sci = audience === "scientist";
   const [, rerender] = useReducer((n: number) => n + 1, 0);
+  const [showAll, setShowAll] = useState(false);
 
   const rows = variables.filter((v) => v.available).map((v) => {
     const p = clampPeriod(start, end, v.coverage);
@@ -112,6 +109,12 @@ export function PlaceCompare({ place, start, end, variables, onOpen }: {
   const groups = [...new Set(view.map((r) => r.v.parameter_name))];
   const noData = view.filter((r) => r.row?.kind === "nodata");
   const cols = sci ? 8 : 4;
+  // Short view first: only the clear (significant) changes, strongest evidence first, at most TOP rows.
+  const testable = view.filter((r) => r.row?.kind !== "nodata" && r.p && !r.p.short);
+  const pending = testable.filter((r) => !r.row).length;
+  const clear = testable.filter((r) => r.row?.kind === "data" && r.row.trend.significant === true)
+    .sort((a, b) => ((a.row as { trend: TrendResponse }).trend.p_value ?? 1) - ((b.row as { trend: TrendResponse }).trend.p_value ?? 1));
+  const TOP = 5;
 
   const line = (r: (typeof view)[number]) => {
     const { v, p, row } = r;
@@ -147,17 +150,42 @@ export function PlaceCompare({ place, start, end, variables, onOpen }: {
     );
   };
 
+  const head = (
+    <thead>
+      <tr>
+        <th>{sci ? "Variable" : "Measurement"}</th><th>{sci ? "Verdict" : "What we found"}</th><th className="pc-rate">{sci ? "Sen's slope per decade" : "Change every 10 years"}</th><th className="pc-spark">{sci ? "Anomaly (seasons removed)" : "Year to year"}</th>
+        {sci && <><th>Mann-Kendall p (raw)</th><th>p adjusted (Hamed-Rao)</th><th>Years</th><th title="Mean share of the area with data each month">Area with data</th></>}
+      </tr>
+    </thead>
+  );
+  const what = sci ? "variables" : "measurements";
+  const summary = pending ? `Checking ${view.length - pending} of ${view.length} ${what}…`
+    : clear.length ? `${clear.length} of ${testable.length} ${what} show a clear change here${clear.length > TOP ? `. The ${TOP} with the strongest evidence:` : ":"}`
+    : `None of the ${testable.length} ${what} show a clear change here for these years.`;
+
+  if (!showAll) return (
+    <div className="col" style={{ gap: 8 }}>
+      <p style={{ margin: 0, fontWeight: 700 }} role="status">{summary}</p>
+      {clear.length > 0 && (
+        <div style={{ overflowX: "auto" }}>
+          <table className="fc-table pc-table">{head}<tbody>{clear.slice(0, TOP).map(line)}</tbody></table>
+        </div>
+      )}
+      <button type="button" className="btn soft" style={{ alignSelf: "flex-start" }} onClick={() => setShowAll(true)}>
+        {clear.length || pending ? `Show every ${sci ? "variable" : "measurement"}, including unclear ones` : `Show every ${sci ? "variable" : "measurement"}`}
+      </button>
+    </div>
+  );
+
   return (
     <div className="col" style={{ gap: 8 }}>
-      <p style={{ margin: 0, fontWeight: 700 }}>{sci ? "Same place, same years, every variable: which ones are changing?" : "Same place, same years: which measurements are changing?"}</p>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <p style={{ margin: 0, fontWeight: 700 }}>{sci ? "Same place, same years, every variable: which ones are changing?" : "Same place, same years: which measurements are changing?"}</p>
+        <button type="button" className="linkbtn" onClick={() => setShowAll(false)}>Show only clear changes</button>
+      </div>
       <div style={{ overflowX: "auto" }}>
         <table className="fc-table pc-table">
-          <thead>
-            <tr>
-              <th>{sci ? "Variable" : "Measurement"}</th><th>{sci ? "Verdict" : "What we found"}</th><th className="pc-rate">{sci ? "Sen's slope per decade" : "Change every 10 years"}</th><th className="pc-spark">{sci ? "Anomaly (seasons removed)" : "Year to year"}</th>
-              {sci && <><th>Mann-Kendall p (raw)</th><th>p adjusted (Hamed-Rao)</th><th>Years</th><th title="Mean share of the area with data each month">Area with data</th></>}
-            </tr>
-          </thead>
+          {head}
           <tbody>
             {groups.map((g) => {
               const inGroup = view.filter((r) => r.v.parameter_name === g && r.row?.kind !== "nodata");

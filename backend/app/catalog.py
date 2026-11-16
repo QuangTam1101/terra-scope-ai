@@ -36,7 +36,7 @@ class Variable:
     @property
     def display_units(self) -> str:
         u = self.units
-        return {"degC": "°C", "m3/m3": "m³/m³", "kg/m2": "kg/m²", "mg/m3": "mg/m³"}.get(u, self.display_units_base if u == "1" else u)
+        return {"degC": "°C", "m3/m3": "m³/m³", "kg/m2": "kg/m²", "mg/m3": "mg/m³", "gC/m2/month": "g C/m²/month"}.get(u, self.display_units_base if u == "1" else u)
 
     @property
     def source(self) -> dict:
@@ -46,9 +46,11 @@ class Variable:
 
 _MODIS_NOTE = ("MODIS is an optical satellite sensor: it cannot see through cloud, so very cloudy months (and snow for "
                "NDVI) can be missing. Each 0.5° cell is the mean of its clear 0.05° MODIS pixels.")
-_LST_NOTE = (_MODIS_NOTE + " Terra's overpass time has drifted earlier since 2022 as the satellite ends its mission, "
-             "which can make recent day and night surface temperatures read slightly cooler; check whether a trend "
-             "holds when the period ends in 2021.")
+_ZERO_NOTE = (" The trend slope is a median, so it can read 0 when most months have no events: then trust the "
+              "p-value and look at Month by year.")
+_LST_NOTE = (_MODIS_NOTE + " Terra's overpass time has drifted earlier since 2020 (its last orbit adjustment) as the "
+             "satellite ends its mission, which can make recent daytime surface temperatures read slightly cooler "
+             "(night-time slightly warmer); check whether a trend holds when the period ends in 2019.")
 _MODEL_NOTE = "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
 
 _VARS = [
@@ -161,6 +163,61 @@ _VARS = [
              "GLDAS Noah land surface model, volumetric soil moisture 100–200 cm, on a common global grid.",
              "m³/m³", 0.25, "GLDAS_NOAH025_M", "2.1", "NASA GES DISC",
              "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary", _MODEL_NOTE),
+    # Added 16/11/2026 (data-pipeline/build_extra_cubes.py, 1° cubes)
+    Variable("grace_water_storage", "tws_grace", "Land water storage (GRACE)", "water",
+             "All the water stored on and under the land: lakes, soil, snow, ice and groundwater, weighed from space.",
+             "GRACE/GRACE-FO JPL Mascon RL06.3 CRI v04 terrestrial water storage anomaly (cm of liquid water) "
+             "relative to the 2004–2009 mean, land only, 3° mascons on a 0.5° grid averaged to 1°.",
+             "cm", 0.5, "TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4", "RL06.3 v04", "NASA JPL / PO.DAAC",
+             "https://doi.org/10.5067/TEMSC-3JC634",
+             "Values are changes from the 2004–2009 average, not totals. The record starts in April 2002 and has "
+             "an 11-month gap between the two missions (2017-07 to 2018-05). Each mascon is about 300 km wide, so "
+             "small regions share one value. Greenland and glacier loss count as land water loss."),
+    Variable("gldas_snow_water", "swe_gldas", "Snow water (GLDAS)", "water",
+             "How much water is locked in the snowpack: the water you would get if all the snow melted.",
+             "GLDAS Noah land surface model snow water equivalent (SWE_inst, kg/m² = mm of water), monthly.",
+             "kg/m²", 0.25, "GLDAS_NOAH025_M", "2.1", "NASA GES DISC",
+             "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
+             _MODEL_NOTE + " Ice sheets (Greenland) and glaciers are removed: the model piles snow up there without melting "
+             "it. Look at the snow months (for example March) with Month by year."),
+    Variable("merra2_aerosol", "aod_merra2", "Air haze: all aerosols (MERRA-2)", "air",
+             "How hazy the air is from smoke, dust, pollution and sea salt: 0 is crystal clear, 1 is very hazy.",
+             "MERRA-2 total aerosol extinction optical thickness at 550 nm (TOTEXTTAU), monthly mean; assimilates "
+             "satellite aerosol observations (MODIS, AVHRR, MISR) and ground sunphotometers (AERONET).",
+             "unitless", 0.5, "M2TMNXAER", "5.12.4", "NASA GMAO / GES DISC",
+             "https://disc.gsfc.nasa.gov/datasets/M2TMNXAER_5.12.4/summary",
+             _MODEL_NOTE + " Aerosol optical depth has no unit. Trends often change direction around 2010–2013 "
+             "(for example China's clean-air rules): compare periods before and after."),
+    Variable("merra2_dust", "dust_aod_merra2", "Air haze: desert dust (MERRA-2)", "air",
+             "How much desert dust hangs in the air.",
+             "MERRA-2 dust extinction optical thickness at 550 nm (DUEXTTAU), monthly mean.",
+             "unitless", 0.5, "M2TMNXAER", "5.12.4", "NASA GMAO / GES DISC",
+             "https://disc.gsfc.nasa.gov/datasets/M2TMNXAER_5.12.4/summary",
+             _MODEL_NOTE + " Dust is the part of the aerosol model with the least direct observation behind it."),
+    Variable("cru_tmax", "tmax_cru", "Daytime highs (CRU TS)", "temperature",
+             "How hot the hottest part of the day gets, averaged over the month.",
+             "CRU TS 4.10 monthly mean of daily maximum temperature (tmx, 0.5°), interpolated from weather "
+             "stations, land only; cells with no station within range (stn = 0) are removed.",
+             "°C", 0.5, "CRU TS", "4.10", "University of East Anglia (CRU)",
+             "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/",
+             "Not NASA data: built from weather stations by the University of East Anglia. Compare with night-time "
+             "lows to see whether days or nights warm faster."),
+    Variable("cru_tmin", "tmin_cru", "Night-time lows (CRU TS)", "temperature",
+             "How cold the coldest part of the night gets, averaged over the month.",
+             "CRU TS 4.10 monthly mean of daily minimum temperature (tmn, 0.5°), interpolated from weather "
+             "stations, land only; cells with no station within range (stn = 0) are removed.",
+             "°C", 0.5, "CRU TS", "4.10", "University of East Anglia (CRU)",
+             "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/",
+             "Not NASA data: built from weather stations by the University of East Anglia. Part of CRU's "
+             "minimum temperature is derived from mean temperature and daily range where stations are sparse."),
+    Variable("micasa_fire", "fire_micasa", "Fire activity (MiCASA, from MODIS burned area)", "fire",
+             "How much carbon wildfires and other fires release each month: more and bigger fires mean a higher value.",
+             "MiCASA v1 monthly fire carbon emission (FIRE, 0.1°), driven by MODIS MCD64A1 burned area; converted "
+             "to g of carbon per m² per month, land only.",
+             "g C/m²/month", 0.1, "MICASA_FLUX_M", "1", "NASA GES DISC",
+             "https://disc.gsfc.nasa.gov/datasets/MICASA_FLUX_M_1/summary",
+             _MODEL_NOTE + " Covers 2001–2024. Fire years are very uneven: one record season (Canada 2023) can "
+             "dominate a regional trend, so read Each year as well as the slope." + _ZERO_NOTE),
 ]
 VARIABLES: dict[str, Variable] = {v.id: v for v in _VARS}
 
@@ -176,6 +233,10 @@ PARAMETERS = {
     "land_surface_temperature": "Land surface temperature",
     "root_zone_water": "Root-zone soil water",
     "ocean_chlorophyll": "Ocean chlorophyll (algae)",
+    "water_storage": "Land water storage",
+    "snow": "Snow water",
+    "air_haze": "Air haze (aerosols)",
+    "fire": "Fire activity",
 }
 # variable id → (parameter, tên dataset ngắn để hiển thị)
 VARIABLE_PARAMETER = {
@@ -197,6 +258,13 @@ VARIABLE_PARAMETER = {
     "gldas_soil_moisture_100_200cm": ("soil_moisture", "GLDAS Noah 100–200 cm (land model)"),
     "gldas_root_zone_moisture": ("root_zone_water", "GLDAS Noah (land model)"),
     "seawifs_chlorophyll": ("ocean_chlorophyll", "SeaWiFS (satellite, ocean only)"),
+    "grace_water_storage": ("water_storage", "GRACE / GRACE-FO (satellite gravity)"),
+    "gldas_snow_water": ("snow", "GLDAS Noah (land model)"),
+    "merra2_aerosol": ("air_haze", "MERRA-2, all aerosols"),
+    "merra2_dust": ("air_haze", "MERRA-2, desert dust only"),
+    "cru_tmax": ("air_temperature", "CRU TS daytime highs (stations, not NASA)"),
+    "cru_tmin": ("air_temperature", "CRU TS night-time lows (stations, not NASA)"),
+    "micasa_fire": ("fire", "MiCASA (from MODIS burned area)"),
 }
 # Chat: câu hỏi chung chung ("precipitation", "soil moisture") không nêu dataset/độ sâu thì chọn biến mặc định này.
 DEFAULT_VARIABLE = {"precipitation": "imerg_precip", "soil_moisture": "gldas_soil_moisture_0_10cm"}
@@ -244,3 +312,50 @@ def _load_regions() -> dict[str, Region]:
 
 
 REGIONS: dict[str, Region] = _load_regions()
+
+
+@dataclass(frozen=True)
+class Country:
+    name: str
+    bbox: tuple[float, float, float, float]
+    rings: tuple                      # các vòng (N, 2) lon/lat của mọi mảnh, cho pipeline.grid.shape_mask
+
+
+def _load_countries() -> dict[str, Country]:
+    """Đường viền quốc gia Natural Earth 1:110m (world-atlas 2.0.2, cùng file frontend vẽ và tìm kiếm), khoá theo tên.
+    TopoJSON: mỗi cung lưu toạ độ lượng tử hoá dạng chênh lệch; chỉ số âm ~i là cung i đi ngược."""
+    path = config.PIPELINE_DIR / "config" / "countries-110m.json"
+    if not path.exists():
+        return {}
+    topo = json.loads(path.read_text(encoding="utf-8"))
+    (sx, sy), (tx, ty) = topo["transform"]["scale"], topo["transform"]["translate"]
+    arcs = []
+    for arc in topo["arcs"]:
+        x = y = 0
+        pts = []
+        for dx, dy in arc:
+            x, y = x + dx, y + dy
+            pts.append((x * sx + tx, y * sy + ty))
+        arcs.append(pts)
+
+    def ring(idx: list[int]) -> list:
+        out: list = []
+        for i in idx:
+            pts = arcs[i] if i >= 0 else arcs[~i][::-1]
+            out.extend(pts if not out else pts[1:])   # cung sau bắt đầu ở điểm cuối của cung trước
+        return out
+
+    countries: dict[str, Country] = {}
+    for g in topo["objects"]["countries"]["geometries"]:
+        polys = [g["arcs"]] if g["type"] == "Polygon" else g["arcs"] if g["type"] == "MultiPolygon" else []
+        rings = tuple(tuple(ring(r)) for poly in polys for r in poly)
+        if not rings:
+            continue
+        lons = [p[0] for r in rings for p in r]
+        lats = [p[1] for r in rings for p in r]
+        name = g["properties"]["name"]
+        countries[name] = Country(name, (min(lons), min(lats), max(lons), max(lats)), rings)
+    return countries
+
+
+COUNTRIES: dict[str, Country] = _load_countries()

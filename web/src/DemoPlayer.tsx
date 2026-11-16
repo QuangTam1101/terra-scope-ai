@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, errorText, type RegionRef, type SeriesResponse, type TrendResponse } from "./api";
+import { countryPlace } from "./places";
 import { useStore } from "./store";
 import { TrendChart } from "./TrendChart";
 import { LocatorMap } from "./report/ReportDoc";
@@ -93,7 +94,8 @@ export function DemoPlayer({ demo: d, extra }: { demo: Demo; extra?: ReactNode }
   const u = v?.display_units ?? data?.t.units ?? "";
   const t = data && { ...(c ? convTrend(data.t, c) : data.t), units: u }, s = data && { ...(c ? convSeries(data.s, c) : data.s), units: u };
   const ref = d.region;
-  const bbox = data?.t.region.bbox ?? (ref.type === "bbox" ? ref.bbox : regions.find((r) => r.id === ref.id)?.bbox);
+  const bbox = data?.t.region.bbox ?? (ref.type === "bbox" ? ref.bbox : ref.type === "country" ? countryPlace(ref.id)?.bbox
+    : regions.find((r) => r.id === ref.id)?.bbox);
   const y0 = d.start.slice(0, 4), y1 = d.end.slice(0, 4);
   const skel = <div className="skel demo-skel" role="status" aria-label="Loading" />;
   const failed = error && <div className="warn col demo-error" role="alert">

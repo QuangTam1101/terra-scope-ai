@@ -19,7 +19,7 @@ export function parseBox(text: string): BBox | null {
   return w >= -180 && e <= 180 && s >= -90 && n <= 90 && w < e && s < n ? [w, s, e, n] : null;
 }
 
-const idOf = (ref: RegionRef) => (ref.type === "preset" ? ref.id : `box-${ref.bbox.join("_")}`);
+const idOf = (ref: RegionRef) => (ref.type === "bbox" ? `box-${ref.bbox.join("_")}` : ref.type === "country" ? `country-${ref.id}` : ref.id);
 
 export function PlaceField({ label, tag, value, quick, regions, onPick }: {
   label: string; tag?: "A" | "B"; value: PlaceOpt; quick: PlaceOpt[]; regions: Region[]; onPick: (o: PlaceOpt) => void;

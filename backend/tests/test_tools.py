@@ -16,7 +16,7 @@ def test_six_tools_and_typed_catalogs(client):
     vs = tools.registry.execute("list_available_variables", {})
     assert vs.ok and vs.data.variables[0].source.product and vs.provenance
     rs = tools.registry.execute("list_available_regions", {})
-    assert rs.ok and rs.data.supported_selection_types == ["preset", "bbox"]
+    assert rs.ok and rs.data.supported_selection_types == ["preset", "bbox", "country"]
     assert "mekong_delta" in [r.id for r in rs.data.catalog.regions]
 
 

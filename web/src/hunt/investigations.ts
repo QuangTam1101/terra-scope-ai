@@ -25,7 +25,8 @@ const isBBox = (b: unknown): b is BBox => Array.isArray(b) && b.length === 4 && 
   && b[0] >= -180 && b[2] <= 180 && b[1] >= -90 && b[3] <= 90 && b[0] < b[2] && b[1] < b[3];
 const isRegion = (r: unknown): r is RegionRef => !!r && typeof r === "object" && (
   ((r as { type?: unknown }).type === "preset" && typeof (r as { id?: unknown }).id === "string" && /^[a-z0-9_]{1,40}$/.test((r as { id: string }).id))
-  || ((r as { type?: unknown }).type === "bbox" && isBBox((r as { bbox?: unknown }).bbox)));
+  || ((r as { type?: unknown }).type === "bbox" && isBBox((r as { bbox?: unknown }).bbox))
+  || ((r as { type?: unknown }).type === "country" && typeof (r as { id?: unknown }).id === "string" && /^.{1,80}$/u.test((r as { id: string }).id)));
 const txt = (x: unknown, n: number) => (typeof x === "string" ? x.slice(0, n) : "");
 const num = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? x : null);
 const MODES: HuntMode[] = ["regions", "datasets", "periods"];

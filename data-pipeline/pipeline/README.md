@@ -6,6 +6,7 @@ Script ở gốc dự án:
 - `appeears.py`: client AppEEARS (gửi task, poll bằng `task_status`, tải). `appeears_adapter.py` gọi nó.
 - `download_appeears.sh`: gửi các request vùng mẫu R1–R4.
 - `build_regions.py`: thư mục thô AppEEARS R1–R3 → `normalize_area` → `validate` → `data/processed/regions/observations.parquet`, in sanity, `trend_ready` và kiểm tra chéo LST với cube GLDAS Tair (02 §3.5). Request chưa tải xong thì bỏ qua; chạy lại được.
+- `build_extra_cubes.py`: file thô ở `data/raw/` của thư mục dự án (GRACE, GLDAS SWE, MERRA-2 sol khí, CRU tmx/tmn, MiCASA) → `processed_data/grid/cube_<id>.nc` 1°, trục tháng liền (processed_data/README.md §3.1c).
 - `download_grid.py`: tải lưới toàn cầu qua Harmony HOSS → `data/raw/harmony_grid/<VAR_ID>/` → `data/processed/grid/cube_<biến>.nc` (02 §4.6). Cần tài khoản đã authorize app GES DISC (docs/04, T-1; xong 13/11).
 
 Luồng chính của web: **cube lưới 1° toàn cầu** (`grid.py`) → `api.py` (hàm cho backend và cho AI) → `report.py`. Bảng `observations` (`schema.py`) dùng cho vùng mẫu và dữ liệu point trước khi thành cube.
@@ -15,7 +16,7 @@ Luồng chính của web: **cube lưới 1° toàn cầu** (`grid.py`) → `api.
 | `schema.py` | 02 §1–2 | Data Adapter Interface + common schema | `Region`, `FetchRequest`, `SourceAdapter`, `request_id`, `REQUIRED`, `validate`, `rows` | `test_schema_adapters.py` |
 | `appeears_adapter.py` | 02 §3 (3.4–3.6) | AppEEARS + CSV/NetCDF; point/polygon extraction | `AppeearsAdapter`, `write_locations`, `normalize_area`, `normalize_points` | `test_schema_adapters.py` |
 | `giovanni_adapter.py` | 02 §4 (4.6 HOSS); 03 §G (parse) | Giovanni qua Harmony: lưới HOSS → cube; area-average CSV | `HOSS_VARIABLES`, `harmony_grid`, `read_grid_file`, `convert_cube`, `build_cube`, `GiovanniAdapter`, `harmony_area_csv`, `parse_giovanni_area_csv`, `normalize_area_csv`, `edl_token`, `quota_guard`, `point_series`, `with_retries` | `test_schema_adapters.py`, `test_grid.py` |
-| `grid.py` | 01 S5–S8b; 02 §2b; 03 §E, §J | Cube lưới 1° toàn cầu; trend cả lưới; điểm nóng | `bin_to_grid`, `global_coords`, `write_grid_points`, `points_to_cube`, `grid_trend`, `region_series`, `hotspot_regions`, `hotspot_obs` | `test_grid.py` |
+| `grid.py` | 01 S5–S8b; 02 §2b; 03 §E, §J | Cube lưới 1° toàn cầu; trend cả lưới; điểm nóng | `bin_to_grid`, `global_coords`, `write_grid_points`, `points_to_cube`, `grid_trend`, `shape_mask`, `region_series`, `hotspot_regions`, `hotspot_obs` | `test_grid.py` |
 | `qa.py` | 03 §C, C2, D, D2 | QA masking, missing values, scale factors | `ensure_scaled`, `scale_et`, `FILL`, `mask_fill`, `bits`, `ndvi_good`, `lst_ok`, `lst_valid`, `QA_POLICY`, `VALID` | `test_qa.py` |
 | `aggregate.py` | 03 §E, §F; 01 S2–S6 | Raster → regional time series; xarray / rasterio / rioxarray | `decode_layer`, `region_mask`, `raster_to_series`, `zonal_mean`, `composites_to_monthly`, `series_to_monthly` | `test_aggregate.py` |
 | `units.py` | 03 §G; 02 §4.2 | Đổi đơn vị có assert | `GIOVANNI_UNITS`, `giovanni_unit`, `convert_units`, `kelvin_to_c` | `test_units.py` |

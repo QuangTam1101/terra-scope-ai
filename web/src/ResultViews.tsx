@@ -82,7 +82,12 @@ export function ExplorerResult({ run, actions }: { run: Run; actions: ReactNode 
           <span className="small muted num">{q.n_months} of {q.n_months + q.missing_months} months have data · {Math.round(q.coverage_fraction * 100)}% of the area</span>
         </div>
       </Section>
-      {t.warnings.length > 0 && <div className="col" style={{ gap: 6 }}>{t.warnings.map((w) => <div key={w} className="warn">{w}</div>)}</div>}
+      {t.warnings.length > 0 && (
+        <details className="disclose notes">
+          <summary>Good to know about this data{t.warnings.length > 1 ? ` (${t.warnings.length} notes)` : ""}</summary>
+          {t.warnings.map((w) => <div key={w} className="warn">{w}</div>)}
+        </details>
+      )}
       <details className="disclose">
         <summary>Why might this matter?</summary>
         <p style={{ margin: 0, font: "600 14px/1.5 var(--body)" }}>A trend shows what changed in the past, not why, and it is not a forecast (<Term id="forecast_vs_trend">trend vs forecast</Term>).
@@ -124,7 +129,8 @@ export function ScientistResult({ run, actions }: { run: Run; actions: ReactNode
         <table className="metatable"><tbody>
           <tr><th>Variable</th><td>{v.parameter_name} ({u})</td></tr>
           <tr><th>Product</th><td>{t.source.product} v{t.source.version} · {t.source.provider}</td></tr>
-          <tr><th>Region</th><td>{place.label} · {t.region.type === "preset" ? `catalog preset "${t.region.id}"` : "bounding-box approximation"}</td></tr>
+          <tr><th>Region</th><td>{place.label} · {t.region.type === "preset" ? `catalog preset "${t.region.id}"` : t.region.type === "country"
+            ? "country border (Natural Earth 1:110m): grid cells whose centre is inside it" : "bounding-box approximation"}</td></tr>
           <tr><th>Box (W, S, E, N)</th><td>{b[0]}°, {b[1]}°, {b[2]}°, {b[3]}°</td></tr>
           <tr><th>Period</th><td>{t.start} to {t.end}, monthly</td></tr>
           <tr><th>Grid</th><td>{v.spatial_resolution_deg}° processed (native {v.native_resolution_deg}°), area mean of cells in the box</td></tr>

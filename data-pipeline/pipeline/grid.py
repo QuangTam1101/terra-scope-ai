@@ -86,17 +86,40 @@ def grid_trend(cube, start=None, end=None, min_years=10, chunk=4096):
                       attrs={"start": str(t[0].date()), "end": str(t[-1].date()), "method": "seasonal_mk_sen"})
 
 
-def region_series(cube, bbox):
-    """Chuỗi tháng của vùng người dùng vẽ: trung bình có trọng số cos(vĩ độ) các ô có tâm trong bbox.
-    Trả (value, valid_frac) để báo chất lượng dữ liệu trên web."""
+def shape_mask(lat, lon, rings):
+    """Ô nào có TÂM nằm trong đường viền (quốc gia): mảng bool (lat, lon).
+    rings: các vòng (N, 2) lon/lat của mọi mảnh; quy tắc chẵn-lẻ nên lỗ (hồ, nước nằm trong nước khác) và
+    nhiều mảnh (đảo) đều đúng. Quét từng hàng vĩ độ, đếm số cạnh cắt hàng ở bên trái mỗi tâm ô.
+    Toạ độ phẳng: đường viền Natural Earth đã cắt tại ±180° nên không vòng nào vắt qua kinh tuyến 180."""
+    edges = np.concatenate([np.column_stack([r[:-1], r[1:]]) for r in map(np.asarray, rings)])
+    x1, y1, x2, y2 = edges.T
+    lon = np.asarray(lon, dtype=float)
+    out = np.zeros((len(lat), len(lon)), dtype=bool)
+    for i, yc in enumerate(np.asarray(lat, dtype=float)):
+        hit = (y1 <= yc) != (y2 <= yc)            # cạnh cắt đường y = yc (nửa mở: đỉnh không bị đếm hai lần)
+        if hit.any():
+            xs = np.sort(x1[hit] + (yc - y1[hit]) * (x2[hit] - x1[hit]) / (y2[hit] - y1[hit]))
+            out[i] = np.searchsorted(xs, lon) % 2 == 1
+    return out
+
+
+def region_series(cube, bbox, rings=None):
+    """Chuỗi tháng của vùng người dùng chọn: trung bình có trọng số cos(vĩ độ) các ô có tâm trong bbox,
+    hoặc, khi có `rings` (đường viền quốc gia), chỉ các ô có tâm nằm trong đường viền (`shape_mask`).
+    Trả (value, valid_frac) để báo chất lượng dữ liệu trên web; valid_frac tính trên các ô được chọn."""
     w, s, e, n = bbox
     assert w < e and s < n, "bbox phải là (W, S, E, N), W < E (chưa hỗ trợ vùng cắt kinh tuyến 180°)"
     sub = cube.sel(lat=slice(s, n), lon=slice(w, e))
     assert sub.sizes["lat"] and sub.sizes["lon"], "bbox nhỏ hơn một ô lưới 1°: chọn vùng lớn hơn"
-    wgt = np.cos(np.deg2rad(sub["lat"])) * xr.ones_like(sub.isel(time=0))
-    ok = sub.notnull()
+    inside = xr.ones_like(sub.isel(time=0), dtype=bool)
+    if rings is not None:
+        inside = inside & xr.DataArray(shape_mask(sub["lat"].values, sub["lon"].values, rings),
+                                       coords={"lat": sub["lat"], "lon": sub["lon"]}, dims=("lat", "lon"))
+        assert inside.any(), "không ô nào có tâm trong đường viền"
+    wgt = (np.cos(np.deg2rad(sub["lat"])) * xr.ones_like(sub.isel(time=0))).where(inside, 0.0)
+    ok = sub.notnull() & inside
     value = (sub * wgt).sum(("lat", "lon")) / wgt.where(ok).sum(("lat", "lon"))
-    frac = ok.sum(("lat", "lon")) / (sub.sizes["lat"] * sub.sizes["lon"])
+    frac = ok.sum(("lat", "lon")) / int(inside.sum())
     idx = pd.DatetimeIndex(sub["time"].values)
     return pd.Series(value.values, index=idx).where(frac.values > 0), pd.Series(frac.values, index=idx)
 

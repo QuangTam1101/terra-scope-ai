@@ -1,5 +1,6 @@
 // Offline place search: preset areas from the API, countries (Natural Earth 1:110m via world-atlas) and major cities.
-// Countries are analysed with their bounding box; cities and coordinates with the grid cell that contains them.
+// Countries are analysed by their border (the backend masks the same file); cities and coordinates use the grid cell
+// that contains them.
 import { geoBounds } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Topology } from "topojson-specification";
@@ -34,9 +35,14 @@ const fc = feature(topo, topo.objects.countries) as unknown as GeoJSON.FeatureCo
 const COUNTRIES: PlaceHit[] = fc.features.map((f) => {
   let [[w, s], [e, n]] = geoBounds(f);
   if (w > e) { if (180 - w >= e + 180) e = 180; else w = -180; }   // crosses the antimeridian: keep the larger side
-  const bbox: BBox = [Math.floor(w), Math.floor(s), Math.ceil(e), Math.ceil(n)];
-  return { kind: "Country", name: f.properties.name, place: { ref: { type: "bbox", bbox }, label: f.properties.name, bbox } };
+  const bbox: BBox = [Math.floor(w), Math.floor(s), Math.ceil(e), Math.ceil(n)];   // map label and zoom only
+  return { kind: "Country", name: f.properties.name, place: { ref: { type: "country", id: f.properties.name }, label: f.properties.name, bbox } };
 });
+const SHAPES = new Map(fc.features.map((f) => [f.properties.name, f]));
+/** Place for a Natural Earth country name; undefined for an unknown name. */
+export const countryPlace = (name: string): Place | undefined => COUNTRIES.find((c) => c.name === name)?.place;
+/** Border to draw for a place: countries only (other places are boxes or cells). */
+export const placeShape = (p: Place) => (p.ref.type === "country" ? SHAPES.get(p.ref.id) : undefined);
 
 // ---------- cities (name, country, lat, lon) ----------
 const CITY_DATA: [string, string, number, number][] = [

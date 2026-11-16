@@ -87,17 +87,20 @@ interface Props {
   /** What is really running while `loading` (Phase 8.5A); falls back to a neutral message. */
   loadingInfo?: { title: string; detail: string } | null;
   selected: BBox | null; selectedLabel?: string; onClear: () => void; onPick: (lon: number, lat: number) => void; onArea: (bbox: BBox) => void; units: string;
+  /** Country border: drawn instead of the `selected` box, which then only places the label. */
+  shape?: GeoJSON.Feature | null;
 }
 
-export function WorldMap({ layer, trend, values, loading, loadingInfo, selected, selectedLabel, onClear, onPick, onArea, units }: Props) {
+export function WorldMap({ layer, trend, values, loading, loadingInfo, selected, selectedLabel, onClear, onPick, onArea, units, shape }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [cssW, setCssW] = useState(0);                       // displayed canvas width, to place the selection label
+  const [mode, setMode] = useState<"2d" | "3d">("2d");       // the flat canvas is a new element after each globe visit
   useEffect(() => {
     if (!ref.current) return;
     const ro = new ResizeObserver(([e]) => setCssW(e.contentRect.width));
     ro.observe(ref.current);
     return () => ro.disconnect();
-  }, []);
+  }, [mode]);
   const [view, setView] = useState<View>({ k: 1, ox: 0, oy: 0 });
   const [hover, setHover] = useState<{ px: number; py: number; text: string } | null>(null);
   const [drag, setDrag] = useState<{ x0: number; y0: number; x1: number; y1: number; lon0: number; lat0: number } | null>(null);
@@ -106,7 +109,6 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
   const left = useRef<{ px: number; py: number; lon: number; lat: number } | null>(null);
   const [panning, setPanning] = useState(false);
   const scale = useMemo(() => (trend ? trendScale(trend) : 1), [trend]);
-  const [mode, setMode] = useState<"2d" | "3d">("2d");
   const cellDeg = (layer === "trend" ? trend?.cell_size_deg : values?.cell_size_deg) ?? gridCell();
   useEffect(() => {
     if (!selected) return;
@@ -114,6 +116,27 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [selected, onClear]);
+
+  // A newly chosen country: glide the map to fit it (only when the country changes, so manual zoom is kept).
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  useEffect(() => {
+    if (!shape || !selected) return;
+    const [w, s, e, n] = selected;
+    const k = Math.max(1, Math.min(MAX_ZOOM, 0.8 * Math.min(W / (x(e) - x(w)), H / (y(s) - y(n)))));
+    const to = clampView({ k, ox: (x(w) + x(e)) / 2 - W / k / 2, oy: (y(n) + y(s)) / 2 - H / k / 2 });
+    const from = viewRef.current, t0 = performance.now();
+    const ms = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 1 : 600;
+    let id = 0;
+    const step = (t: number) => {
+      const u = Math.min(1, (t - t0) / ms), ease = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
+      const mix = (a: number, b: number) => a + (b - a) * ease;
+      setView({ k: mix(from.k, to.k), ox: mix(from.ox, to.ox), oy: mix(from.oy, to.oy) });
+      if (u < 1) id = requestAnimationFrame(step);
+    };
+    id = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(id);
+  }, [shape]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const lookup = useMemo(() => {
     const m = new Map<string, string>();
@@ -138,21 +161,30 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
     if (selected) {
       const [w, s, e, n] = selected;
       const rx = x(w), ry = y(n), rw = x(e) - x(w), rh = y(s) - y(n);
-      // 1) dim everything outside the selection so the chosen area stands out
-      ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.rect(rx, ry, rw, rh);
-      ctx.fillStyle = "rgba(43,37,64,.32)"; ctx.fill("evenodd");
-      // 2) double outline: white halo, then dark ink line
       ctx.lineJoin = "round";
-      ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 6 / k; ctx.strokeRect(rx, ry, rw, rh);
-      ctx.strokeStyle = "#2b2540"; ctx.lineWidth = 2.5 / k; ctx.strokeRect(rx, ry, rw, rh);
-      // 3) corner marks
-      const c = Math.min(10 / k, rw / 2, rh / 2);
-      ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 4 / k; ctx.lineCap = "round";
-      ctx.beginPath();
-      for (const [cx, cy, dx, dy] of [[rx, ry, 1, 1], [rx + rw, ry, -1, 1], [rx, ry + rh, 1, -1], [rx + rw, ry + rh, -1, -1]]) {
-        ctx.moveTo(cx + dx * c, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy + dy * c);
+      if (shape) {
+        // country: dim outside its border (even-odd also dims holes, e.g. Lesotho inside South Africa), then outline it
+        ctx.beginPath(); ctx.rect(0, 0, W, H); path(shape);
+        ctx.fillStyle = "rgba(43,37,64,.32)"; ctx.fill("evenodd");
+        ctx.beginPath(); path(shape);
+        ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 6 / k; ctx.stroke();
+        ctx.strokeStyle = "#2b2540"; ctx.lineWidth = 2.5 / k; ctx.stroke();
+      } else {
+        // 1) dim everything outside the selection so the chosen area stands out
+        ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.rect(rx, ry, rw, rh);
+        ctx.fillStyle = "rgba(43,37,64,.32)"; ctx.fill("evenodd");
+        // 2) double outline: white halo, then dark ink line
+        ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 6 / k; ctx.strokeRect(rx, ry, rw, rh);
+        ctx.strokeStyle = "#2b2540"; ctx.lineWidth = 2.5 / k; ctx.strokeRect(rx, ry, rw, rh);
+        // 3) corner marks
+        const c = Math.min(10 / k, rw / 2, rh / 2);
+        ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 4 / k; ctx.lineCap = "round";
+        ctx.beginPath();
+        for (const [cx, cy, dx, dy] of [[rx, ry, 1, 1], [rx + rw, ry, -1, 1], [rx, ry + rh, 1, -1], [rx + rw, ry + rh, -1, -1]]) {
+          ctx.moveTo(cx + dx * c, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy + dy * c);
+        }
+        ctx.stroke();
       }
-      ctx.stroke();
       // 4) a single cell is tiny on screen: add a locator ring around it
       if (rw * k < 18) {
         const cx = rx + rw / 2, cy = ry + rh / 2;
@@ -161,7 +193,7 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
         ctx.strokeStyle = "#2b2540"; ctx.lineWidth = 2.2 / k; ctx.stroke();
       }
     }
-  }, [layer, trend, values, selected, scale, view]);
+  }, [layer, trend, values, selected, shape, scale, view, mode]);
 
   // ---------- coordinates & zoom ----------
   const toLonLat = (clientX: number, clientY: number) => {
@@ -210,7 +242,7 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
       </div>
       {mode === "3d" ? (
         <Globe layer={layer} trend={trend} values={values} scale={scale} loading={loading} loadingInfo={loadingInfo} selected={selected}
-          selectedLabel={selectedLabel} lookup={lookup} cellDeg={cellDeg} onPick={onPick} onClear={onClear} />
+          shape={shape} selectedLabel={selectedLabel} lookup={lookup} cellDeg={cellDeg} onPick={onPick} onClear={onClear} />
       ) : (
       <div className="mapwrap">
         <canvas ref={ref} role="img"

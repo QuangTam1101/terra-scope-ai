@@ -19,7 +19,7 @@ const clampLat = (lat: number) => Math.max(-85, Math.min(85, lat));
 
 interface Props {
   layer: Layer; trend: TrendGrid | null; values: ValueGrid | null; scale: number; loading: boolean; loadingInfo?: { title: string; detail: string } | null;
-  selected: BBox | null; selectedLabel?: string; lookup: Map<string, string>; cellDeg: number;
+  selected: BBox | null; selectedLabel?: string; lookup: Map<string, string>; cellDeg: number; shape?: GeoJSON.Feature | null;
   onPick: (lon: number, lat: number) => void; onClear: () => void;
 }
 
@@ -31,7 +31,7 @@ const STARS = Array.from({ length: 140 }, (_, i) => {
   return { x: r(1), y: r(2), s: 0.4 + r(3) * 1.1, a: 0.25 + r(4) * 0.6 };
 });
 
-export function Globe({ layer, trend, values, scale, loading, loadingInfo, selected, selectedLabel, lookup, cellDeg, onPick, onClear }: Props) {
+export function Globe({ layer, trend, values, scale, loading, loadingInfo, selected, selectedLabel, lookup, cellDeg, onPick, onClear, shape }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const start: [number, number] = selected ? [(selected[0] + selected[2]) / 2, (selected[1] + selected[3]) / 2] : [106, 12];
@@ -97,6 +97,14 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
     anim.current = requestAnimationFrame(step);
   };
 
+  // A newly chosen country (or switching to the globe with one selected): turn and zoom to it.
+  useEffect(() => {
+    if (!shape || !selected) return;
+    const [w, s, e, n] = selected;
+    const lat = (s + n) / 2, span = Math.max((e - w) * Math.cos((lat * Math.PI) / 180), n - s);   // degrees
+    animateTo({ lon: (w + e) / 2, lat: clampLat(lat), k: Math.max(1, Math.min(MAX_ZOOM, 80 / span)) }, 700);
+  }, [shape]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const proj = useMemo(() => geoOrthographic().translate([CW / 2, CH / 2]).scale(R).rotate([-rot.lon, -rot.lat]).clipAngle(90), [CW, CH, R, rot.lon, rot.lat]);
 
   // ---------- render ----------
@@ -156,7 +164,7 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
       for (let lo = e; lo >= w; lo -= Math.max(0.25, (e - w) / 40)) ring.push([lo, n]);
       for (let la = n; la >= s; la -= Math.max(0.25, (n - s) / 40)) ring.push([w, la]);
       ring.push(ring[0]);
-      const line = { type: "LineString" as const, coordinates: ring };
+      const line = shape ?? { type: "LineString" as const, coordinates: ring };   // country: its border, not the box
       ctx.lineJoin = "round";
       ctx.beginPath(); path(line); ctx.strokeStyle = "#fff"; ctx.lineWidth = 6 * q; ctx.stroke();
       ctx.beginPath(); path(line); ctx.strokeStyle = "#2b2540"; ctx.lineWidth = 2.5 * q; ctx.stroke();
@@ -169,7 +177,7 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
     }
     // thin limb line
     ctx.beginPath(); ctx.arc(cx0, cy0, R, 0, Math.PI * 2); ctx.strokeStyle = "rgba(190,220,245,.45)"; ctx.lineWidth = 1.2 * q; ctx.stroke();
-  }, [tex, rot, R, proj, selected, CW, CH, q]);
+  }, [tex, rot, R, proj, selected, shape, CW, CH, q]);
 
   // ---------- input ----------
   const toCanvas = (ev: { clientX: number; clientY: number }) => {

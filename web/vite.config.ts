@@ -26,6 +26,7 @@ export default defineConfig({
   cacheDir: "node_modules/.vite-terrascope",
   server: {
     port: 5173,
-    proxy: { "/api": { target: "http://127.0.0.1:8000", changeOrigin: true } },
+    // TERRA_API_PROXY: another local backend (e.g. a worktree's own uvicorn on another port)
+    proxy: { "/api": { target: process.env.TERRA_API_PROXY ?? "http://127.0.0.1:8000", changeOrigin: true } },
   },
 });
