@@ -84,12 +84,9 @@ button { font-family: var(--body); }
 .detective { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; width: 100%; }
 @media (max-width: 1100px) { .detective { grid-template-columns: minmax(0, 1fr); } }
 .mapwrap { position: relative; }
-/* Sea-ice polar map (PolarMap.tsx): one panel per pole, panel width ∝ grid columns so both share one km scale */
-.polar-row { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
-.polar-panel { margin: 0; flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.polar-panel figcaption { font: 800 13px var(--body); color: var(--muted); }
-.mapwrap .polar-panel canvas { image-rendering: pixelated; border-radius: 16px; }
-.polar-chip { position: absolute; left: 12px; top: 30px; background: #2b2540; color: #fff; border-radius: 999px; padding: 3px 4px 3px 12px;
+/* Sea-ice polar map (PolarMap.tsx): one pole at a time, a fixed-height canvas the grid is fitted into */
+.mapwrap .polar-canvas { width: 100%; height: clamp(340px, 64vh, 640px); touch-action: none; background: #e3eef1; }
+.polar-chip { position: absolute; left: 12px; top: 12px; background: #2b2540; color: #fff; border-radius: 999px; padding: 3px 4px 3px 12px;
   font: 800 12.5px var(--body); box-shadow: 0 4px 12px rgba(0,0,0,.25); display: flex; align-items: center; gap: 8px; max-width: 290px; }
 .polar-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .polar-chip button { width: 22px; height: 22px; border-radius: 999px; border: 0; cursor: pointer; background: rgba(255,255,255,.2); color: inherit;
@@ -615,6 +612,7 @@ select.select::-ms-expand { display: none; }
 
 /* Time-lapse (2D map, month by month) */
 .tl-canvas { width: 100%; height: auto; aspect-ratio: 2 / 1; display: block; border-radius: 20px; background: #cdeaf0; touch-action: pan-y; }
+.tl-canvas.polar { aspect-ratio: auto; height: clamp(340px, 64vh, 640px); background: #e3eef1; }
 .tl-month { font: 700 26px var(--display); font-variant-numeric: tabular-nums; min-width: 110px; text-align: right; }
 .tl-overlay { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 20px; border-radius: 20px;
   background: rgba(251, 246, 236, .7); font: 800 15px var(--body); }

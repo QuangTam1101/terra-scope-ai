@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 from . import bridge, catalog, service
 from .errors import ApiError
 from .scientific_schemas import MethodAdvice
-from .schemas import (BBoxRegion, CompareRequest, CountryRegion, CompareResponse, Month, PresetRegion,
+from .schemas import (BBoxRegion, CompareRequest, CountryRegion, CompareResponse, Month, PolarRegion, PresetRegion,
                       RegionsResponse, SeriesRequest, SeriesResponse, TrendRequest, TrendResponse,
                       VariableItem, VariablesResponse, ToolResult, ToolError, ToolWarning, RegionCatalog, Provenance)
 
@@ -55,7 +55,15 @@ class CountryInput(StrictModel):
     id: str = Field(min_length=1, max_length=80)
 
 
-ToolRegion = Annotated[Union[PresetInput, BBoxInput, CountryInput], Field(discriminator="type")]
+class PolarInput(StrictModel):
+    """A square drawn on the sea-ice polar map (NSIDC 25 km pixels, inclusive)."""
+    type: Literal["polar"]
+    hemi: Literal["N", "S"]
+    rows: list[int] = Field(min_length=2, max_length=2)
+    cols: list[int] = Field(min_length=2, max_length=2)
+
+
+ToolRegion = Annotated[Union[PresetInput, BBoxInput, CountryInput, PolarInput], Field(discriminator="type")]
 
 
 class VariableInput(StrictModel):
@@ -91,12 +99,17 @@ def _region(ref, variable):
         if ref.id not in catalog.COUNTRIES:
             raise ApiError(404, "UNKNOWN_REGION", "Unknown country.")
         converted = CountryRegion(type="country", id=ref.id)
+    elif ref.type == "polar":          # a square drawn on the sea-ice map: bounded by the polar grid itself
+        try:
+            converted = PolarRegion(type="polar", hemi=ref.hemi, rows=tuple(ref.rows), cols=tuple(ref.cols))
+        except ValueError:
+            raise ApiError(422, "VALIDATION_ERROR", "The drawn polar area is outside the polar grid.") from None
     else:
         converted = PresetRegion(type="preset", id=ref.id) if ref.type == "preset" else BBoxRegion(type="bbox", bbox=tuple(ref.bbox))
     if converted.type == "preset" and converted.id not in catalog.REGIONS:
         raise ApiError(404, "UNKNOWN_REGION", "Unknown region preset.")
     _, bbox, _ = service.resolve_region(converted)
-    if converted.type == "country" or (converted.type == "preset" and converted.id != "global"):
+    if converted.type in ("country", "polar") or (converted.type == "preset" and converted.id != "global"):
         return converted   # fixed catalog places (Arctic, Russia...): Explore runs the same analysis without a cap
     w, s, e, n = bbox
     if (e - w) * (n - s) > MAX_AREA:

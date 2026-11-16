@@ -44,6 +44,16 @@ test('unknown or invalid values are dropped, never thrown', () => {
   assert.equal(exploreHash({ variableId: 'NOT OK', view: 'map', start: '1999-01' }), '#explore');
 });
 
+test('squares drawn on the sea-ice polar maps round-trip as exact pixels; anything off the grid is dropped', () => {
+  const st = { variableId: 'nsidc_sea_ice', place: { kind: 'polar', hemi: 'N', rows: [200, 240], cols: [140, 170] } };
+  assert.equal(exploreHash(st), '#explore?v=nsidc_sea_ice&place=polar:N,200,240,140,170');
+  assert.deepEqual(parseExplore(exploreHash(st)), st);
+  assert.deepEqual(parseExplore('#explore?place=polar:S,0,331,0,315').place, { kind: 'polar', hemi: 'S', rows: [0, 331], cols: [0, 315] });
+  for (const q of ['polar:N,0,448,0,10', 'polar:S,0,10,0,316', 'polar:N,10,5,0,1', 'polar:X,0,1,0,1', 'polar:N,0,1,0', 'polar:N,0.5,1,0,1', 'polar:N,-1,1,0,1'])
+    assert.equal(parseExplore(`#explore?place=${q}`).place, undefined, q);
+  assert.deepEqual(linkPlace({ type: 'polar', hemi: 'S', rows: [3, 4], cols: [5, 6] }), { kind: 'polar', hemi: 'S', rows: [3, 4], cols: [5, 6] });
+});
+
 test('cells snap to the centre of their 0.5° grid cell, boxes to 0.5° grid lines', () => {
   assert.deepEqual(parseExplore('#explore?place=cell:10.1,105.9').place, { kind: 'cell', lat: 10.25, lon: 105.75 });
   assert.deepEqual(parseExplore('#explore?place=cell:-0.1,-179.99').place, { kind: 'cell', lat: -0.25, lon: -179.75 });

@@ -59,7 +59,7 @@ Khi chưa có cube, các endpoint phân tích trả `503 DATA_NOT_READY` và `/v
 | `POST /api/v1/trends/sensitivity` | `service.trend_sensitivity` (gọi lại `bridge.trend_one` như `/trends`) | Cùng body với `/trends`. `points`: chạy lại đúng phép thử cho mỗi năm bắt đầu (tháng 1) còn ≥ 10 năm tới `end`, xếp từ chuỗi ngắn nhất; điểm cuối trùng `/trends` cả kỳ. `years_needed.estimate`: số năm thêm (ước lượng thô) để \|độ dốc OLS anomaly\| / sai số chuẩn ≥ 1,96, sai số tính từ SD phần dư và tự tương quan bậc 1; `null` khi đã có ý nghĩa. Cách tính ghi trong `basis`, giới hạn trong `caveat` |
 | `GET /api/v1/trends/grid` | `grid.grid_trend` (cache) | Bản đồ xu hướng (divergence map). FDR Benjamini-Hochberg trên toàn lưới, rồi cắt theo `bbox` |
 | `GET /api/v1/values/grid` | trung bình theo thời gian của cube | Heatmap giá trị; `month=1..12` để chỉ lấy một tháng |
-| (lưới cực) | cube `(time, cell)` của băng biển | `/variables` ghi `grid: "polar"`; hai endpoint lưới trên thêm `hemi`/`row`/`col` cho từng ô và khối `polar` (số hàng/cột, mặt nạ đất base64) để web vẽ bản đồ hai cực; ô lat/lon không có ba trường này (`model_dump_json(exclude_unset=True)`). `/values/frames` trả 400 `NOT_SUPPORTED` |
+| (lưới cực) | cube `(time, cell)` của băng biển | `/variables` ghi `grid: "polar"`; hai endpoint lưới trên thêm `hemi`/`row`/`col` cho từng ô và khối `polar` (số hàng/cột, mặt nạ đất base64) để web vẽ bản đồ cực; ô lat/lon không có ba trường này (`model_dump_json(exclude_unset=True)`). `/values/frames?hemi=N\|S` trả raster pixel của một cực (hàng từ dưới lên như khung lat/lon, khối k × k pixel khi pixel có dữ liệu × số tháng > `VALUE_BUDGET`; cả kỳ 2001–2025 là khối 50 km, ~5 MB sau gzip), `grid.polar` kèm `hemi`, `rows`, `cols`, `factor`, `land_b64` |
 | `POST /api/v1/compare` | `contradictions.pair_difference_test` | `is_contradiction` khi ngược chiều **và** hiệu significant |
 | `POST /api/v1/explain` | dùng lại kết quả `/trends` | Bản **template, chưa có LLM** (`model: "template-v1 (no language model)"`) |
 | `POST /api/v1/chat` | dùng lại `/trends` + dịch vụ `/explain` | Chat typed, `mode: "template"`; không gọi LLM |
@@ -77,6 +77,11 @@ Khớp với frontend hiện tại:
   (`data-pipeline/config/countries-110m.json`, world-atlas 2.0.2 1:110m, cùng file frontend vẽ; `grid.shape_mask`). Tên lạ →
   `404 NOT_FOUND`. Nước nhỏ hơn một ô (trên lưới 1°: Luxembourg, Síp, Bắc Síp, Jamaica, Palestine) dùng ô gần tâm khung bao, kèm
   warning. Chat (`tools.py`) nhận cả `country`; giới hạn 1000 độ² của agent vẫn tính theo khung bao.
+- Vùng `{"type": "polar", "hemi": "N"|"S", "rows": [r0, r1], "cols": [c0, c1]}` (pixel NSIDC, gồm cả hai đầu; vẽ trên bản đồ cực):
+  cube băng biển lấy đúng các pixel đó (`grid.PolarBox`); cube lat/lon lấy ô có tâm chiếu vào hình vuông (`polar_pixel`), nhỏ hơn
+  một ô thì dùng ô gần tâm kèm warning. Ngoài lưới hoặc `r0 > r1` → 422. Chat nhận cả `polar` và không áp giới hạn diện tích.
+- `details` của lỗi đi qua `jsonable_encoder` có bộ chuyển numpy (`errors._body`): số đọc từ cube (float32) từng làm chính lỗi
+  `NO_DATA` thành 500.
 - `/explain` nhận `context.period` dạng `"2005-2024"` hoặc `"2005-01/2024-12"`; thiếu vùng thì dùng vùng demo.
 
 ## Test

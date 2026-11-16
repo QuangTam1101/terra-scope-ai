@@ -7,7 +7,8 @@ export type BBox = [number, number, number, number];
 export type RegionRef =
   | { type: "preset"; id: string }
   | { type: "bbox"; bbox: BBox }
-  | { type: "country"; id: string };   // Natural Earth 1:110m name; analysed by its border, not its box
+  | { type: "country"; id: string }    // Natural Earth 1:110m name; analysed by its border, not its box
+  | { type: "polar"; hemi: "N" | "S"; rows: [number, number]; cols: [number, number] };   // square on a sea-ice polar map (NSIDC pixels)
 
 export interface DataSource { product: string; version: string; provider: string; url: string; citation?: string }
 export interface Quality { n_months: number; missing_months: number; coverage_fraction: number; sufficient: boolean }
@@ -23,10 +24,11 @@ export interface Variable {
 export interface Region { id: string; name: string; bbox: BBox; is_demo: boolean }
 export interface RegionsResponse { regions: Region[]; limits: { max_bbox_area_deg2: number; min_cells: number; cell_size_deg: number } }
 
-export interface RegionOut { type: string; id?: string | null; name?: string | null; bbox: BBox }
-/** Request ref that repeats an answered region (presets and countries by id, anything else by its box). */
+export interface RegionOut { type: string; id?: string | null; name?: string | null; bbox: BBox; hemi?: "N" | "S"; rows?: [number, number]; cols?: [number, number] }
+/** Request ref that repeats an answered region (presets and countries by id, polar squares by pixels, anything else by its box). */
 export const refOfRegion = (r: RegionOut): RegionRef =>
-  (r.type === "preset" || r.type === "country") && r.id ? { type: r.type, id: r.id } : { type: "bbox", bbox: r.bbox };
+  r.type === "polar" && r.hemi && r.rows && r.cols ? { type: "polar", hemi: r.hemi, rows: r.rows, cols: r.cols }
+    : (r.type === "preset" || r.type === "country") && r.id ? { type: r.type, id: r.id } : { type: "bbox", bbox: r.bbox };
 export interface SeriesPoint { t: string; value: number | null; anomaly: number | null; valid_fraction: number }
 export interface SeriesResponse {
   variable_id: string; region: RegionOut; units: string; points: SeriesPoint[]; climatology: (number | null)[];
@@ -77,7 +79,9 @@ export interface HuntResponse {
 }
 export interface FramesResponse {
   variable_id: string; units: string; kind: "value" | "anomaly"; start: string; end: string; times: string[];
-  grid: { west: number; south: number; cell_deg: number; nlon: number; nlat: number };
+  /** Sea ice: `polar` instead of west/south/cell_deg (absent then): one pole's NSIDC pixels in factor x factor blocks, plus its land mask. */
+  grid: { west: number; south: number; cell_deg: number; nlon: number; nlat: number;
+    polar?: { hemi: "N" | "S"; rows: number; cols: number; factor: number; land_b64: string } };
   scale: number; offset: number; missing: number; display_range: [number, number]; coarsen_factor: number; data_b64: string; note: string;
 }
 export interface ExplainResponse {
@@ -205,8 +209,8 @@ export const api = {
   valueGrid: (variable_id: string, start: string, end: string, month?: number, signal?: AbortSignal) =>
     call<ValueGrid>("/values/grid" + qs({ variable_id, start, end, month }), signal ? { signal } : undefined, 90000),
   /** Time-lapse frames (display only): one grid per month, value or anomaly. */
-  valueFrames: (variable_id: string, start: string, end: string, kind: "value" | "anomaly", bbox?: BBox | null, signal?: AbortSignal) =>
-    call<FramesResponse>("/values/frames" + qs({ variable_id, start, end, kind, bbox: bbox ? bbox.join(",") : undefined }), signal ? { signal } : undefined, 120000),
+  valueFrames: (variable_id: string, start: string, end: string, kind: "value" | "anomaly", bbox?: BBox | null, signal?: AbortSignal, hemi?: "N" | "S") =>
+    call<FramesResponse>("/values/frames" + qs({ variable_id, start, end, kind, bbox: bbox ? bbox.join(",") : undefined, hemi }), signal ? { signal } : undefined, 120000),
   /** Is a map already computed? Cheap, no computation on the server. */
   gridStatus: (kind: "trend" | "values", variable_id: string, start: string, end: string, month?: number) =>
     call<{ kind: string; cached: boolean; available: boolean; cell_size_deg: number | null }>("/grids/status" + qs({ kind, variable_id, start, end, month }), undefined, 8000),

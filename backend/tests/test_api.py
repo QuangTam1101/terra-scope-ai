@@ -119,6 +119,19 @@ def test_country_region_uses_border_cells(client, monkeypatch):
     r = client.post("/api/v1/trends", json={**base, "region": {"type": "country", "id": "Tiny"}})
     assert r.status_code == 200 and any("nearest its centre" in w for w in r.json()["warnings"])
 
+
+def test_error_details_from_cube_numbers_still_serialise(client, monkeypatch):
+    # Real cubes store lat/lon as float32: a tiny place whose nearest cell is sea (land-only variable) raised NO_DATA with
+    # float32 numbers in details, and writing that error crashed into a 500 (seen with sea-ice squares on other variables).
+    import numpy as np
+    from app import service
+    from app.errors import ApiError
+    def boom():
+        raise ApiError(404, "NO_DATA", "No data here.", {"bbox": [np.float32(108.25), np.float64(8.5)], "n": np.int16(3), "a": np.arange(2)})
+    monkeypatch.setattr(service, "variables", boom)
+    r = client.get("/api/v1/variables")
+    assert r.status_code == 404 and r.json()["error"]["details"] == {"bbox": [108.25, 8.5], "n": 3, "a": [0, 1]}
+
 def test_value_heatmap(client):
     body = client.get("/api/v1/values/grid", params={"variable_id": "imerg_precip", **PERIOD,
                                                      "bbox": "100,5,104,10"}).json()

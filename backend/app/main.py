@@ -156,11 +156,12 @@ def values_grid(request: Request, variable_id: str, start: str = Query(..., exam
 @api.get("/values/frames")
 def values_frames(variable_id: str, start: str = Query(..., examples=["2001-01"]), end: str = Query(..., examples=["2025-12"]),
                   bbox: Optional[str] = Query(None, description="west,south,east,north"),
-                  kind: str = Query("anomaly", pattern="^(value|anomaly)$")):
+                  kind: str = Query("anomaly", pattern="^(value|anomaly)$"),
+                  hemi: str = Query("N", pattern="^[NS]$", description="sea ice only: which pole")):
     """Time-lapse frames for the 2D map (display only; see app/timelapse.py)."""
     v = service.get_variable(variable_id)
     service._check_time(v, start, end)
-    return timelapse.frames(v, start, end, service._parse_bbox(bbox), kind)
+    return timelapse.frames(v, start, end, service._parse_bbox(bbox), kind, hemi)
 
 
 @api.get("/grids/status")

@@ -117,7 +117,9 @@ không bị bỏ (bỏ thì backend lỗi 500).
   (bỏ đất, bờ, lỗ cực Bắc), toạ độ `lat`/`lon` (float32, từ `x`, `y` qua pyproj), `hemi` (+1 Bắc, −1 Nam), `row`/`col` trên lưới
   448 × 304 (Bắc) / 332 × 316 (Nam); attrs `shape_n`/`shape_s` và `land_n`/`land_s` (mặt nạ đất + bờ, `np.packbits` theo hàng) để
   web vẽ đất đúng từng pixel. `grid_trend` chạy trên mọi chiều khác `time`; `region_series` với cube có `cell` lấy TB đều các pixel có
-  tâm trong bbox / đường viền (pixel 25 km gần bằng diện tích nhau). Time-lapse chưa hỗ trợ lưới cực (`/values/frames` trả 400).
+  tâm trong bbox / đường viền (pixel 25 km gần bằng diện tích nhau), hoặc đúng các pixel của vùng `polar` vẽ trên bản đồ cực
+  (`grid.PolarBox`). Phép chiếu thuận/nghịch `polar_pixel` / `polar_lonlat` (Hughes 1980, đúng tỉ lệ ở 70°) có bản sao ở
+  `web/src/places.ts`; cực Bắc ở pixel (234, 154), cực Nam (174, 158). Time-lapse: `/values/frames?hemi=` (raster một cực).
   Nạp vào RAM ~82 MB (68 752 × 300 float32); dựng cả hai cube: RSS đỉnh 1,9 GB, 17 s.
 - AOD lưu với `least_significant_digit = 4` (lệch tối đa 3·10⁻⁵ so với float32 đầy đủ; 55 → 27 MB và 16 MB).
 - **Sét không có**: chuỗi sét toàn cầu của NASA (LIS/OTD `lolrmts`) chỉ chạy 1995-05 → 2015-04, ISS LIS 2017-03 → 2023-11; bản

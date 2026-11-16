@@ -1,7 +1,7 @@
 // Offline place search: preset areas from the API, countries (Natural Earth 1:110m via world-atlas) and major cities.
 // Countries are analysed by their border (the backend masks the same file); cities and coordinates use the grid cell
 // that contains them.
-import { geoBounds } from "d3-geo";
+import { geoArea, geoBounds } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Topology } from "topojson-specification";
 import countriesTopo from "world-atlas/countries-110m.json";
@@ -29,6 +29,65 @@ export function pointPlace(lat: number, lon: number, name?: string): Place {
   return { ref: { type: "bbox", bbox }, label: name ?? `${f(s + s0 / 2, "N", "S")}, ${f(w + s0 / 2, "E", "W")}`, bbox };
 }
 
+// ---------- NSIDC polar grids (sea ice) ----------
+// Same projection as data-pipeline/pipeline/grid.py (polar_pixel / polar_lonlat): NSIDC-0051 polar stereographic,
+// Hughes 1980 ellipsoid, true scale at 70°, 25 km pixels. The Python twin matches every pixel of the sea-ice cube.
+export type Hemi = "N" | "S";
+export const POLAR_GRID: Record<Hemi, { lon0: number; x0: number; y0: number; rows: number; cols: number }> = {
+  N: { lon0: -45, x0: -3850, y0: 5850, rows: 448, cols: 304 }, S: { lon0: 0, x0: -3950, y0: 4350, rows: 332, cols: 316 },
+};
+const PA = 6378.273, PE = 0.081816153, PX = 25, RAD = Math.PI / 180;
+const tOf = (phi: number) => Math.tan(Math.PI / 4 - phi / 2) / ((1 - PE * Math.sin(phi)) / (1 + PE * Math.sin(phi))) ** (PE / 2);
+const TC = tOf(70 * RAD), MC = Math.cos(70 * RAD) / Math.sqrt(1 - (PE * Math.sin(70 * RAD)) ** 2);
+const sgn = (h: Hemi) => (h === "N" ? 1 : -1);
+
+/** [row, col] as fractions on a pole's grid: pixel (r, c) covers [r, r+1) × [c, c+1). */
+export function polarPixel(lat: number, lon: number, h: Hemi): [number, number] {
+  const g = POLAR_GRID[h], lam = (lon - g.lon0) * RAD, rho = (PA * MC * tOf(lat * sgn(h) * RAD)) / TC;
+  return [(g.y0 + sgn(h) * rho * Math.cos(lam)) / PX, (rho * Math.sin(lam) - g.x0) / PX];
+}
+
+/** [lon, lat] of a point given as fractional [row, col] on a pole's grid (inverse of polarPixel). */
+export function polarLonLat(row: number, col: number, h: Hemi): [number, number] {
+  const g = POLAR_GRID[h], x = g.x0 + col * PX, y = g.y0 - row * PX;
+  const chi = Math.PI / 2 - 2 * Math.atan((Math.hypot(x, y) * TC) / (PA * MC));
+  const e2 = PE * PE, e4 = e2 * e2, e6 = e4 * e2;
+  const phi = chi + (e2 / 2 + (5 * e4) / 24 + e6 / 12) * Math.sin(2 * chi) + ((7 * e4) / 48 + (29 * e6) / 240) * Math.sin(4 * chi) + ((7 * e6) / 120) * Math.sin(6 * chi);
+  return [((Math.atan2(x, -sgn(h) * y) / RAD + g.lon0 + 540) % 360) - 180, (phi / RAD) * sgn(h)];
+}
+
+/** Outline of pixel rows r0..r1, cols c0..c1 as [lon, lat] points (closed ring, about one point per pixel edge). */
+function polarRing(h: Hemi, [r0, r1]: [number, number], [c0, c1]: [number, number]): [number, number][] {
+  const line = (a: number, b: number) => { const n = Math.min(40, Math.max(1, Math.abs(b - a))); return Array.from({ length: n }, (_, i) => a + ((b - a) * i) / n); };
+  const pts: [number, number][] = [
+    ...line(c0, c1 + 1).map((c) => [r0, c] as [number, number]), ...line(r0, r1 + 1).map((r) => [r, c1 + 1] as [number, number]),
+    ...line(c1 + 1, c0).map((c) => [r1 + 1, c] as [number, number]), ...line(r1 + 1, r0).map((r) => [r, c0] as [number, number]),
+  ];
+  const ring = pts.map(([r, c]) => polarLonLat(r, c, h));
+  return [...ring, ring[0]];
+}
+
+/** A square of pixels drawn (or one pixel clicked) on a sea-ice polar map. The box is only for labels and the
+ * other maps; the backend analyses exactly these pixels (or, for lat/lon datasets, the cells centred inside them). */
+export function polarPlace(h: Hemi, rows: [number, number], cols: [number, number]): Place {
+  const ring = polarRing(h, rows, cols), lats = ring.map((p) => p[1]), lons = ring.map((p) => p[0]);
+  const [pr, pc] = polarPixel(90 * sgn(h), 0, h);
+  const pole = rows[0] <= pr && pr <= rows[1] + 1 && cols[0] <= pc && pc <= cols[1] + 1;
+  const wide = pole || Math.max(...lons) - Math.min(...lons) > 180;
+  const s = pole && h === "S" ? -90 : Math.floor(Math.min(...lats)), n = pole && h === "N" ? 90 : Math.ceil(Math.max(...lats));
+  const bbox: BBox = wide ? [-180, s, 180, n] : [Math.floor(Math.min(...lons)), s, Math.ceil(Math.max(...lons)), n];
+  const [lon, lat] = polarLonLat((rows[0] + rows[1] + 1) / 2, (cols[0] + cols[1] + 1) / 2, h);
+  const at = `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? "N" : "S"}, ${Math.abs(lon).toFixed(1)}°${lon >= 0 ? "E" : "W"}`;
+  const one = rows[0] === rows[1] && cols[0] === cols[1];
+  return { ref: { type: "polar", hemi: h, rows, cols }, label: one ? at : `Area around ${at}`, bbox };
+}
+
+/** The polar pixel under a point, as a place (clicks on the polar map or the globe while sea ice is shown). */
+export function polarPointPlace(lat: number, lon: number): Place | undefined {
+  const h: Hemi = lat >= 0 ? "N" : "S", [r, c] = polarPixel(lat, lon, h).map(Math.floor), g = POLAR_GRID[h];
+  return r >= 0 && r < g.rows && c >= 0 && c < g.cols ? polarPlace(h, [r, r], [c, c]) : undefined;
+}
+
 // ---------- countries ----------
 const topo = countriesTopo as unknown as Topology;
 const fc = feature(topo, topo.objects.countries) as unknown as GeoJSON.FeatureCollection<GeoJSON.Geometry, { name: string }>;
@@ -41,8 +100,15 @@ const COUNTRIES: PlaceHit[] = fc.features.map((f) => {
 const SHAPES = new Map(fc.features.map((f) => [f.properties.name, f]));
 /** Place for a Natural Earth country name; undefined for an unknown name. */
 export const countryPlace = (name: string): Place | undefined => COUNTRIES.find((c) => c.name === name)?.place;
-/** Border to draw for a place: countries only (other places are boxes or cells). */
-export const placeShape = (p: Place) => (p.ref.type === "country" ? SHAPES.get(p.ref.id) : undefined);
+/** Border to draw for a place: countries, and squares drawn on a polar map (other places are boxes or cells). */
+export function placeShape(p: Place): GeoJSON.Feature | undefined {
+  if (p.ref.type === "country") return SHAPES.get(p.ref.id);
+  if (p.ref.type !== "polar") return undefined;
+  const ring = polarRing(p.ref.hemi, p.ref.rows, p.ref.cols);
+  const f: GeoJSON.Feature<GeoJSON.Polygon> = { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [ring] } };
+  if (geoArea(f) > 2 * Math.PI) f.geometry.coordinates = [[...ring].reverse()];   // d3 reads the winding: keep the small side
+  return f;
+}
 
 // ---------- cities (name, country, lat, lon) ----------
 const CITY_DATA: [string, string, number, number][] = [

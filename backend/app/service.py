@@ -126,6 +126,11 @@ def resolve_region(ref) -> tuple[dict, tuple, list[str]]:
         if c is None:
             raise ApiError(404, "NOT_FOUND", f"Unknown country '{ref.id}'.", {"country": ref.id})
         bbox, out = c.bbox, {"type": "country", "id": c.name, "name": c.name}
+    elif ref.type == "polar":
+        box = bridge.PolarBox(1 if ref.hemi == "N" else -1, ref.rows, ref.cols)
+        bbox = box.bbox()
+        out = {"type": "polar", "hemi": ref.hemi, "rows": list(ref.rows), "cols": list(ref.cols),
+               "name": ref.name or f"an area drawn on the {'Arctic' if ref.hemi == 'N' else 'Antarctic'} map"}
     else:
         bbox, w = _geometry_to_bbox(ref.geometry)
         warnings.append(w)
@@ -160,13 +165,23 @@ def _country_of(region: dict) -> str | None:
     return region.get("id") if region.get("type") == "country" else None
 
 
+def _shape_of(region: dict):
+    """Hình dạng của vùng ngoài khung bao: tên quốc gia, hình vuông trên bản đồ cực (PolarBox), hoặc None."""
+    if region.get("type") == "polar":
+        return bridge.PolarBox(1 if region["hemi"] == "N" else -1, region["rows"], region["cols"])
+    return _country_of(region)
+
+
 def _region_values(v: catalog.Variable, bbox: tuple, start: str, end: str,
-                   country: str | None = None) -> tuple[pd.Series, pd.Series, list]:
-    """Chuỗi tháng của vùng. `country`: chỉ các ô có tâm trong đường viền quốc gia (catalog.COUNTRIES)."""
+                   country=None) -> tuple[pd.Series, pd.Series, list]:
+    """Chuỗi tháng của vùng. `country`: tên quốc gia (chỉ các ô có tâm trong đường viền, catalog.COUNTRIES) hoặc
+    PolarBox (hình vuông vẽ trên bản đồ cực: đúng pixel trên lưới cực, ô có tâm trong hình vuông trên lưới lat/lon)."""
     cube = bridge.load_cube(v.pipeline_id)
+    polar = isinstance(country, bridge.PolarBox)
+    shape = country if polar else catalog.COUNTRIES[country].rings if country else None
     if "cell" in cube.dims:          # lưới cực (băng biển): pixel có tâm trong vùng / đường viền, không có ô lat/lon
         try:
-            value, frac = bridge.region_series(cube, bbox, catalog.COUNTRIES[country].rings if country else None)
+            value, frac = bridge.region_series(cube, bbox, shape)
         except AssertionError:
             raise ApiError(404, "NO_DATA", f"No {v.name.lower()} data here: it covers only polar seas that have ice.",
                            {"bbox": list(bbox)})
@@ -180,15 +195,15 @@ def _region_values(v: catalog.Variable, bbox: tuple, start: str, end: str,
     lat, lon = cube["lat"].values, cube["lon"].values
     extra, rings = [], None
     if country:
-        c = catalog.COUNTRIES[country]
         lat_in, lon_in = lat[(lat >= s) & (lat <= n)], lon[(lon >= w) & (lon <= e)]
-        if len(lat_in) and len(lon_in) and bridge.shape_mask(lat_in, lon_in, c.rings).any():
-            rings = c.rings
-        else:                         # nước nhỏ hơn một ô: dùng ô gần tâm khung bao nhất, và nói rõ
+        if len(lat_in) and len(lon_in) and bridge.shape_mask(lat_in, lon_in, shape).any():
+            rings = shape
+        else:                         # nước / hình vuông nhỏ hơn một ô: dùng ô gần tâm khung bao nhất, và nói rõ
             cs = m["cell_size_deg"]
-            la, lo = lat[np.abs(lat - (s + n) / 2).argmin()], lon[np.abs(lon - (w + e) / 2).argmin()]
+            la, lo = float(lat[np.abs(lat - (s + n) / 2).argmin()]), float(lon[np.abs(lon - (w + e) / 2).argmin()])
             bbox = w, s, e, n = (lo - cs / 2, la - cs / 2, lo + cs / 2, la + cs / 2)
-            extra.append(f"{c.name} is smaller than one {cs:g}° data square, so the square nearest its centre is used.")
+            what = "This drawn area" if polar else catalog.COUNTRIES[country].name
+            extra.append(f"{what} is smaller than one {cs:g}° data square, so the square nearest its centre is used.")
     if not (((lat >= s) & (lat <= n)).any() and ((lon >= w) & (lon <= e)).any()):
         raise ApiError(400, "REGION_TOO_SMALL",
                        f"Region does not contain the centre of any {m['cell_size_deg']:g}° grid cell. "
@@ -245,7 +260,7 @@ def series(req: SeriesRequest) -> dict:
     v = get_variable(req.variable_id)
     region, bbox, warnings = resolve_region(req.region)
     _check_time(v, req.start, req.end)
-    value, frac, extra = _region_values(v, bbox, req.start, req.end, _country_of(region))
+    value, frac, extra = _region_values(v, bbox, req.start, req.end, _shape_of(region))
     warnings = warnings + extra
     anom = bridge.anomaly(value)
     clim = value.groupby(value.index.month).mean().reindex(range(1, 13))
@@ -282,7 +297,7 @@ def _trend_summary(v, region, start, end, slope, p, significant, sufficient) -> 
 
 
 def _compute_trend(v, region, bbox, start, end, alpha, warnings) -> tuple[dict, pd.Series]:
-    value, frac, extra = _region_values(v, bbox, start, end, _country_of(region))
+    value, frac, extra = _region_values(v, bbox, start, end, _shape_of(region))
     warnings = warnings + extra
     try:
         tr = bridge.trend_one(value, annual=_annual(v))
@@ -313,6 +328,8 @@ def _compute_trend(v, region, bbox, start, end, alpha, warnings) -> tuple[dict, 
     key = {"v": v.id, "bbox": bbox, "start": start, "end": end, "alpha": alpha}
     if _country_of(region):                 # cùng khung bao nhưng khác vùng: id phải khác
         key["country"] = _country_of(region)
+    if region.get("type") == "polar":
+        key["polar"] = [region["hemi"], *region["rows"], *region["cols"]]
     trend_id = _make_id("tr", key)
     res = {
         "trend_id": trend_id, "variable_id": v.id, "region": region, "start": start, "end": end,
@@ -671,7 +688,7 @@ def trend_sensitivity(req: TrendRequest) -> dict:
     v = get_variable(req.variable_id)
     region, bbox, _ = resolve_region(req.region)
     _check_time(v, req.start, req.end)
-    value = _region_values(v, bbox, req.start, req.end, _country_of(region))[0]
+    value = _region_values(v, bbox, req.start, req.end, _shape_of(region))[0]
     starts = [req.start] + [f"{y}-01" for y in range(int(req.start[:4]) + 1, int(req.end[:4]) + 1)]
     points = []
     for start in starts:

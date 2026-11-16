@@ -10,9 +10,9 @@ import { Term } from "../Term";
 import { seriesCsv } from "../report/model";
 import { periodEnd, periodMonths, periodStart } from "../period";
 import { PlacePicker } from "../PlacePicker";
-import { countryPlace, placeShape } from "../places";
+import { countryPlace, placeShape, polarPlace, type Hemi } from "../places";
 import { Legend, WorldMap, type Layer } from "../WorldMap";
-import { PolarMap } from "../PolarMap";
+import { PolarMap, poleOf } from "../PolarMap";
 import { TrendChart } from "../TrendChart";
 import { byTheme, ParamIcon, paramShort, Terra } from "../ui";
 import { ExplorerResult, ScientistResult } from "../ResultViews";
@@ -65,9 +65,10 @@ export function Explore() {
     return Array.from({ length: b - a + 1 }, (_, i) => a + i);
   }, [variable]);
   const units = variable?.display_units ?? "";
-  // Sea ice lives on NSIDC's polar grids: its map is PolarMap (both poles); every other dataset uses the world map.
+  // Sea ice lives on NSIDC's polar grids: its map is PolarMap (one pole at a time); every other dataset uses the world map.
   const polar = variable?.grid === "polar";
-  useEffect(() => { if (polar && timelapse) setTimelapse(false); }, [polar, timelapse]);   // no time-lapse on the polar grid
+  const [pole, setPole] = useState<Hemi>("N");   // shown pole, shared by the polar map and its time-lapse
+  useEffect(() => { const p = poleOf(sel.place); if (p) setPole(p); }, [sel.place]);   // a place on the other pole flips it
   // Large map mode: the map card fills the workspace (and optionally the screen). Escape leaves it first,
   // before the map's own Escape (clear selection) handler runs.
   const mapRef = useRef<HTMLElement>(null);
@@ -165,6 +166,7 @@ export function Explore() {
     const r = st.place?.kind === "region" ? regions.find((x) => x.id === (st.place as { id: string }).id) : undefined;
     const place: Place | undefined = !st.place ? undefined : st.place.kind === "cell" ? cellPlace(st.place.lon, st.place.lat)
       : st.place.kind === "box" ? areaPlace(st.place.bbox) : st.place.kind === "country" ? countryPlace(st.place.name)
+      : st.place.kind === "polar" ? polarPlace(st.place.hemi, st.place.rows, st.place.cols)
       : r && { ref: { type: "preset", id: r.id }, label: r.name, bbox: r.bbox };
     const target = v ?? variable;
     if (!target || (!v && !place)) return;
@@ -283,7 +285,7 @@ export function Explore() {
           <div className="seg" role="group" aria-label="Map layer">
             <button type="button" className={!timelapse && layer === "values" ? "on" : ""} aria-pressed={!timelapse && layer === "values"} onClick={() => { setTimelapse(false); setLayer("values"); }}>Values</button>
             <button type="button" className={!timelapse && layer === "trend" ? "on" : ""} aria-pressed={!timelapse && layer === "trend"} onClick={() => { setTimelapse(false); setLayer("trend"); }}>Trend</button>
-            {!polar && <button type="button" className={timelapse ? "on" : ""} aria-pressed={timelapse} onClick={() => setTimelapse(true)}>Time-lapse</button>}
+            <button type="button" className={timelapse ? "on" : ""} aria-pressed={timelapse} onClick={() => setTimelapse(true)}>Time-lapse</button>
           </div>
           <span style={{ font: "800 14px var(--body)" }}>{variable?.parameter_name} · {variable?.dataset_name} · {periodLabel(periodStart(sel))} to {periodLabel(periodEnd(sel))}</span>
           {!timelapse && layer === "values" && (
@@ -301,14 +303,13 @@ export function Explore() {
             </button>
           </div>
         </div>
-        {timelapse && variable?.available && !polar ? (
-          <Timelapse variable={variable} start={periodStart(sel)} end={periodEnd(sel)} conv={conv}
+        {timelapse && variable?.available ? (
+          <Timelapse variable={variable} start={periodStart(sel)} end={periodEnd(sel)} conv={conv} pole={polar ? pole : undefined} onPole={setPole}
             bbox={sel.place.bbox[2] - sel.place.bbox[0] >= 360 ? null : sel.place.bbox} />
         ) : <>
         {polar ? (
           <PolarMap layer={layer} trend={shownTrend} values={shownValues} loading={gridLoading} loadingInfo={gridInfo} units={units}
-            selected={sel.place.bbox} selectedLabel={sel.place.label} onClear={() => runAnalysis({ place: WORLD })}
-            onPick={(lon, lat) => runAnalysis({ place: cellPlace(lon, lat) })} />
+            place={sel.place} onClear={() => runAnalysis({ place: WORLD })} onPlace={(place) => runAnalysis({ place })} pole={pole} onPole={setPole} />
         ) : (
         <WorldMap layer={layer} trend={shownTrend} values={shownValues} loading={gridLoading} loadingInfo={gridInfo} units={units}
           selected={sel.place.bbox[2] - sel.place.bbox[0] >= 360 && sel.place.ref.type !== "country" ? null : sel.place.bbox}

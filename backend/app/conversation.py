@@ -238,10 +238,10 @@ def decorate(response, ctx):
     response = response.model_copy(update={"resolved_context": ctx, "suggested_questions": [
         "What does that p-value mean?", "Compare it with another region.", "Plot the time series.", "Inspect dataset provenance."]})
     actions = []
-    if ctx.variable_id and ctx.region and ctx.region.type in {"preset", "bbox", "country"} and ctx.start and ctx.end:
+    if ctx.variable_id and ctx.region and ctx.region.type in {"preset", "bbox", "country", "polar"} and ctx.start and ctx.end:
         if ctx.start.endswith("-01") and ctx.end.endswith("-12"):
             params = ChatActionParams(variable_id=ctx.variable_id, region=ctx.region, start=ctx.start, end=ctx.end,
-                                      region_b=ctx.region_b if ctx.region_b and ctx.region_b.type in {"preset", "bbox", "country"} else None)
+                                      region_b=ctx.region_b if ctx.region_b and ctx.region_b.type in {"preset", "bbox", "country", "polar"} else None)
             if response.evidence:
                 actions += [ChatAction(type="navigate", page=page, label=label, params=params) for page, label in [
                     ("explore", "Open this analysis in Explore"), ("report", "Add this analysis to Report")]]

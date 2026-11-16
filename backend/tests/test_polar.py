@@ -46,7 +46,32 @@ def test_polar_grid_endpoints(client):
         assert abs(t["slope_per_decade"] + 6) < 0.1 and t["significant"]
         body["region"]["bbox"] = [100, 5, 110, 25]
         assert client.post("/api/v1/trends", json=body).json()["error"]["code"] == "NO_DATA"
-        assert client.get("/api/v1/values/frames", params=q).json()["error"]["code"] == "NOT_SUPPORTED"
+        # time-lapse: one pole's pixel raster, rows bottom-up (web flips them), land mask at full resolution
+        f = client.get("/api/v1/values/frames", params={**q, "kind": "value"}).json()
+        g = f["grid"]
+        assert (g["nlat"], g["nlon"], g["polar"]["hemi"], g["polar"]["factor"]) == (4, 5, "N", 1) and g["polar"]["land_b64"]
+        fr = np.frombuffer(base64.b64decode(f["data_b64"]), "<i2").reshape(len(f["times"]), 4, 5)
+        assert np.sum(fr[0] != f["missing"]) == 3 and fr[0, 4 - 1 - 2, 2] != f["missing"]          # pixel row 2, col 2
+        assert abs(fr[0, 4 - 1 - 1, 1] * f["scale"] + f["offset"] - 90.0) < 0.01                   # 80 + 10·cos(0) in Jan 2001
+        s = client.get("/api/v1/values/frames", params={**q, "hemi": "S"}).json()
+        assert (s["grid"]["nlat"], s["grid"]["nlon"], s["grid"]["polar"]["hemi"]) == (3, 4, "S")
+        anom = np.frombuffer(base64.b64decode(s["data_b64"]), "<i2")
+        assert np.all(np.abs(anom[anom != s["missing"]] * s["scale"] + s["offset"]) < 0.01)          # S pixel = climatology only
+        assert client.get("/api/v1/values/frames", params={**q, "hemi": "X"}).status_code == 422
+
+        # a square drawn on the Arctic map: exactly the pixels by row/col, echoed back, its own trend id
+        drawn = {"type": "polar", "hemi": "N", "rows": [1, 1], "cols": [1, 2]}
+        t = client.post("/api/v1/trends", json={**body, "region": drawn}).json()
+        assert abs(t["slope_per_decade"] + 6) < 0.1 and t["significant"], t
+        assert (t["region"]["hemi"], t["region"]["rows"], t["region"]["cols"]) == ("N", [1, 1], [1, 2])
+        other = client.post("/api/v1/trends", json={**body, "region": {**drawn, "cols": [1, 1]}}).json()
+        assert other["trend_id"] != t["trend_id"]
+        assert client.post("/api/v1/trends", json={**body, "region": {**drawn, "rows": [3, 2]}}).status_code == 422
+        assert client.post("/api/v1/trends", json={**body, "region": {**drawn, "rows": [0, 0]}}).json()["error"]["code"] == "NO_DATA"   # land row
+        assert client.post("/api/v1/series", json={**body, "region": drawn}).status_code == 200
+        chat = client.post("/api/v1/chat", json={"message": "Analyze the selected trend.", "use_tools": True,
+                                                 "context": {**{k: q[k] for k in ("variable_id", "start", "end")}, "region": drawn}}).json()
+        assert chat["evidence"] and chat["actions"][0]["params"]["region"]["type"] == "polar", chat
 
         flat = client.get("/api/v1/trends/grid", params={**q, "variable_id": "imerg_precip"}).json()
         assert flat["grid"] == "latlon" and "polar" not in flat and "hemi" not in flat["cells"][0]

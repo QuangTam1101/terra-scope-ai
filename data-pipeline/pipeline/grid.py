@@ -102,7 +102,11 @@ def shape_mask(lat, lon, rings):
     """Ô nào có TÂM nằm trong đường viền (quốc gia): mảng bool (lat, lon).
     rings: các vòng (N, 2) lon/lat của mọi mảnh; quy tắc chẵn-lẻ nên lỗ (hồ, nước nằm trong nước khác) và
     nhiều mảnh (đảo) đều đúng. Quét từng hàng vĩ độ, đếm số cạnh cắt hàng ở bên trái mỗi tâm ô.
-    Toạ độ phẳng: đường viền Natural Earth đã cắt tại ±180° nên không vòng nào vắt qua kinh tuyến 180."""
+    Toạ độ phẳng: đường viền Natural Earth đã cắt tại ±180° nên không vòng nào vắt qua kinh tuyến 180.
+    rings cũng có thể là PolarBox (hình vuông vẽ trên bản đồ cực)."""
+    if isinstance(rings, PolarBox):
+        la, lo = np.meshgrid(np.asarray(lat, float), np.asarray(lon, float), indexing="ij")
+        return rings.contains(la, lo)
     edges = np.concatenate([np.column_stack([r[:-1], r[1:]]) for r in map(np.asarray, rings)])
     x1, y1, x2, y2 = edges.T
     lon = np.asarray(lon, dtype=float)
@@ -115,8 +119,78 @@ def shape_mask(lat, lon, rings):
     return out
 
 
+# Lưới cực NSIDC-0051 (stereographic, ellipsoid Hughes 1980, đúng tỉ lệ ở 70°, pixel 25 km). Khớp 100 % row/col
+# của mọi pixel trong cube băng biển (kiểm 16/11/2026). hemi 1 = Bắc, -1 = Nam: (kinh tuyến giữa, x mép trái, y mép trên km, số hàng, số cột).
+_A, _E, _PX = 6378.273, 0.081816153, 25.0
+POLAR_GRID = {1: (-45.0, -3850.0, 5850.0, 448, 304), -1: (0.0, -3950.0, 4350.0, 332, 316)}
+
+
+def _t(phi):
+    return np.tan(np.pi / 4 - phi / 2) / ((1 - _E * np.sin(phi)) / (1 + _E * np.sin(phi))) ** (_E / 2)
+
+
+_TC = _t(np.deg2rad(70.0))
+_MC = np.cos(np.deg2rad(70.0)) / np.sqrt(1 - (_E * np.sin(np.deg2rad(70.0))) ** 2)
+
+
+def polar_pixel(lat, lon, hemi):
+    """(hàng, cột) dạng số thực trên lưới cực của bán cầu `hemi`: pixel (r, c) phủ [r, r+1) × [c, c+1)."""
+    lon0, x0, y0, _, _ = POLAR_GRID[hemi]
+    lam = np.deg2rad(np.asarray(lon, float) - lon0)
+    rho = _A * _MC * _t(np.deg2rad(np.asarray(lat, float) * hemi)) / _TC
+    return (y0 + hemi * rho * np.cos(lam)) / _PX, (rho * np.sin(lam) - x0) / _PX
+
+
+def polar_lonlat(row, col, hemi):
+    """Ngược của polar_pixel (chuỗi chuẩn của Snyder cho vĩ độ trên ellipsoid): (lat, lon) của điểm (hàng, cột)."""
+    lon0, x0, y0, _, _ = POLAR_GRID[hemi]
+    x, y = x0 + np.asarray(col, float) * _PX, y0 - np.asarray(row, float) * _PX
+    chi = np.pi / 2 - 2 * np.arctan(np.hypot(x, y) * _TC / (_A * _MC))
+    e2, e4, e6 = _E ** 2, _E ** 4, _E ** 6
+    phi = (chi + (e2 / 2 + 5 * e4 / 24 + e6 / 12) * np.sin(2 * chi) + (7 * e4 / 48 + 29 * e6 / 240) * np.sin(4 * chi)
+           + 7 * e6 / 120 * np.sin(6 * chi))
+    lon = (np.rad2deg(np.arctan2(x, -hemi * y)) + lon0 + 180) % 360 - 180
+    return np.rad2deg(phi) * hemi, lon
+
+
+class PolarBox:
+    """Hình vuông người dùng vẽ trên bản đồ cực (băng biển): các pixel hàng r0..r1, cột c0..c1 (gồm cả hai đầu)
+    của một bán cầu. Pixel lưới cực: lấy đúng theo hàng/cột; ô lat/lon của biến khác: ô có tâm rơi vào hình vuông."""
+
+    def __init__(self, hemi, rows, cols):
+        self.hemi, (self.r0, self.r1), (self.c0, self.c1) = int(hemi), map(int, rows), map(int, cols)
+
+    def pixels(self, hemi, row, col):
+        return (hemi == self.hemi) & (row >= self.r0) & (row <= self.r1) & (col >= self.c0) & (col <= self.c1)
+
+    def contains(self, lat, lon):
+        lat = np.asarray(lat, float)
+        row, col = polar_pixel(lat, lon, self.hemi)
+        return (lat * self.hemi > 0) & self.pixels(self.hemi, np.floor(row), np.floor(col))
+
+    def bbox(self):
+        """Khung lat/lon bao trọn hình vuông (mép lấy mẫu dày); chứa cực thì phủ mọi kinh độ tới ±90°."""
+        r = np.linspace(self.r0, self.r1 + 1, 4 * (self.r1 - self.r0 + 1) + 1)
+        c = np.linspace(self.c0, self.c1 + 1, 4 * (self.c1 - self.c0 + 1) + 1)
+        rows = np.concatenate([r, r, np.full_like(c, self.r0), np.full_like(c, self.r1 + 1)])
+        cols = np.concatenate([np.full_like(r, self.c0), np.full_like(r, self.c1 + 1), c, c])
+        lat, lon = polar_lonlat(rows, cols, self.hemi)
+        pr, pc = polar_pixel(90.0 * self.hemi, 0.0, self.hemi)
+        pole = self.r0 <= pr <= self.r1 + 1 and self.c0 <= pc <= self.c1 + 1
+        if pole or lon.max() - lon.min() > 180:          # quanh cực hoặc vắt qua kinh tuyến 180: lấy mọi kinh độ
+            w, e = -180.0, 180.0
+        else:
+            w, e = float(np.floor(lon.min())), float(np.ceil(lon.max()))
+        s, n = float(np.floor(lat.min())), float(np.ceil(lat.max()))
+        if pole:
+            s, n = (s, 90.0) if self.hemi == 1 else (-90.0, n)
+        return max(w, -180.0), max(s, -90.0), min(e, 180.0), min(n, 90.0)
+
+
 def points_in(lat, lon, rings, chunk=4096):
     """Như shape_mask nhưng cho danh sách điểm rời (tâm pixel lưới cực): điểm nào nằm trong đường viền (chẵn-lẻ)."""
+    if isinstance(rings, PolarBox):
+        return rings.contains(lat, lon)
     edges = np.concatenate([np.column_stack([r[:-1], r[1:]]) for r in map(np.asarray, rings)])
     x1, y1, x2, y2 = edges.T
     lat, lon = np.asarray(lat, dtype=float), np.asarray(lon, dtype=float)
@@ -137,7 +211,9 @@ def _cell_series(cube, bbox, rings):
     w, s, e, n = bbox
     lat, lon = cube["lat"].values, cube["lon"].values
     inside = (lat >= s) & (lat <= n) & (lon >= w) & (lon <= e)
-    if rings is not None and inside.any():
+    if isinstance(rings, PolarBox):                  # hình vuông vẽ trên chính lưới này: đúng từng pixel
+        inside = rings.pixels(cube["hemi"].values, cube["row"].values, cube["col"].values)
+    elif rings is not None and inside.any():
         inside[inside] = points_in(lat[inside], lon[inside], rings)
     assert inside.any(), "không pixel nào có tâm trong vùng"
     sub = cube.isel(cell=np.nonzero(inside)[0])

@@ -86,6 +86,32 @@ try {
     for(const h of ['','#','#/','#landing','#/landing'])assert.equal(routes.pageFromHash(h),'landing');
     assert.equal(routes.pageFromHash('#/explore'),'explore');assert.equal(routes.pageFromHash('#/detective'),'detective');
   });
+  const places=await server.ssrLoadModule('/src/places.ts');
+  const {poleOf}=await server.ssrLoadModule('/src/PolarMap.tsx');
+  const {geoArea}=await import('d3-geo');
+  test('sea-ice polar grid: projection matches NSIDC, places carry exact pixels, the pole switch follows the place',()=>{
+    const near=(a,b,eps=1e-6)=>a.every((v,i)=>Math.abs(v-b[i])<eps);
+    assert.ok(near(places.polarPixel(90,0,'N'),[234,154]),'North Pole at row 234, col 154');
+    assert.ok(near(places.polarPixel(-90,0,'S'),[174,158]),'South Pole at row 174, col 158');
+    for(const [h,r,c] of [['N',10.5,20.5],['N',300.5,250.5],['N',234.5,100.5],['S',50.5,60.5],['S',300.5,300.5]]){
+      const [lon,lat]=places.polarLonLat(r,c,h);
+      assert.ok(near(places.polarPixel(lat,lon,h),[r,c],1e-6),`${h} ${r},${c} round trip`);
+    }
+    const one=places.polarPlace('N',[100,100],[120,120]);
+    assert.deepEqual(one.ref,{type:'polar',hemi:'N',rows:[100,100],cols:[120,120]});
+    assert.ok(!/Area around/.test(one.label),one.label);
+    const pole=places.polarPlace('N',[220,250],[140,170]);
+    assert.match(pole.label,/^Area around/);
+    assert.equal(pole.bbox[0],-180);assert.equal(pole.bbox[2],180);assert.equal(pole.bbox[3],90);
+    const shape=places.placeShape(pole);
+    assert.equal(shape.geometry.type,'Polygon');assert.ok(geoArea(shape)<2*Math.PI,'ring winds around the square, not the rest of the Earth');
+    assert.equal(places.polarPointPlace(30,0),undefined,'30°N is off the Arctic grid');
+    assert.equal(places.polarPointPlace(-75,170).ref.hemi,'S');
+    assert.equal(poleOf(pole),'N');assert.equal(poleOf(places.polarPlace('S',[1,2],[3,4])),'S');
+    assert.equal(poleOf({ref:{type:'preset',id:'arctic'},label:'Arctic',bbox:[-180,66.5,180,90]}),'N');
+    assert.equal(poleOf({ref:{type:'preset',id:'global'},label:'Whole world',bbox:[-180,-90,180,90]}),undefined);
+    assert.equal(poleOf({ref:{type:'preset',id:'mekong_delta'},label:'Mekong Delta',bbox:[104.4,8.5,106.9,11.1]}),undefined);
+  });
   const {api}=await server.ssrLoadModule('/src/api.ts');
   test('API timeout surfaces a retryable error and a subsequent request can succeed',async()=>{
     const oldFetch=globalThis.fetch,oldTimer=globalThis.setTimeout,oldClear=globalThis.clearTimeout;

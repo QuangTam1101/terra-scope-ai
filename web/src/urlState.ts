@@ -5,7 +5,8 @@ import type { RegionRef } from "./api";
 export interface ExploreState {
   variableId?: string;
   place?: { kind: "region"; id: string } | { kind: "country"; name: string } | { kind: "cell"; lat: number; lon: number }
-    | { kind: "box"; bbox: [number, number, number, number] };
+    | { kind: "box"; bbox: [number, number, number, number] }
+    | { kind: "polar"; hemi: "N" | "S"; rows: [number, number]; cols: [number, number] };   // square on a sea-ice polar map
   start?: string; end?: string;            // "YYYY-MM"
   view?: "values" | "trend" | "timelapse";
 }
@@ -32,6 +33,12 @@ function parsePlace(raw: string | null): ExploreState["place"] {
     const [lat, lon] = n;
     if (!(Math.abs(lat) <= 90 && Math.abs(lon) <= 180)) return undefined;
     return { kind, lat: cellCentre(lat, 90), lon: cellCentre(lon, 180) };
+  }
+  if (kind === "polar") {                                  // "polar:N,r0,r1,c0,c1" (NSIDC pixels, inclusive)
+    const [h, ...rc] = rest.split(","), [r0, r1, c0, c1] = rc.map(num);
+    const [rows, cols] = h === "N" ? [448, 304] : h === "S" ? [332, 316] : [0, 0];
+    const ok = rc.length === 4 && [r0, r1, c0, c1].every(Number.isInteger) && 0 <= r0 && r0 <= r1 && r1 < rows && 0 <= c0 && c0 <= c1 && c1 < cols;
+    return ok ? { kind, hemi: h as "N" | "S", rows: [r0, r1], cols: [c0, c1] } : undefined;
   }
   if (kind === "box" && n.length === 4) {
     const [w, s, e, nn] = n.map(grid);
@@ -61,7 +68,7 @@ export function parseExplore(hash: string): ExploreState | null {
 function format(s: ExploreState): string {
   const p = s.place;
   const place = !p ? undefined : p.kind === "region" ? `region:${p.id}` : p.kind === "country" ? `country:${p.name}`
-    : p.kind === "cell" ? `cell:${p.lat},${p.lon}` : `box:${p.bbox.join(",")}`;
+    : p.kind === "cell" ? `cell:${p.lat},${p.lon}` : p.kind === "polar" ? `polar:${p.hemi},${p.rows.join(",")},${p.cols.join(",")}` : `box:${p.bbox.join(",")}`;
   const parts = [["v", s.variableId], ["place", place], ["from", s.start], ["to", s.end], ["view", s.view]]
     .filter((kv): kv is [string, string] => kv[1] !== undefined).map(([k, v]) => `${k}=${encodeURIComponent(v).replace(/%3A/g, ":").replace(/%2C/g, ",")}`);
   return parts.length ? `#explore?${parts.join("&")}` : "#explore";
@@ -76,10 +83,11 @@ export function shareUrl(s: ExploreState): string {
   return `${location.origin}${location.pathname}${location.search}${exploreHash(s)}`;
 }
 
-/** Link place from an app place ref: presets by id, countries by name, one 0.5° cell as "cell", any other box as "box". */
+/** Link place from an app place ref: presets by id, countries by name, polar squares by pixels, one 0.5° cell as "cell", any other box as "box". */
 export function linkPlace(ref: RegionRef): ExploreState["place"] {
   if (ref.type === "preset") return { kind: "region", id: ref.id };
   if (ref.type === "country") return { kind: "country", name: ref.id };
+  if (ref.type === "polar") return { kind: "polar", hemi: ref.hemi, rows: ref.rows, cols: ref.cols };
   const [w, s, e, n] = ref.bbox;
   return e - w === CELL && n - s === CELL ? { kind: "cell", lat: s + CELL / 2, lon: w + CELL / 2 } : { kind: "box", bbox: [w, s, e, n] };
 }

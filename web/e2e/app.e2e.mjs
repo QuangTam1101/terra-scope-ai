@@ -94,14 +94,20 @@ describe("Terra-scope full feature E2E", { skip: !up && "servers not running", c
     await page.waitFor(settled(/mm\/month/), { timeout: 60000, label: "result back on rainfall" });
   });
 
-  it("explore: sea ice swaps in the two polar maps; any other topic brings the world map back", async () => {
-    const polar = `document.querySelectorAll(".mapcard .polar-panel canvas").length`;
-    const timelapse = `[...document.querySelectorAll('.mapcard [aria-label="Map layer"] button')].some((b) => b.innerText === "Time-lapse")`;
+  it("explore: sea ice swaps in the polar map (one pole at a time); any other topic brings the world map back", async () => {
+    const polar = `document.querySelectorAll(".mapcard canvas.polar-canvas").length`;
+    const pressed = (name) => `document.querySelector('.mapcard [aria-label="Pole"] button[aria-pressed="true"]')?.innerText === "${name}"`;
     await page.click(`document.querySelector('[data-tour="variable"] button[aria-label="Sea ice"]')`);
-    await page.waitFor(`${polar} === 2 && !${timelapse}`, { timeout: 60000, label: "Arctic and Antarctic panels, no time-lapse" });
+    await page.waitFor(`${polar} === 1 && ${pressed("Arctic")}`, { timeout: 60000, label: "one polar map, Arctic first" });
     await page.waitFor(`/No data for Mekong Delta/.test(document.querySelector(".result")?.innerText ?? "")`, { timeout: 60000, label: "no sea ice in the Mekong Delta" });
+    await page.click(byText('.mapcard [aria-label="Pole"] button', "Antarctic"));
+    await page.waitFor(pressed("Antarctic"), { label: "pole switch" });
+    await page.click(byText('.mapcard [aria-label="Map layer"] button', "Time-lapse"));
+    await page.waitFor(`document.querySelector(".tl-canvas.polar") && document.querySelector('.tl [aria-label="Pole"] button[aria-pressed="true"]')?.innerText === "Antarctic" && /\\d{4}/.test(document.querySelector(".tl-month")?.innerText ?? "")`,
+      { timeout: 60000, label: "polar time-lapse keeps the chosen pole" });
+    await page.click(byText('.mapcard [aria-label="Map layer"] button', "Trend"));
     await page.click(`document.querySelector('[data-tour="variable"] button[aria-label="Precipitation"]')`);
-    await page.waitFor(`${polar} === 0 && ${timelapse} && /mm\\/month/.test(document.querySelector(".result")?.innerText ?? "")`, { timeout: 60000, label: "world map and rainfall back" });
+    await page.waitFor(`${polar} === 0 && /mm\\/month/.test(document.querySelector(".result")?.innerText ?? "")`, { timeout: 60000, label: "world map and rainfall back" });
   });
 
   it("explore: map overlay names the real grid operation", async () => {

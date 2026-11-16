@@ -144,3 +144,27 @@ def test_convert_cube_imerg_mm_per_month():
                                                    "lat": [0.5], "lon": [0.5]}, dims=("time", "lat", "lon"))
     out, unit = convert_cube("GPM_3IMERGM_07_precipitation", da, "mm/hr")
     assert unit == "mm/month" and list(out.values.ravel()) == [24 * 31, 24 * 29]
+
+
+def test_polar_box_projection_mask_and_bbox():
+    """Hình vuông vẽ trên bản đồ cực NSIDC: phép chiếu thuận/ngược khớp nhau, mask ô lat/lon và khung bao đúng."""
+    from pipeline.grid import PolarBox, polar_lonlat, polar_pixel
+    for hemi in (1, -1):
+        rows, cols = np.array([10.5, 200.5, 300.5]), np.array([20.5, 150.5, 280.5])
+        lat, lon = polar_lonlat(rows, cols, hemi)
+        r2, c2 = polar_pixel(lat, lon, hemi)
+        assert np.allclose(r2, rows, atol=1e-6) and np.allclose(c2, cols, atol=1e-6)
+    # Bắc Cực: cực nằm ở pixel (234, 154); hình vuông chứa cực phủ mọi kinh độ tới 90°N
+    pr, pc = polar_pixel(90.0, 0.0, 1)
+    assert (int(pr), int(pc)) == (234, 154)
+    box = PolarBox(1, (224, 244), (144, 164))
+    w, s, e, n = box.bbox()
+    assert (w, e, n) == (-180.0, 180.0, 90.0) and 84 < s < 87
+    lat, lon = np.array([89.9, 80.0, -89.9]), np.array([0.0, 0.0, 0.0])
+    assert box.contains(lat, lon).tolist() == [True, False, False]          # Nam Cực không bao giờ ở hình vuông Bắc
+    # hình vuông xa cực: khung bao hẹp và mọi điểm mẫu bên trong nằm trong khung
+    box = PolarBox(1, (300, 320), (60, 80))
+    w, s, e, n = box.bbox()
+    la, lo = polar_lonlat(np.linspace(300, 321, 30), np.linspace(60, 81, 30), 1)
+    assert e - w < 180 and (la >= s).all() and (la <= n).all() and (lo >= w).all() and (lo <= e).all()
+    assert box.contains(la[1:-1], lo[1:-1]).all()

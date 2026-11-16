@@ -3,11 +3,11 @@ import { geoEquirectangular, geoGraticule10, geoPath } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Topology } from "topojson-specification";
 import landTopo from "world-atlas/land-110m.json";
-import type { BBox, TrendGrid, ValueGrid } from "./api";
+import type { BBox, GridCell, TrendGrid, ValueCell, ValueGrid } from "./api";
 import { plain, signed } from "./ui";
 import { rateOf, rateUnit } from "./units";
 import { Globe } from "./Globe";
-import { cellKey, gridCell } from "./places";
+import { cellKey, gridCell, polarLonLat } from "./places";
 
 export type Layer = "values" | "trend";
 
@@ -48,7 +48,8 @@ export function paintMap(ctx: CanvasRenderingContext2D, path: ReturnType<typeof 
 
   const pat = hatch(ctx);
   const gap = 0.3 / k;
-  if (layer === "trend" && trend) {
+  if ((layer === "trend" ? trend : values)?.polar) paintPolar(ctx, layer, trend, values, scale, pat, k);
+  else if (layer === "trend" && trend) {
     const s = trend.cell_size_deg, cw = (s / 360) * W + gap, ch = (s / 180) * H + gap;
     for (const c of trend.cells) {
       const px = x(c.lon - s / 2), py = y(c.lat + s / 2);
@@ -76,6 +77,47 @@ export function paintMap(ctx: CanvasRenderingContext2D, path: ReturnType<typeof 
   }
   ctx.beginPath(); path(geoGraticule10()); ctx.strokeStyle = "rgba(43,37,64,.07)"; ctx.lineWidth = 0.6 / k; ctx.stroke();
   ctx.beginPath(); path(land); ctx.strokeStyle = "rgba(90,70,40,.55)"; ctx.lineWidth = 0.8 / k; ctx.stroke();
+}
+
+/** Colour of one cell, the same classes on every map: trend ramps (light = could be chance) or the value ramp. */
+export function cellColour(layer: Layer, c: GridCell | ValueCell, scale: number, range?: ValueGrid["value_range"]): string {
+  if (layer === "trend") {
+    const t = c as GridCell, v = t.slope_per_decade;
+    if (!t.valid || v === null) return NODATA;
+    const ramp = v > 0 ? UP : v < 0 ? DOWN : null;
+    if (!ramp) return FLAT;
+    return t.significant_fdr ? (Math.abs(v) / scale > 0.5 ? ramp[2] : ramp[1]) : ramp[0];
+  }
+  const v = (c as ValueCell).value;
+  if (v === null || !range) return NODATA;
+  const t = range.p98 > range.p02 ? (v - range.p02) / (range.p98 - range.p02) : 0.5;
+  return SEQ[Math.max(0, Math.min(5, Math.floor(t * 6)))];
+}
+
+/** Sea-ice pixels (NSIDC polar grids) at their true footprint: the four pixel corners projected back to lon/lat.
+ * One path per colour; a pixel across the 180° meridian is drawn on both sides. Pole-hole pixels are skipped. */
+function paintPolar(ctx: CanvasRenderingContext2D, layer: Layer, trend: TrendGrid | null, values: ValueGrid | null, scale: number,
+  pat: CanvasPattern | null, k: number) {
+  const cells = ((layer === "trend" ? trend?.cells : values?.cells) ?? []) as (GridCell | ValueCell)[];
+  const paths = new Map<string, Path2D>(), chance = new Path2D();
+  for (const c of cells) {
+    if (!c.hemi) continue;
+    const r = c.row!, q = c.col!;
+    const pts = [[r, q], [r, q + 1], [r + 1, q + 1], [r + 1, q]].map(([a, b]) => polarLonLat(a, b, c.hemi!));
+    if (pts.some((p) => Math.abs(p[1]) > 89.5)) continue;
+    const wrap = Math.max(...pts.map((p) => p[0])) - Math.min(...pts.map((p) => p[0])) > 180;
+    const fill = cellColour(layer, c, scale, values?.value_range);
+    const path = paths.get(fill) ?? new Path2D();
+    paths.set(fill, path);
+    const striped = layer === "trend" && (c as GridCell).valid && !(c as GridCell).significant_fdr && (c as GridCell).slope_per_decade !== 0;
+    for (const shift of wrap ? [0, -360] : [0]) for (const p of striped ? [path, chance] : [path]) {
+      pts.forEach(([lon, lat], i) => { const X = x((wrap && lon < 0 ? lon + 360 : lon) + shift), Y = y(lat); i ? p.lineTo(X, Y) : p.moveTo(X, Y); });
+      p.closePath();
+    }
+  }
+  ctx.lineWidth = 0.35 / k;
+  for (const [fill, p] of paths) { ctx.fillStyle = fill; ctx.strokeStyle = fill; ctx.fill(p); ctx.stroke(p); }   // stroke closes hairline gaps
+  if (pat) { ctx.fillStyle = pat; ctx.fill(chance); }
 }
 
 interface View { k: number; ox: number; oy: number }       // zoom factor and top-left corner (logical units)

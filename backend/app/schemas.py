@@ -34,7 +34,24 @@ class CountryRegion(BaseModel):
     name: Optional[str] = None
 
 
-RegionRef = Annotated[Union[PresetRegion, BBoxRegion, GeoJSONRegion, CountryRegion], Field(discriminator="type")]
+class PolarRegion(BaseModel):
+    """Hình vuông vẽ trên bản đồ cực của băng biển: pixel lưới NSIDC 25 km, hàng rows[0]..rows[1], cột cols[0]..cols[1]
+    (gồm cả hai đầu). Biến lat/lon khác dùng các ô có tâm rơi vào hình vuông (pipeline.grid.PolarBox)."""
+    type: Literal["polar"]
+    hemi: Literal["N", "S"]
+    rows: tuple[int, int]
+    cols: tuple[int, int]
+    name: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _inside_grid(self):
+        n_rows, n_cols = {"N": (448, 304), "S": (332, 316)}[self.hemi]
+        if not (0 <= self.rows[0] <= self.rows[1] < n_rows and 0 <= self.cols[0] <= self.cols[1] < n_cols):
+            raise ValueError(f"rows/cols must be ordered pixel ranges inside the {self.hemi} grid ({n_rows} × {n_cols}).")
+        return self
+
+
+RegionRef = Annotated[Union[PresetRegion, BBoxRegion, GeoJSONRegion, CountryRegion, PolarRegion], Field(discriminator="type")]
 
 
 class SeriesRequest(BaseModel):
@@ -142,6 +159,8 @@ class RegionsResponse(BaseModel):
 
 
 class RegionOut(BaseModel):
+    # vùng "polar" mang thêm hemi, rows, cols; extra="allow" giữ chúng mà không thêm trường null vào vùng khác
+    model_config = ConfigDict(extra="allow")
     type: str
     id: Optional[str] = None
     name: Optional[str] = None
@@ -376,10 +395,10 @@ class ChatEvidence(BaseModel):
 
 class ChatActionParams(BaseModel):
     variable_id: str
-    region: Union[PresetRegion, BBoxRegion, CountryRegion]
+    region: Union[PresetRegion, BBoxRegion, CountryRegion, PolarRegion]
     start: Month
     end: Month
-    region_b: Optional[Union[PresetRegion, BBoxRegion, CountryRegion]] = None
+    region_b: Optional[Union[PresetRegion, BBoxRegion, CountryRegion, PolarRegion]] = None
 
 
 class ChatAction(BaseModel):

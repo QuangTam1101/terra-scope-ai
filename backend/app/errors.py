@@ -2,6 +2,7 @@
 {"error": {"code", "message", "details", "retryable"}}."""
 import logging
 
+import numpy as np
 from fastapi import FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
@@ -19,7 +20,10 @@ class ApiError(Exception):
 
 
 def _body(code, message, details=None, retryable=False):
-    return {"error": {"code": code, "message": message, "details": details or {}, "retryable": retryable}}
+    # details often carry numbers read from a cube (numpy float32: a box built from cube coordinates), which plain
+    # json cannot write; without this the error itself became a 500.
+    details = jsonable_encoder(details or {}, custom_encoder={np.generic: lambda x: x.item(), np.ndarray: lambda x: x.tolist()})
+    return {"error": {"code": code, "message": message, "details": details, "retryable": retryable}}
 
 
 def install(app: FastAPI) -> None:

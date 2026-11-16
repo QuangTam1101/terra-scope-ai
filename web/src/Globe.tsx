@@ -21,6 +21,10 @@ interface Props {
   layer: Layer; trend: TrendGrid | null; values: ValueGrid | null; scale: number; loading: boolean; loadingInfo?: { title: string; detail: string } | null;
   selected: BBox | null; selectedLabel?: string; lookup: Map<string, string>; cellDeg: number; shape?: GeoJSON.Feature | null;
   onPick: (lon: number, lat: number) => void; onClear: () => void;
+  /** Hover key of the point under the pointer (default: the lat/lon grid cell); sea ice keys by polar pixel. */
+  keyOf?: (lon: number, lat: number) => string;
+  /** Where the globe first looks [lon, lat] (default: the selection, else South-East Asia); sea ice faces its pole. */
+  home?: [number, number];
 }
 
 type Rot = { lon: number; lat: number; k: number };
@@ -31,11 +35,11 @@ const STARS = Array.from({ length: 140 }, (_, i) => {
   return { x: r(1), y: r(2), s: 0.4 + r(3) * 1.1, a: 0.25 + r(4) * 0.6 };
 });
 
-export function Globe({ layer, trend, values, scale, loading, loadingInfo, selected, selectedLabel, lookup, cellDeg, onPick, onClear, shape }: Props) {
+export function Globe({ layer, trend, values, scale, loading, loadingInfo, selected, selectedLabel, lookup, cellDeg, onPick, onClear, shape, keyOf, home }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const box = useRef<HTMLDivElement>(null);
-  const start: [number, number] = selected ? [(selected[0] + selected[2]) / 2, (selected[1] + selected[3]) / 2] : [106, 12];
-  const [rot, setRot] = useState<Rot>({ lon: start[0], lat: clampLat(Math.max(-60, Math.min(60, start[1]))), k: 1 });
+  const start: [number, number] = home ?? (selected ? [(selected[0] + selected[2]) / 2, (selected[1] + selected[3]) / 2] : [106, 12]);
+  const [rot, setRot] = useState<Rot>({ lon: start[0], lat: clampLat(home ? home[1] : Math.max(-60, Math.min(60, start[1]))), k: 1 });
   const [spin, setSpin] = useState(!selected);
   const [hover, setHover] = useState<{ px: number; py: number; text: string } | null>(null);
   const [size, setSize] = useState({ w: 800, h: 520 });           // CSS pixels of the panel
@@ -274,7 +278,7 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
             return;
           }
           const p = toCanvas(ev), ll = lonLat(p.cx, p.cy);
-          const text = ll ? lookup.get(cellKey(ll[0], ll[1], cellDeg)) : undefined;
+          const text = ll ? lookup.get(keyOf ? keyOf(ll[0], ll[1]) : cellKey(ll[0], ll[1], cellDeg)) : undefined;
           setHover(text ? { px: p.px, py: p.py, text } : null);
         }}
         onPointerUp={(ev) => {

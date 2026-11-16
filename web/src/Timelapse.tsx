@@ -6,13 +6,19 @@ import { api, type BBox, type FramesResponse, type Variable } from "./api";
 import { H, W, land, projection } from "./WorldMap";
 import { colourOf, decodeFrames, DIVERGING, monthLabel, paintFrame, SEQUENTIAL, valueAt, type Frames } from "./timelapseData";
 import { plain } from "./ui";
+import { landImage } from "./PolarMap";
+import { polarLonLat, type Hemi } from "./places";
 import { periodText } from "./period";
 import type { Conv } from "./units";
 
 type Kind = "anomaly" | "value";
 const SPEEDS = [{ fps: 3, label: "Slow" }, { fps: 6, label: "Normal" }, { fps: 12, label: "Fast" }];
 
-export function Timelapse({ variable, start, end, bbox, conv }: { variable: Variable; start: string; end: string; bbox: BBox | null; conv: Conv | null }) {
+export function Timelapse({ variable, start, end, bbox, conv, pole, onPole }: {
+  variable: Variable; start: string; end: string; bbox: BBox | null; conv: Conv | null;
+  /** Sea ice: plays this pole's NSIDC pixels instead of the world, with an Arctic | Antarctic switch (shared with the map). */
+  pole?: Hemi; onPole?: (h: Hemi) => void;
+}) {
   const [kind, setKind] = useState<Kind>("anomaly");
   const [res, setRes] = useState<FramesResponse | null>(null);
   const [frames, setFrames] = useState<Frames | null>(null);
@@ -29,11 +35,11 @@ export function Timelapse({ variable, start, end, bbox, conv }: { variable: Vari
     const ctrl = new AbortController();
     setRes(null); setFrames(null); setError(null); setPlaying(false); setT(0); setHover(null);
     if (start > end) { setError("The end of the period is before the start. Change the dates to play the time-lapse."); return; }
-    api.valueFrames(variable.id, start, end, kind, bbox, ctrl.signal)
+    api.valueFrames(variable.id, start, end, kind, pole ? null : bbox, ctrl.signal, pole)
       .then((r) => { setRes(r); setFrames(decodeFrames(r)); })
       .catch((e) => { if (!ctrl.signal.aborted) setError(e?.message ?? "Could not load the time-lapse."); });
     return () => ctrl.abort();
-  }, [variable.id, start, end, kind, bbox?.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [variable.id, start, end, kind, bbox?.join(","), pole]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Play loop: advances one month per tick, wraps at the end.
   useEffect(() => {
@@ -57,11 +63,49 @@ export function Timelapse({ variable, start, end, bbox, conv }: { variable: Vari
     return { k, ox: W / 2 - ((x0 + x1) / 2) * k, oy: H / 2 - ((y0 + y1) / 2) * k };
   }, [bbox]);
 
+  // Sea ice: the pole's ocean and land at full 25 km, fitted into the canvas (frames may be coarser blocks on top).
+  const polar = res?.grid.polar;
+  const base = useMemo(() => {
+    if (!polar) return null;
+    const cv = document.createElement("canvas");
+    cv.width = polar.cols; cv.height = polar.rows;
+    cv.getContext("2d")!.putImageData(landImage(polar.rows, polar.cols, polar.land_b64), 0, 0);
+    return cv;
+  }, [polar]);
+  const fit = (cw: number, ch: number) => {
+    const s = polar ? Math.min(cw / polar.cols, ch / polar.rows) * 0.97 : 1;
+    return { s, x0: polar ? (cw - polar.cols * s) / 2 : 0, y0: polar ? (ch - polar.rows * s) / 2 : 0 };
+  };
+  const frameImage = () => {
+    let cc = cellCanvas.current;
+    if (!cc) { cc = document.createElement("canvas"); cellCanvas.current = cc; }
+    cc.width = frames!.nlon; cc.height = frames!.nlat;
+    const g = cc.getContext("2d")!, img = g.createImageData(frames!.nlon, frames!.nlat);
+    paintFrame(frames!, t, range![0], range![1], palette, img.data, convert);
+    g.putImageData(img, 0, 0);
+    return cc;
+  };
+
   // Draw: ocean, land, the frame (one pixel per cell, scaled up without smoothing), coastline.
   useEffect(() => {
     const c = canvas.current;
     if (!c) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (pole) {
+      const cw = c.clientWidth, ch = c.clientHeight, { s, x0, y0 } = fit(cw, ch);
+      c.width = cw * dpr; c.height = ch * dpr;
+      const ctx = c.getContext("2d")!;
+      ctx.fillStyle = "#e3eef1"; ctx.fillRect(0, 0, c.width, c.height);
+      if (!polar || !base) return;
+      ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * x0, dpr * y0);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(base, 0, 0);
+      if (frames && range) {
+        ctx.beginPath(); ctx.rect(0, 0, polar.cols, polar.rows); ctx.clip();   // the last block row/column may overhang the grid
+        ctx.drawImage(frameImage(), 0, 0, frames.nlon * polar.factor, frames.nlat * polar.factor);
+      }
+      return;
+    }
     c.width = W * dpr; c.height = H * dpr;
     const ctx = c.getContext("2d")!;
     ctx.setTransform(dpr * view.k, 0, 0, dpr * view.k, dpr * view.ox, dpr * view.oy);
@@ -69,27 +113,29 @@ export function Timelapse({ variable, start, end, bbox, conv }: { variable: Vari
     ctx.fillStyle = "#cdeaf0"; ctx.fillRect(-W, -H, 3 * W, 3 * H);
     ctx.beginPath(); path(land); ctx.fillStyle = "#f3e3c3"; ctx.fill();
     if (frames && res && range) {
-      let cc = cellCanvas.current;
-      if (!cc) { cc = document.createElement("canvas"); cellCanvas.current = cc; }
-      cc.width = frames.nlon; cc.height = frames.nlat;
-      const g = cc.getContext("2d")!, img = g.createImageData(frames.nlon, frames.nlat);
-      paintFrame(frames, t, range[0], range[1], palette, img.data, convert);
-      g.putImageData(img, 0, 0);
+      const cc = frameImage();
       const { west, south, cell_deg } = res.grid;
       const x0 = ((west + 180) / 360) * W, y0 = ((90 - (south + frames.nlat * cell_deg)) / 180) * H;
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(cc, x0, y0, (frames.nlon * cell_deg / 360) * W, (frames.nlat * cell_deg / 180) * H);
     }
     ctx.beginPath(); path(land); ctx.strokeStyle = "rgba(43,37,64,.55)"; ctx.lineWidth = 0.7 / view.k; ctx.stroke();
-  }, [frames, res, t, range, palette, convert, view]);
+  }, [frames, res, t, range, palette, convert, view, base]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onMove = (ev: React.PointerEvent<HTMLCanvasElement>) => {
     if (!frames || !res) return;
     const r = ev.currentTarget.getBoundingClientRect();
-    const lx = (((ev.clientX - r.left) / r.width) * W - view.ox) / view.k, ly = (((ev.clientY - r.top) / r.height) * H - view.oy) / view.k;
-    const lon = (lx / W) * 360 - 180, lat = 90 - (ly / H) * 180;
-    const col = Math.floor((lon - res.grid.west) / res.grid.cell_deg), row = Math.floor((lat - res.grid.south) / res.grid.cell_deg);
-    const v = valueAt(frames, t, row, col);
+    let lon: number, lat: number, v: number | null;
+    if (polar) {
+      const { s, x0, y0 } = fit(r.width, r.height), gx = (ev.clientX - r.left - x0) / s, gy = (ev.clientY - r.top - y0) / s;
+      if (gx < 0 || gy < 0 || gx >= polar.cols || gy >= polar.rows) { setHover(null); return; }
+      [lon, lat] = polarLonLat(gy, gx, polar.hemi);
+      v = valueAt(frames, t, frames.nlat - 1 - Math.floor(gy / polar.factor), Math.floor(gx / polar.factor));
+    } else {
+      const lx = (((ev.clientX - r.left) / r.width) * W - view.ox) / view.k, ly = (((ev.clientY - r.top) / r.height) * H - view.oy) / view.k;
+      lon = (lx / W) * 360 - 180; lat = 90 - (ly / H) * 180;
+      v = valueAt(frames, t, Math.floor((lat - res.grid.south) / res.grid.cell_deg), Math.floor((lon - res.grid.west) / res.grid.cell_deg));
+    }
     const where = `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? "N" : "S"}, ${Math.abs(lon).toFixed(1)}°${lon >= 0 ? "E" : "W"}`;
     const text = v === null ? `${where}: no data` : `${where}: ${kind === "anomaly" && convert(v) > 0 ? "+" : ""}${plain(convert(v), 2)} ${units}${kind === "anomaly" ? " vs usual" : ""}`;
     setHover({ px: ev.clientX - r.left, py: ev.clientY - r.top, text });
@@ -103,10 +149,17 @@ export function Timelapse({ variable, start, end, bbox, conv }: { variable: Vari
           <button type="button" className={kind === "value" ? "on" : ""} aria-pressed={kind === "value"} onClick={() => setKind("value")}>Actual values</button>
           <button type="button" className={kind === "anomaly" ? "on" : ""} aria-pressed={kind === "anomaly"} onClick={() => setKind("anomaly")}>Compared with usual</button>
         </div>
+        {pole && (
+          <div className="seg" role="group" aria-label="Pole">
+            {(["N", "S"] as const).map((h) => (
+              <button key={h} type="button" className={pole === h ? "on" : ""} aria-pressed={pole === h} onClick={() => onPole?.(h)}>{h === "N" ? "Arctic" : "Antarctic"}</button>
+            ))}
+          </div>
+        )}
         <span className="tl-month num" aria-live="off">{month}</span>
       </div>
       <div style={{ position: "relative" }}>
-        <canvas ref={canvas} className="tl-canvas" role="img" aria-label={`Time-lapse of ${variable.parameter_name.toLowerCase()} by month, ${month}`}
+        <canvas ref={canvas} className={`tl-canvas${pole ? " polar" : ""}`} role="img" aria-label={`Time-lapse of ${variable.parameter_name.toLowerCase()} by month, ${month}`}
           onPointerMove={onMove} onPointerLeave={() => setHover(null)} />
         {!frames && !error && (
           <div className="tl-overlay" role="status">Preparing the monthly maps for {variable.parameter_name.toLowerCase()} ({variable.dataset_name}), {periodText(start, end)}…</div>
