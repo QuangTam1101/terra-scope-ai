@@ -46,12 +46,14 @@ class Variable:
 
 _MODIS_NOTE = ("MODIS is an optical satellite sensor: it cannot see through cloud, so very cloudy months (and snow for "
                "NDVI) can be missing. Each 0.5° cell is the mean of its clear 0.05° MODIS pixels.")
-_ZERO_NOTE = (" The trend slope is a median, so it can read 0 when most months have no events: then trust the "
-              "p-value and look at Month by year.")
+_ZERO_NOTE = (" Events come in a short season, so the rate of change is measured on yearly averages (the "
+              "significance test still compares matching months).")
 _LST_NOTE = (_MODIS_NOTE + " Terra's overpass time has drifted earlier since 2020 (its last orbit adjustment) as the "
              "satellite ends its mission, which can make recent daytime surface temperatures read slightly cooler "
              "(night-time slightly warmer); check whether a trend holds when the period ends in 2019.")
 _MODEL_NOTE = "This variable comes from a model/reanalysis that assimilates observations, not a direct measurement."
+_DROUGHT_NOTE = (_MODEL_NOTE + " Drought here means drier than 4 in 5 of the same weeks in 1948–2012 (the 20th "
+                 "percentile, the US Drought Monitor's moderate drought or worse). Starts February 2003.")
 
 _VARS = [
     Variable("imerg_precip", "precip", "Precipitation", "water",
@@ -210,6 +212,16 @@ _VARS = [
              "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/",
              "Not NASA data: built from weather stations by the University of East Anglia. Part of CRU's "
              "minimum temperature is derived from mean temperature and daily range where stations are sparse."),
+    Variable("firms_fire_count", "fire_count_firms", "Number of fires (MODIS active fires)", "fire",
+             "How many fires satellites spot each month: every burning hot spot seen from space counts once.",
+             "NASA FIRMS MODIS Collection 6.1 active-fire detections (MCD14ML, Terra and Aqua, 1 km), vegetation "
+             "fires only (type 0) with confidence of at least 30 %, counted per 1° cell per month from 2003.",
+             "fires/month", 0.01, "MCD14ML (FIRMS)", "6.1", "NASA FIRMS (LANCE)",
+             "https://firms.modaps.eosdis.nasa.gov/download/",
+             "Counts start in 2003, the first full year with both Terra and Aqua. A fire is counted only if it burns "
+             "during one of the four daily overpasses and is not hidden by thick cloud or smoke. Terra (since 2020) "
+             "and Aqua (since 2022) are drifting to new overpass times as their missions end, which can change how "
+             "many fires they catch: check whether a trend holds when the period ends in 2019." + _ZERO_NOTE),
     Variable("micasa_fire", "fire_micasa", "Fire activity (MiCASA, from MODIS burned area)", "fire",
              "How much carbon wildfires and other fires release each month: more and bigger fires mean a higher value.",
              "MiCASA v1 monthly fire carbon emission (FIRE, 0.1°), driven by MODIS MCD64A1 burned area; converted "
@@ -218,6 +230,29 @@ _VARS = [
              "https://disc.gsfc.nasa.gov/datasets/MICASA_FLUX_M_1/summary",
              _MODEL_NOTE + " Covers 2001–2024. Fire years are very uneven: one record season (Canada 2023) can "
              "dominate a regional trend, so read Each year as well as the slope." + _ZERO_NOTE),
+    Variable("ibtracs_storms", "storms_ibtracs", "Tropical storms passing within 500 km (IBTrACS)", "storms",
+             "How many tropical storms, typhoons or hurricanes pass within 500 km of a place each month.",
+             "IBTrACS v04r01 best tracks (NOAA NCEI): distinct tropical cyclones of at least tropical-storm strength "
+             "(34 knots or more) whose centre passed within 500 km of each 1° cell centre, per month.",
+             "storms/month", 1.0, "IBTrACS", "v04r01", "NOAA NCEI",
+             "https://www.ncei.noaa.gov/products/international-best-track-archive",
+             "Not NASA data: the official storm tracks of the world's weather agencies, combined by NOAA. Places no "
+             "storm reached in 2001–2025 have no data. 2025 tracks are still provisional (not yet re-analysed). "
+             "Storms are rare and come in lucky and unlucky years, so a 25-year trend is hard to prove." + _ZERO_NOTE),
+    Variable("graceda_drought_rootzone", "drought_rtz_grace", "Drought in the root zone (GRACE-DA)", "drought",
+             "How much of each month the soil where plants drink is in drought.",
+             "GRACE-DA-DM Global v3.0 (NASA GSFC, Catchment land model assimilating GRACE/GRACE-FO): share of weekly "
+             "maps in the month with root-zone soil moisture at or below the 20th percentile of 1948–2012, averaged to 1°.",
+             "% of weeks", 0.25, "GRACEDADM_CLSM025GL_7D", "3.0", "NASA GES DISC",
+             "https://disc.gsfc.nasa.gov/datasets/GRACEDADM_CLSM025GL_7D_3.0/summary", _DROUGHT_NOTE + _ZERO_NOTE),
+    Variable("graceda_drought_groundwater", "drought_gws_grace", "Groundwater drought (GRACE-DA)", "drought",
+             "How much of each month the water stored deep underground is in drought.",
+             "GRACE-DA-DM Global v3.0 (NASA GSFC, Catchment land model assimilating GRACE/GRACE-FO): share of weekly "
+             "maps in the month with groundwater storage at or below the 20th percentile of 1948–2012, averaged to 1°.",
+             "% of weeks", 0.25, "GRACEDADM_CLSM025GL_7D", "3.0", "NASA GES DISC",
+             "https://disc.gsfc.nasa.gov/datasets/GRACEDADM_CLSM025GL_7D_3.0/summary",
+             _DROUGHT_NOTE + " Groundwater reacts to years of rain, not weeks, so its droughts start late and last long."
+             + _ZERO_NOTE),
 ]
 VARIABLES: dict[str, Variable] = {v.id: v for v in _VARS}
 
@@ -237,6 +272,8 @@ PARAMETERS = {
     "snow": "Snow water",
     "air_haze": "Air haze (aerosols)",
     "fire": "Fire activity",
+    "drought": "Drought",
+    "tropical_storms": "Tropical storms",
 }
 # variable id → (parameter, tên dataset ngắn để hiển thị)
 VARIABLE_PARAMETER = {
@@ -264,7 +301,11 @@ VARIABLE_PARAMETER = {
     "merra2_dust": ("air_haze", "MERRA-2, desert dust only"),
     "cru_tmax": ("air_temperature", "CRU TS daytime highs (stations, not NASA)"),
     "cru_tmin": ("air_temperature", "CRU TS night-time lows (stations, not NASA)"),
-    "micasa_fire": ("fire", "MiCASA (from MODIS burned area)"),
+    "firms_fire_count": ("fire", "MODIS active fires: number of fires"),
+    "micasa_fire": ("fire", "MiCASA: carbon released (from burned area)"),
+    "ibtracs_storms": ("tropical_storms", "IBTrACS storm tracks (not NASA)"),
+    "graceda_drought_rootzone": ("drought", "GRACE-DA: root-zone soil"),
+    "graceda_drought_groundwater": ("drought", "GRACE-DA: groundwater"),
 }
 # Chat: câu hỏi chung chung ("precipitation", "soil moisture") không nêu dataset/độ sâu thì chọn biến mặc định này.
 DEFAULT_VARIABLE = {"precipitation": "imerg_precip", "soil_moisture": "gldas_soil_moisture_0_10cm"}

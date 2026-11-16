@@ -6,9 +6,11 @@ Kết quả: processed_data/grid/cube_<id>.nc, float32, nhãn đầu tháng, tr�
          cuối cùng (bridge đọc coverage từ trục; grid_trend cần đủ 12 tháng mỗi năm, tháng thiếu là NaN)."""
 import os
 import sys
+import zipfile
 from multiprocessing import Pool
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -17,6 +19,9 @@ from pipeline.grid import bin_to_grid, global_coords
 
 RAW = Path(os.environ.get("TERRA_RAW", "../../data/raw")).resolve()
 OUT = Path("processed_data/grid")
+FIRE_MIN_CONF = 30       # độ tin cậy FIRMS MODIS < 30 % = "low", hay là báo nhầm
+STORM_KM = 500           # bão "đi qua" một ô khi tâm bão cách tâm ô ≤ 500 km
+DROUGHT_PCT = 20         # phần trăm vị ≤ 20 = hạn vừa trở lên (ngưỡng D1 của US Drought Monitor)
 SWE_ICE_MM = 10          # ô có tuyết ≥ 10 mm nước ở mọi tháng 2001–2025 = băng vĩnh cửu (1.167 ô 1°)
 
 
@@ -86,6 +91,77 @@ def fire():
     return cube.where(_land()).assign_attrs(units="gC/m2/month", dataset="MICASA_FLUX_M.1 FIRE")
 
 
+def _firms_year(path):
+    """Một năm FIRMS (zip các CSV theo quốc gia) → số điểm cháy theo (tháng, ô 1°)."""
+    with zipfile.ZipFile(path) as z:
+        df = pd.concat([pd.read_csv(z.open(n), usecols=["latitude", "longitude", "acq_date", "confidence", "type"])
+                        for n in z.namelist() if n.endswith(".csv")])
+    df = df[(df["type"] == 0) & (df["confidence"] >= FIRE_MIN_CONF)]
+    return df.assign(time=pd.to_datetime(df["acq_date"].str[:7] + "-01"),
+                     lat=np.floor(df["latitude"].clip(-90, 90 - 1e-9)) + 0.5,
+                     lon=np.floor((df["longitude"] + 180) % 360 - 180) + 0.5).groupby(["time", "lat", "lon"]).size()
+
+
+def fire_count():
+    """NASA FIRMS MODIS C6.1 (Terra + Aqua): số điểm cháy thảm thực vật (type 0, độ tin cậy ≥ 30 %) mỗi tháng trong ô 1°.
+    Từ 2003: trước 07/2002 chỉ có Terra, số điểm thấp giả tạo. Ô đất liền không có điểm nào trong tháng = 0."""
+    files = [f for f in sorted((RAW / "firms").glob("modis_*_all_countries.zip")) if int(f.name[6:10]) >= 2003]
+    with Pool(6) as pool:
+        s = pd.concat(pool.map(_firms_year, files))
+    lat, lon = global_coords()
+    cube = xr.DataArray.from_series(s.astype("float32")).reindex(lat=lat, lon=lon)
+    return cube.fillna(0).where(_land()).assign_attrs(units="fires/month", dataset="FIRMS MODIS C6.1 MCD14ML")
+
+
+def storms():
+    """IBTrACS v04r01 (NOAA, không phải NASA): số cơn xoáy thuận nhiệt đới (mọi track trừ spur, nature TS, gió ≥ 34 kt: bão nhiệt
+    đới trở lên) có tâm đi qua trong 500 km quanh tâm ô 1°, mỗi tháng. Gió: usa_wind (1 phút), thiếu thì wmo_wind.
+    Ô chưa từng có bão đi qua 2001–2025 = NaN (không có dữ liệu); ô có bão thì tháng không bão = 0."""
+    ds = xr.open_dataset(RAW / "ibtracs" / "IBTrACS.ALL.v04r01.nc", decode_times=False)
+    tt = ds["track_type"].values                              # main, PROVISIONAL, US-PROVISIONAL (2025: 69/117 cơn chưa
+    ds = ds.isel(storm=np.nonzero((ds["season"].values >= 2000) & ~np.char.endswith(tt, b"spur"))[0])   # chốt); bỏ spur
+    wind = ds["usa_wind"].fillna(ds["wmo_wind"]).values
+    ok = (ds["nature"].values == b"TS") & (wind >= 34) & np.isfinite(ds["lat"].values)
+    sid, _ = np.nonzero(ok)
+    t = pd.DatetimeIndex(pd.Timestamp("1858-11-17") + pd.to_timedelta(ds["time"].values[ok], unit="D"))
+    month = (t.year - 2001) * 12 + t.month - 1
+    keep = (month >= 0) & (month < 300)
+    glat, glon = global_coords()
+    keys = []
+    for la, lo, m, s in zip(ds["lat"].values[ok][keep], ds["lon"].values[ok][keep], month[keep], sid[keep]):
+        rows = np.nonzero(np.abs(glat - la) <= STORM_KM / 111.2 + 0.5)[0]
+        a, b = np.radians(glat[rows])[:, None], np.radians(la)
+        d = 6371 * 2 * np.arcsin(np.sqrt(np.sin((a - b) / 2) ** 2 + np.cos(a) * np.cos(b)
+                                         * np.sin(np.radians(glon[None, :] - lo) / 2) ** 2))
+        r, c = np.nonzero(d <= STORM_KM)
+        keys.append((m * 64800 + rows[r] * 360 + c) * 100000 + s)
+    cell = np.unique(np.concatenate(keys)) // 100000            # mỗi (cơn, tháng, ô) đếm một lần
+    cnt = np.bincount(cell, minlength=300 * 64800).reshape(300, 180, 360).astype("float32")
+    cnt[:, cnt.sum(0) == 0] = np.nan
+    return xr.DataArray(cnt, {"time": pd.date_range("2001-01-01", periods=300, freq="MS"), "lat": glat, "lon": glon},
+                        ("time", "lat", "lon")).assign_attrs(units="storms/month", dataset="IBTrACS v04r01")
+
+
+def _drought_month(args):
+    month, files, var = args
+    weeks = xr.concat([xr.open_dataset(f)[var] for f in files], "time")
+    frac = (weeks <= DROUGHT_PCT).where(weeks.notnull()).mean("time") * 100
+    return bin_to_grid(frac.expand_dims(time=[month]))
+
+
+def drought(var):
+    """GRACE-DA-DM v3.0 (NASA GSFC, mô hình Catchment đồng hoá GRACE): % số bản đồ tuần trong tháng có phần trăm vị của
+    `var` ≤ 20 (so với 1948–2012 của chính mô hình = hạn vừa trở lên), TB khối 1°. Tuần thuộc tháng của ngày ghi trên tên file."""
+    by = {}
+    for f in sorted((RAW / "grace_da").glob("GRACEDADM_CLSM025GL_7D.A*.nc4")):
+        by.setdefault(pd.Timestamp(f.name.split(".A")[1][:6] + "01"), []).append(f)
+    with Pool(6) as pool:
+        cube = xr.concat(pool.map(_drought_month, [(m, fs, var) for m, fs in by.items()]), "time")
+    lat, lon = global_coords()
+    return cube.reindex(lat=lat, lon=lon, method="nearest", tolerance=1e-6).assign_attrs(
+        units="% of weeks", dataset=f"GRACEDADM_CLSM025GL_7D v3.0 {var}")
+
+
 # AOD phủ cả biển, float32 đầy đủ nén kém (55 MB/cube): giữ 4 chữ số thập phân (xu hướng ~0,01/thập kỷ)
 LSD = {"aod_merra2": 4, "dust_aod_merra2": 4}
 
@@ -97,6 +173,10 @@ BUILDERS = {
     "tmax_cru": lambda: cru("tmx"),
     "tmin_cru": lambda: cru("tmn"),
     "fire_micasa": fire,
+    "fire_count_firms": fire_count,
+    "storms_ibtracs": storms,
+    "drought_rtz_grace": lambda: drought("rtzsm_inst"),
+    "drought_gws_grace": lambda: drought("gws_inst"),
 }
 
 if __name__ == "__main__":

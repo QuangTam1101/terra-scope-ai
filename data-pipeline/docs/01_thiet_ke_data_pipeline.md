@@ -163,6 +163,8 @@ Code của từng bước ở **03**, chi tiết adapter ở **02**, thuật to�
       Có `rings` (đường viền quốc gia) thì chỉ lấy ô có tâm trong đường viền (`shape_mask`, quy tắc chẵn-lẻ: lỗ như Lesotho
       trong Nam Phi bị loại, đảo được tính); `valid_frac` tính trên các ô đó.
    2. `trend_one(series)`: Seasonal MK + Sen, Hamed-Rao MK trên anomaly, OLS trên anomaly ± CI 95%, cờ `insufficient_data` (< 10 năm hoặc < 70% tháng).
+      Chuỗi đếm sự kiện theo mùa (`api.ANNUAL_SLOPE`) dùng `annual=True` ở cả `trend_one` và `grid_trend`: độ dốc là Sen trên
+      trung bình dị thường từng năm (Sen theo mùa ra 0 khi sự kiện chỉ có vài tháng mỗi năm), p vẫn của Seasonal MK.
 3. Mọi độ dốc quy về đơn vị / thập kỷ.
 
 **Kiểm tra đầu ra:**

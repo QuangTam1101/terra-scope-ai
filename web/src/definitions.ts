@@ -31,6 +31,9 @@ const GRACE: Source = { product: "TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4", p
 const MERRA2_AER: Source = { product: "M2TMNXAER 5.12.4", provider: "NASA GMAO / GES DISC", url: "https://disc.gsfc.nasa.gov/datasets/M2TMNXAER_5.12.4/summary" };
 const CRU_T: Source = { product: "CRU TS 4.10 tmx / tmn", provider: "University of East Anglia, Climatic Research Unit, not NASA",
   url: "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/", license: "Open Database License (ODbL)" };
+const FIRMS: Source = { product: "MCD14ML Collection 6.1 (FIRMS)", provider: "NASA FIRMS (LANCE)", url: "https://firms.modaps.eosdis.nasa.gov/download/" };
+const IBTRACS: Source = { product: "IBTrACS v04r01", provider: "NOAA NCEI, not NASA", url: "https://www.ncei.noaa.gov/products/international-best-track-archive" };
+const GRACE_DA: Source = { product: "GRACEDADM_CLSM025GL_7D v3.0", provider: "NASA GSFC / GES DISC", url: "https://disc.gsfc.nasa.gov/datasets/GRACEDADM_CLSM025GL_7D_3.0/summary" };
 const MICASA: Source = { product: "MICASA_FLUX_M v1 (0.1°)", provider: "NASA GES DISC", url: "https://disc.gsfc.nasa.gov/datasets/MICASA_FLUX_M_1/summary" };
 
 const MORE = {
@@ -147,6 +150,26 @@ export const DEFINITIONS: Record<string, Definition> = {
     science: "Not NASA data. CRU TS 4.10 (University of East Anglia) monthly mean daily minimum temperature (tmn), station-interpolated 0.5°, land only, 2001–2025, averaged to 1°. Cells without stations removed.",
     why: "Warmer nights stress people, crops and animals that need cool nights to recover.",
     units: "°C", source: CRU_T, more: MORE.cru },
+  firms_fire_count: { title: "Number of fires (MODIS)",
+    simple: "How many fires satellites spot each month: every burning hot spot seen from space counts once.",
+    science: "NASA FIRMS active-fire detections from MODIS on Terra and Aqua (Collection 6.1), vegetation fires only (type 0), confidence at least 30 %, counted per 1° cell per month from 2003.",
+    why: "Counts fires directly, so it shows whether fire seasons bring more fires or fewer.",
+    units: "fires per month", source: FIRMS },
+  ibtracs_storms: { title: "Tropical storms passing nearby",
+    simple: "Not NASA data: how many tropical storms, typhoons or hurricanes pass within 500 km of a place each month.",
+    science: "Not NASA data. IBTrACS v04r01 best tracks (NOAA NCEI): distinct tropical cyclones of at least 34 knots whose centre passed within 500 km of each 1° cell centre, per month. 2025 tracks are provisional.",
+    why: "Shows whether a coast is being hit by storms more often than before.",
+    units: "storms per month", source: IBTRACS },
+  graceda_drought_rootzone: { title: "Drought in the root zone",
+    simple: "How much of each month the soil where plants drink is in drought: drier than four in five past years.",
+    science: "GRACE-DA-DM Global v3.0 (NASA GSFC): Catchment land model assimilating GRACE and GRACE-FO. Share of weekly maps in the month with root-zone soil moisture at or below the 20th percentile of 1948–2012, averaged to 1°.",
+    why: "Crops fail when this layer dries out, so it tracks farm drought.",
+    units: "% of weeks", source: GRACE_DA },
+  graceda_drought_groundwater: { title: "Groundwater drought",
+    simple: "How much of each month the water deep underground is in drought: lower than four in five past years.",
+    science: "GRACE-DA-DM Global v3.0 (NASA GSFC): share of weekly maps in the month with groundwater storage at or below the 20th percentile of 1948–2012, averaged to 1°. Groundwater responds to years of rain, not weeks.",
+    why: "Wells and dry-season rivers depend on it, and it recovers slowly.",
+    units: "% of weeks", source: GRACE_DA },
   micasa_fire: { title: "Fire activity (MiCASA)",
     simple: "How much carbon fires release each month: more and bigger fires give a higher value.",
     science: "MiCASA v1 monthly fire carbon emissions (FIRE, 0.1°), driven by MODIS MCD64A1 burned area, in g C/m² per month, land only, 2001–2024, averaged to 1°.",
@@ -220,6 +243,21 @@ export const DEFINITIONS: Record<string, Definition> = {
     science: "Gravity Recovery and Climate Experiment and its Follow-On, JPL mascon RL06.3 v04 with coastline correction: monthly water-equivalent anomaly relative to 2004–2009, mascons about 300 km wide. Gap 2017-07 to 2018-05.",
     why: "The only way to see groundwater loss from space, over whole countries.",
     source: GRACE },
+  "dataset:firms": { title: "FIRMS (MODIS active fires)",
+    simple: "A NASA service that records every fire spotted by two NASA satellites, Terra and Aqua, since 2000.",
+    science: "Fire Information for Resource Management System: MODIS Collection 6.1 thermal-anomaly detections (MCD14ML), 1 km pixels, four overpasses a day. Counted here from 2003, when both Terra and Aqua fly; Terra drifts since 2020, Aqua since 2022.",
+    why: "Real detections of each fire, not a model estimate.",
+    source: FIRMS },
+  "dataset:ibtracs": { title: "IBTrACS (storm tracks)",
+    simple: "Not NASA data: the official paths of every tropical storm on Earth, collected from weather agencies by the United States weather agency.",
+    science: "Not NASA data. International Best Track Archive for Climate Stewardship v04r01, NOAA NCEI: positions every 3 hours merged from all regional agencies; wind from US agencies (1-minute), else the official agency.",
+    why: "The standard record scientists use to count storms.",
+    source: IBTRACS },
+  "dataset:graceda": { title: "GRACE drought indicator",
+    simple: "A NASA drought map made by feeding gravity measurements from the twin water-weighing satellites into a model of soil and groundwater.",
+    science: "GRACE-DA-DM Global v3.0, NASA Goddard: the Catchment land surface model assimilates GRACE and GRACE-FO water storage; weekly wetness percentiles at 0.25° for surface soil, root zone and groundwater against 1948–2012. Drought: 20th percentile or lower.",
+    why: "Brings groundwater, invisible to ordinary satellites, into drought tracking.",
+    source: GRACE_DA },
   "dataset:micasa": { title: "MiCASA (fire carbon)",
     simple: "A NASA carbon model that uses satellite maps of burned land to estimate how much carbon fires release each month.",
     science: "MiCASA v1 (NASA GSFC), a CASA-based biosphere model at 0.1°, monthly. FIRE flux is driven by MODIS MCD64A1 burned area; converted here to g C/m²/month, land only, 2001–2024.",

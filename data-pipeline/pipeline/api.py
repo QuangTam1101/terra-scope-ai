@@ -42,8 +42,14 @@ VARIABLES = {
     "dust_aod_merra2": ("Độ dày quang học bụi (MERRA-2)", "1", "MERRA-2 M2TMNXAER v5.12.4 DUEXTTAU (550 nm), NASA GMAO / GES DISC qua Harmony"),
     "tmax_cru": ("Nhiệt độ cao nhất ngày (CRU TS)", "degC", "CRU TS 4.10 tmx, University of East Anglia (không phải NASA; nội suy từ trạm)"),
     "tmin_cru": ("Nhiệt độ thấp nhất ngày (CRU TS)", "degC", "CRU TS 4.10 tmn, University of East Anglia (không phải NASA; nội suy từ trạm)"),
+    "fire_count_firms": ("Số điểm cháy (MODIS, NASA FIRMS)", "fires/month", "NASA FIRMS MODIS Collection 6.1 active fire detections (MCD14ML, Terra + Aqua); điểm cháy thảm thực vật (type 0), độ tin cậy ≥ 30 %, đếm theo ô 1°, từ 2003"),
+    "storms_ibtracs": ("Số cơn bão nhiệt đới đi qua trong 500 km (IBTrACS)", "storms/month", "IBTrACS v04r01, NOAA NCEI (không phải NASA); Knapp et al. 2010, Bull. Amer. Meteor. Soc. 91, 363–376"),
+    "drought_rtz_grace": ("Tỉ lệ tuần hạn hán vùng rễ (GRACE-DA)", "% of weeks", "GRACE-DA-DM Global v3.0 (GRACEDADM_CLSM025GL_7D), NASA GSFC / GES DISC; tuần có rtzsm_inst ≤ phần trăm vị 20 (so với 1948–2012)"),
+    "drought_gws_grace": ("Tỉ lệ tuần hạn hán nước ngầm (GRACE-DA)", "% of weeks", "GRACE-DA-DM Global v3.0 (GRACEDADM_CLSM025GL_7D), NASA GSFC / GES DISC; tuần có gws_inst ≤ phần trăm vị 20 (so với 1948–2012)"),
     "fire_micasa": ("Phát thải carbon do cháy (MiCASA)", "gC/m2/month", "MiCASA v1 monthly 0.1° (MICASA_FLUX_M.1) FIRE, tính từ diện tích cháy MODIS MCD64A1, NASA GES DISC"),
 }
+# Chuỗi đếm sự kiện theo mùa: độ dốc = Sen trên trung bình năm (trends.trend_one annual=True), vì Sen theo mùa ra 0.
+ANNUAL_SLOPE = {"fire_count_firms", "storms_ibtracs", "drought_rtz_grace", "drought_gws_grace", "fire_micasa"}
 METHOD = ("Trung bình vùng trên lưới 1° (trọng số cos vĩ độ); Seasonal Mann-Kendall + Sen's slope theo mùa; "
           "Hamed-Rao MK trên anomaly (hiệu chỉnh tự tương quan); OLS trên anomaly ± CI 95%; FDR Benjamini–Hochberg cho bản đồ")
 LIMITATIONS = [
@@ -92,7 +98,7 @@ def list_variables():
 
 def trend_map(variable, start=None, end=None, q=0.05):
     """Heatmap: mọi ô có kết quả → [lat, lon, slope/thập kỷ, q-value FDR]; significant = q < 0.05."""
-    tr = grid_trend(load_cube(variable), start, end)
+    tr = grid_trend(load_cube(variable), start, end, annual=variable in ANNUAL_SLOPE)
     df = tr[["slope_per_decade", "p_value_fdr"]].to_dataframe().dropna().reset_index()
     return _clean({**_meta(variable), "start": tr.attrs["start"], "end": tr.attrs["end"], "q_threshold": q,
                    "columns": ["lat", "lon", "slope_per_decade", "q_value"],
@@ -108,7 +114,7 @@ def _region(variable, bbox, start, end):
 def analyze_region(variable, bbox, start=None, end=None):
     """Một vùng bất kỳ người dùng vẽ: chuỗi tháng + xu hướng (p, CI) + chất lượng dữ liệu + nguồn + giới hạn."""
     s, frac = _region(variable, bbox, start, end)
-    tr = trend_one(s)
+    tr = trend_one(s, annual=variable in ANNUAL_SLOPE)
     return _clean({**_meta(variable), "bbox": list(bbox), "start": str(s.index[0].date()), "end": str(s.index[-1].date()),
                    "series": {"time": s.index.strftime("%Y-%m").tolist(), "value": s.round(4).tolist(),
                               "valid_frac": frac.round(3).tolist()},
@@ -124,8 +130,8 @@ def compare_regions(variable, bbox_a, bbox_b, start=None, end=None, alpha=0.05):
     b, _ = _region(variable, bbox_b, start, end)
     diff = pair_difference_test(a, b)
     reliable = diff["p_diff"] < alpha and (diff["ci95_low"] > 0 or diff["ci95_high"] < 0)
-    return _clean({**_meta(variable), "region_a": {"bbox": list(bbox_a), "trend": trend_one(a)},
-                   "region_b": {"bbox": list(bbox_b), "trend": trend_one(b)},
+    return _clean({**_meta(variable), "region_a": {"bbox": list(bbox_a), "trend": trend_one(a, annual=variable in ANNUAL_SLOPE)},
+                   "region_b": {"bbox": list(bbox_b), "trend": trend_one(b, annual=variable in ANNUAL_SLOPE)},
                    "difference": diff, "reliable": bool(reliable),
                    "method": METHOD + "; khác biệt: Hamed-Rao MK + Sen trên hiệu anomaly A − B, CI bootstrap khối 12 tháng",
                    "limitations": LIMITATIONS})

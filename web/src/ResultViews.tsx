@@ -10,7 +10,7 @@ import { ci, pval, signed, Stat, VerdictBadge } from "./ui";
 import { periodText } from "./period";
 
 const METHOD: Record<string, string> = {
-  seasonal_mk: "Seasonal Mann-Kendall", sen_seasonal: "seasonal Sen slope", ols_anomaly: "OLS slope of monthly anomalies",
+  seasonal_mk: "Seasonal Mann-Kendall", sen_seasonal: "seasonal Sen slope", sen_annual: "Sen slope of yearly averages", ols_anomaly: "OLS slope of monthly anomalies",
 };
 const nice = (x: unknown, fallback: string) => (typeof x === "string" ? METHOD[x] ?? x.replace(/_/g, " ") : fallback);
 const extra = (t: TrendResponse) => t as TrendResponse & { method?: string; slope_method?: string; alpha?: number };

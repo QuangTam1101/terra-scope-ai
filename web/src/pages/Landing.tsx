@@ -100,11 +100,11 @@ const SOURCES = [
     vars: ["Precipitation"], url: "https://disc.gsfc.nasa.gov/datasets/GPM_3IMERGM_07/summary" },
   { kind: "Land surface model", art: "land", tint: "#e3f1ea", name: "GLDAS Noah", product: "GLDAS_NOAH025_M 2.1", center: "NASA GES DISC",
     what: "Water and energy at the land surface, from the top 10 cm down to 2 m.",
-    vars: ["Soil moisture (4 layers)", "Root-zone soil water", "Air temperature", "Evapotranspiration", "Potential evapotranspiration"],
+    vars: ["Soil moisture (4 layers)", "Root-zone soil water", "Snow water", "Air temperature", "Evapotranspiration", "Potential evapotranspiration"],
     url: "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary" },
-  { kind: "Reanalysis", art: "reanalysis", tint: "#fde9da", name: "MERRA-2", product: "M2IMNXASM 5.12.4", center: "NASA GES DISC",
-    what: "Air temperature over land and sea.",
-    vars: ["Air temperature (land and sea)"], url: "https://disc.gsfc.nasa.gov/datasets/M2IMNXASM_5.12.4/summary" },
+  { kind: "Reanalysis", art: "reanalysis", tint: "#fde9da", name: "MERRA-2", product: "M2IMNXASM / M2TMNXAER 5.12.4", center: "NASA GES DISC",
+    what: "Air temperature over land and sea, and the haze of dust, smoke and pollution.",
+    vars: ["Air temperature (land and sea)", "Air haze (all aerosols, desert dust)"], url: "https://disc.gsfc.nasa.gov/datasets/M2IMNXASM_5.12.4/summary" },
   { kind: "Satellite measurement", art: "modis", tint: "#e8f4dc", name: "MODIS Terra", product: "MOD13C2 / MOD11C3 V061", center: "NASA LP DAAC",
     what: "How green the plants are and how hot the ground is, seen from orbit.",
     vars: ["Vegetation greenness (NDVI)", "Land surface temperature (day and night)"], url: "https://lpdaac.usgs.gov/products/mod13c2v061/" },
@@ -114,6 +114,12 @@ const SOURCES = [
   { kind: "Satellite measurement", art: "seawifs", tint: "#dcefef", name: "SeaWiFS", product: "SeaWiFS L3m CHL R2022.0", center: "NASA OB.DAAC",
     what: "Ocean colour: how much algae floats near the sea surface (2001 to 2010 in the app).",
     vars: ["Ocean chlorophyll"], url: "https://doi.org/10.5067/ORBVIEW-2/SeaWiFS/L3M/CHL/2022.0" },
+  { kind: "Satellite gravity", art: "satellite", tint: "#e6e9fb", name: "GRACE and GRACE-FO", product: "JPL Mascon RL06.3 · GRACE-DA-DM v3.0", center: "NASA JPL / GSFC",
+    what: "Twin satellites weigh the water on land; a NASA model turns that into weekly drought maps.",
+    vars: ["Land water storage", "Drought (root zone)", "Groundwater drought"], url: "https://doi.org/10.5067/TEMSC-3JC634" },
+  { kind: "Satellite detection", art: "modis", tint: "#fde3d8", name: "Fire: FIRMS and MiCASA", product: "MCD14ML C6.1 · MICASA_FLUX_M v1", center: "NASA FIRMS / GES DISC",
+    what: "Every fire MODIS spots from orbit, and the carbon fires release each month.",
+    vars: ["Number of fires", "Fire carbon"], url: "https://firms.modaps.eosdis.nasa.gov/download/" },
 ] as const;
 
 /** Schematic drawings of each kind of evidence (not data). */
@@ -706,7 +712,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
       <section id="data" className="lp-section" aria-labelledby="data-title">
         <span className="lp-eyebrow">Data</span>
         <h2 id="data-title" className="lp-h2">Built on NASA Earth observation data</h2>
-        <p className="lp-lead">Six public NASA datasets from GES DISC, LP DAAC, NSIDC and OB.DAAC. Two rain-gauge products (GPCC and CRU TS, not NASA) are offered as cross-checks.</p>
+        <p className="lp-lead">Public NASA data from GES DISC, LP DAAC, NSIDC, OB.DAAC, JPL and FIRMS. Records that are not NASA are labelled: GPCC and CRU TS station grids as cross-checks, and NOAA's IBTrACS storm tracks for tropical storms.</p>
         <div className="lp-grid3">
           {SOURCES.map((s) => {
             const Art = SOURCE_ART[s.art];
@@ -766,7 +772,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
             ))}
           </nav>
         </div>
-        <p className="small muted">Data: NASA GES DISC (GPM IMERG, GLDAS Noah, MERRA-2), LP DAAC (MODIS), NSIDC DAAC (SMAP) and OB.DAAC (SeaWiFS); GPCC (DWD) and CRU TS (UEA) for cross-checks. Terra-scope AI is not an official NASA product. Not affiliated with or endorsed by NASA.
+        <p className="small muted">Data: NASA GES DISC (GPM IMERG, GLDAS Noah, MERRA-2, MiCASA, GRACE-DA), LP DAAC (MODIS), NSIDC DAAC (SMAP), OB.DAAC (SeaWiFS), JPL (GRACE) and FIRMS; not NASA: GPCC (DWD), CRU TS (UEA), IBTrACS (NOAA). Terra-scope AI is not an official NASA product. Not affiliated with or endorsed by NASA.
           Built for NASA Space Apps Challenge 2026: "Be An Earth System Trend Detective!"</p>
       </footer>
     </div>

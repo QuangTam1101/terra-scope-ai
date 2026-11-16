@@ -91,14 +91,16 @@ const PARAM_ICON: Record<string, [string, ReactNode, string]> = {
   water_storage: ["#dfe6ff", <><path {...P} d="M12 7c-2 2.6-3.5 4.4-3.5 6a3.5 3.5 0 0 0 7 0c0-1.6-1.5-3.4-3.5-6z" /><path {...P} d="M3.5 15.5c2 4 15 4 17 0M17 3h3v3h-3zM15.5 6.5l1.5-1.5" /></>, "Land water"],
   snow: ["#e8f1ff", <><path {...P} d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M10 4.5l2 1.5 2-1.5M10 19.5l2-1.5 2 1.5" /></>, "Snow"],
   air_haze: ["#ece9e4", <><path {...P} d="M4 7h10M7 11h13M4 15h11M8 19h9M18 7h.01M18 15h.01" /></>, "Air haze"],
+  drought: ["#fbe3c4", <><circle {...P} cx="12" cy="7" r="3" /><path {...P} d="M3 14h18M6 14l2 3-1 3M13 14l-1 3 2 3M18 14l-1 2" /></>, "Drought"],
+  tropical_storms: ["#e3e8ff", <><circle {...P} cx="12" cy="12" r="2.5" /><path {...P} d="M12 9.5C12 6 9.5 4 5 4M12 14.5c0 3.5 2.5 5.5 7 5.5" /></>, "Tropical storms"],
   fire: ["#ffd9cc", <><path {...P} d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-6 1.5 1 2 2 2 3 1-2 1-4 1-7z" /></>, "Fire"],
 };
 export const paramShort = (id: string, name: string) => PARAM_ICON[id]?.[2] ?? name;
 
 // Tiles in three themes, so 14 choices read as 3 small groups. A parameter missing here joins the last theme.
 const THEMES: [string, string[]][] = [
-  ["Water", ["precipitation", "soil_moisture", "root_zone_water", "water_storage", "snow", "evapotranspiration", "potential_evapotranspiration"]],
-  ["Heat", ["air_temperature", "land_surface_temperature"]],
+  ["Water", ["precipitation", "soil_moisture", "root_zone_water", "water_storage", "drought", "snow", "evapotranspiration", "potential_evapotranspiration"]],
+  ["Heat and storms", ["air_temperature", "land_surface_temperature", "tropical_storms"]],
   ["Life, fire and air", ["vegetation", "ocean_chlorophyll", "fire", "air_haze"]],
 ];
 export function byTheme<T>(items: [string, T][]): [string, [string, T][]][] {

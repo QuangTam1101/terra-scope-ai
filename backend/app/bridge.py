@@ -121,4 +121,4 @@ def load_cube(pipeline_id: str):
 @lru_cache(maxsize=32)
 def grid_result(pipeline_id: str, start: str, end: str):
     """Seasonal MK + Sen cho mọi ô + FDR toàn lưới (pipeline.grid.grid_trend). Cache vì tính cả lưới mất vài giây."""
-    return grid_trend(load_cube(pipeline_id), start, end)
+    return grid_trend(load_cube(pipeline_id), start, end, annual=pipeline_id in papi.ANNUAL_SLOPE)

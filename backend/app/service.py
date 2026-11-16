@@ -207,6 +207,11 @@ def _quality(value: pd.Series, frac: pd.Series, insufficient: bool) -> dict:
             "coverage_fraction": round(float(frac.mean()), 3), "sufficient": not insufficient}
 
 
+def _annual(v: catalog.Variable) -> bool:
+    """Chuỗi đếm sự kiện theo mùa: độ dốc Sen trên trung bình năm (pipeline.api.ANNUAL_SLOPE)."""
+    return v.pipeline_id in bridge.papi.ANNUAL_SLOPE
+
+
 def _insufficient(value: pd.Series) -> bool:
     """Cùng ngưỡng với pipeline.trends.trend_one (min_years=10, min_frac=0.7)."""
     return value.dropna().index.year.nunique() < 10 or value.notna().mean() < 0.7
@@ -263,7 +268,7 @@ def _compute_trend(v, region, bbox, start, end, alpha, warnings) -> tuple[dict, 
     value, frac, extra = _region_values(v, bbox, start, end, _country_of(region))
     warnings = warnings + extra
     try:
-        tr = bridge.trend_one(value)
+        tr = bridge.trend_one(value, annual=_annual(v))
     except Exception:                       # chuỗi quá ngắn để pymannkendall chạy
         tr = None
     insufficient = tr is None or bool(tr["insufficient_data"]) or _insufficient(value)
@@ -294,7 +299,7 @@ def _compute_trend(v, region, bbox, start, end, alpha, warnings) -> tuple[dict, 
     trend_id = _make_id("tr", key)
     res = {
         "trend_id": trend_id, "variable_id": v.id, "region": region, "start": start, "end": end,
-        "units": v.units, "method": "seasonal_mk", "slope_method": "sen_seasonal",
+        "units": v.units, "method": "seasonal_mk", "slope_method": "sen_annual" if _annual(v) else "sen_seasonal",
         "slope_per_decade": slope, "slope_ci": slope_ci, "ci_method": "ols_anomaly", "ci_level": 0.95,
         "p_value": p, "p_value_autocorr_adjusted": None if insufficient else _num(tr["hr_p_value"]),
         "z": _num(tr["z"]) if tr else None, "tau": None, "alpha": alpha,
@@ -631,7 +636,7 @@ def trend_sensitivity(req: TrendRequest) -> dict:
         if s.index.year.nunique() < 10:             # >= 10 năm tới `end`, cùng cách đếm năm với _insufficient
             continue
         try:
-            tr = bridge.trend_one(s)
+            tr = bridge.trend_one(s, annual=_annual(v))
         except Exception:                           # giống _compute_trend: chuỗi quá ngắn cho pymannkendall
             tr = None
         insufficient = tr is None or bool(tr["insufficient_data"]) or _insufficient(s)

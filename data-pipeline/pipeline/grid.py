@@ -1,5 +1,7 @@
 """Lưới toàn cầu (docs/01 S5–S8b, mục 7): gộp mọi nguồn về ô 1°, xu hướng cả lưới trong vài giây,
 chuỗi cho vùng BẤT KỲ người dùng vẽ, và gom ô significant thành "điểm nóng" cho Contradiction Hunter."""
+import warnings
+
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -53,8 +55,9 @@ def points_to_cube(obs, variable, step=STEP):
     return xr.DataArray.from_series(s).reindex(lat=lat, lon=lon).rename(variable)
 
 
-def grid_trend(cube, start=None, end=None, min_years=10, chunk=4096):
+def grid_trend(cube, start=None, end=None, min_years=10, chunk=4096, annual=False):
     """Seasonal Mann-Kendall + Sen theo mùa cho MỌI ô cùng lúc (numpy), cho khoảng thời gian người dùng chọn.
+    annual=True: độ dốc = Sen trên trung bình anomaly từng năm, như trends.trend_one(annual=True).
     cube: DataArray (time, lat, lon), nhãn đầu tháng; khoảng chọn phải gồm trọn năm.
     Khớp pymannkendall.seasonal_test khi không có giá trị trùng; bỏ hiệu chỉnh trùng (ties) → phương sai
     lớn hơn thật một chút ở ô sa mạc nhiều tháng mưa = 0, tức là THẬN TRỌNG hơn (p lớn hơn)."""
@@ -71,7 +74,13 @@ def grid_trend(cube, start=None, end=None, min_years=10, chunk=4096):
         s_stat[a:a + chunk] = np.nansum(np.sign(d), axis=(1, 2))
         n = np.isfinite(b).sum(axis=1)                         # (ô, tháng)
         var[a:a + chunk] = (n * (n - 1) * (2 * n + 5) / 18).sum(axis=1)
-        r = (d / (j - i)[None, :, None]).reshape(len(b), -1)
+        if annual:                                             # (ô, năm): TB anomaly năm, rồi Sen theo cặp năm
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)  # ô không có dữ liệu: nanmean rỗng → NaN
+                ya = np.nanmean(b - np.nanmean(b, axis=1, keepdims=True), axis=2)
+            r = (ya[:, j] - ya[:, i]) / (j - i)[None, :]
+        else:
+            r = (d / (j - i)[None, :, None]).reshape(len(b), -1)
         ok = np.isfinite(r).any(axis=1)
         slope[a:a + chunk][ok] = np.nanmedian(r[ok], axis=1)
     with np.errstate(invalid="ignore", divide="ignore"):
@@ -83,7 +92,8 @@ def grid_trend(cube, start=None, end=None, min_years=10, chunk=4096):
     out = {"slope_per_decade": slope * 10, "z": z, "p_value": p, "p_value_fdr": bh_fdr(p), "n_years": n_years}
     return xr.Dataset({k: (("lat", "lon"), v.reshape(shape)) for k, v in out.items()},
                       coords={"lat": c["lat"], "lon": c["lon"]},
-                      attrs={"start": str(t[0].date()), "end": str(t[-1].date()), "method": "seasonal_mk_sen"})
+                      attrs={"start": str(t[0].date()), "end": str(t[-1].date()),
+                             "method": "seasonal_mk_sen_annual" if annual else "seasonal_mk_sen"})
 
 
 def shape_mask(lat, lon, rings):

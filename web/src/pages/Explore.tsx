@@ -226,7 +226,7 @@ export function Explore() {
               </button>
             ))}
           </div>
-          {datasets.filter((d) => d.available).length > 1 && sel.parameter !== "air_haze" && (   // haze lists different quantities, not rival datasets
+          {datasets.filter((d) => d.available).length > 1 && !["air_haze", "fire", "drought"].includes(sel.parameter) && (   // these list different quantities, not rival datasets
             <span className="warn small">Datasets can disagree{sel.parameter === "air_temperature"
               ? ". For the Sahel, MERRA-2 and GLDAS give opposite temperature trends, so compare both" : ", so compare them"} before you trust one.</span>
           )}
@@ -354,7 +354,7 @@ export function Explore() {
       <MoreYears />
       {!running && <ExploreFurther />}
       <span className="footer explore-foot">
-        <a href="#guide">Numbers checked against an independent recalculation</a> · not peer reviewed · NASA data: GPM IMERG, GLDAS Noah, MERRA-2, MODIS, SMAP, SeaWiFS; ground references (not NASA): GPCC, CRU TS ({variable?.spatial_resolution_deg ?? 0.5}° global grid, {years[0]} to {years[years.length - 1]}).{" "}
+        <a href="#guide">Numbers checked against an independent recalculation</a> · not peer reviewed · NASA data: GPM IMERG, GLDAS Noah, MERRA-2, MODIS, SMAP, SeaWiFS, GRACE, MiCASA, FIRMS; not NASA: GPCC, CRU TS, IBTrACS ({variable?.spatial_resolution_deg ?? 0.5}° global grid, {years[0]} to {years[years.length - 1]}).{" "}
         <button type="button" className="btn soft" style={{ minHeight: 32, padding: "0 12px", fontSize: 12.5 }} onClick={() => go("report")}>Open report</button>
       </span>
     </div>

@@ -56,10 +56,14 @@ forecast the future.
 | Air haze: all aerosols / desert dust | **MERRA-2** (`M2TMNXAER` v5.12.4, `TOTEXTTAU` / `DUEXTTAU`), NASA GMAO | Aerosol optical depth at 550 nm: how much smoke, dust, pollution and sea salt dim sunlight (0 = clear, about 1 = very hazy) | unitless | Land and sea, whole globe |
 | Daytime highs / night-time lows | **CRU TS 4.10** `tmx` / `tmn`, University of East Anglia (not NASA) | Monthly mean of daily maximum / minimum air temperature, interpolated from weather stations | °C | Land only; cells with no nearby station removed |
 | Fire activity | **MiCASA v1** (`MICASA_FLUX_M`, `FIRE`), NASA GES DISC, driven by MODIS burned area | Carbon released by fires each month | g C/m²/month | Land only, 2001–2024 |
+| Number of fires | **NASA FIRMS** MODIS Collection 6.1 active fires (MCD14ML, Terra + Aqua) | Fires detected per month in each 1° cell (vegetation fires, confidence ≥ 30 %) | fires/month | Land; 2003 onward (both satellites); Terra and Aqua orbits drift since 2020 / 2022 |
+| Drought (root zone / groundwater) | **GRACE-DA-DM** Global v3.0, NASA GSFC (Catchment model assimilating GRACE) | Share of weeks in the month with root-zone soil water / groundwater at or below the 20th percentile of 1948–2012 (moderate drought or worse) | % of weeks | Land, 60°S to 90°N; February 2003 onward |
+| Tropical storms | **IBTrACS** v04r01, NOAA NCEI (not NASA) | Number of tropical storms, typhoons or hurricanes (≥ 34 knots) whose centre passed within 500 km, per month | storms/month | Places a storm reached in 2001–2025; 2025 tracks provisional |
 
-Fire activity is zero in most months in many places. Its trend slope is a
-median and can be exactly 0 while the p-value is still significant: then say the number of events is changing but
-the typical month is still zero, and point to the Month by year view.
+Count variables (number of fires, fire carbon, tropical storms, drought weeks) are zero in most months in many places.
+Their trend slope is a median over the 12 calendar months, so it can be exactly 0, or far smaller than the 95 % range
+(a different method), while the p-value is still significant: then say the number of events is changing and point to
+the Month by year view. A global or regional tropical-storm count rarely shows a significant trend: storms are rare.
 
 MODIS evapotranspiration (marked "not available yet" in the app) has **no data on the server**. Never describe results
 for it. Land surface temperature is the skin of the ground and is usually hotter than the air by day; do not compare
@@ -92,9 +96,10 @@ it with air temperature as if they were the same quantity.
   earlier than 10:30 / 22:30 as it ends its mission. Recent daytime MODIS land surface temperatures can therefore read
   slightly cooler (night-time ones slightly warmer). When FACTS show a land surface temperature trend, mention that
   checking a period ending in 2019 is a good robustness test.
-- **There is no salinity or river flow data** in Terra-scope at the moment. Groundwater is only seen inside GRACE land
-  water storage (which also includes soil water, snow and ice); air pollution only as aerosol haze (MERRA-2).
-- **Lightning has no continuous record in Terra-scope**: NASA's LIS/OTD lightning climatology ends in 2015.
+- **There is no salinity or river flow data** in Terra-scope at the moment. Groundwater is seen inside GRACE land
+  water storage (which also includes soil water, snow and ice) and as groundwater drought (GRACE-DA); air pollution only as aerosol haze (MERRA-2).
+- **Lightning has no continuous record in Terra-scope**: NASA's TRMM LIS/OTD record ends in April 2015 and the space-station
+  sensor covers only 2017-03 to 2023-11; joining sensors with different sensitivity would make a false trend.
 
 ---
 
@@ -120,7 +125,9 @@ it with air temperature as if they were the same quantity.
 - **Seasonal Mann-Kendall test** (period 12 months): checks whether values tend to go up or down over the years,
   comparing each calendar month with the same month in other years. It gives the main **p-value** (`p_value`).
 - **Sen's slope** (Theil-Sen): the median of the slopes between pairs of years, robust to outliers. It is the
-  headline rate, reported **per decade** (`slope_per_decade`), in the variable's units.
+  headline rate, reported **per decade** (`slope_per_decade`), in the variable's units. For event counts that come in
+  a short season (fires, storms, drought weeks, MiCASA fire carbon), `slope_method` is `sen_annual`: Sen's slope of
+  the yearly averages, because the seasonal version reads 0 when most months have no events. The p-value is unchanged.
 - **Hamed-Rao modified Mann-Kendall test** on the anomalies: a second p-value (`p_value_autocorr_adjusted`) that
   corrects for months that depend on each other (autocorrelation). Climate series are often autocorrelated, which can
   make the first p-value look more confident than it should.

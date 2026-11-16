@@ -32,8 +32,8 @@ def assess_trend(evidence: dict) -> TrustAssessment:
     if t.get('p_value_autocorr_adjusted') is None:
         flag('ADJUSTED_NOT_AVAILABLE', 'No usable autocorrelation-adjusted p-value is reported; no successful adjustment is claimed.', ['p_value_autocorr_adjusted'])
     if t.get('slope_ci') is not None:
-        if t.get('ci_method') == 'ols_anomaly' and t.get('slope_method') == 'sen_seasonal':
-            flag('INTERVAL_ESTIMATOR_MISMATCH', 'OLS anomaly confidence interval targets an OLS estimator, not seasonal Sen slope. HAC uncertainty is not implemented for this interval.', ['slope_ci','ci_method','slope_method'])
+        if t.get('ci_method') == 'ols_anomaly' and t.get('slope_method') in ('sen_seasonal', 'sen_annual'):
+            flag('INTERVAL_ESTIMATOR_MISMATCH', 'OLS anomaly confidence interval targets an OLS estimator, not the Sen slope. HAC uncertainty is not implemented for this interval.', ['slope_ci','ci_method','slope_method'])
         else:
             flag('INTERVAL_REVIEW', 'The interval estimator is not established by the audited OLS/Sen pairing; inspect its metadata.', ['slope_ci','ci_method','slope_method'])
     else:

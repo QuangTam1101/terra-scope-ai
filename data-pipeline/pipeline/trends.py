@@ -10,10 +10,13 @@ def anomaly(s):
     return s - s.groupby(s.index.month).transform("mean")
 
 
-def trend_one(s, min_years=10, min_frac=0.7):
+def trend_one(s, min_years=10, min_frac=0.7, annual=False):
     """s: chuỗi tháng (index = đầu tháng, NaN = thiếu) → dict một dòng của trends.parquet.
     Độ dốc quy về đơn vị / thập kỷ. ✅ pymannkendall 1.4.3: seasonal_test(period=12).slope là / năm;
-    hamed_rao trên chuỗi tháng cho slope / tháng."""
+    hamed_rao trên chuỗi tháng cho slope / tháng.
+    annual=True (chuỗi đếm sự kiện theo mùa, api.ANNUAL_SLOPE): độ dốc = Sen trên trung bình anomaly từng năm.
+    Sen theo mùa là trung vị của mọi cặp năm trong 12 tháng, nên ra 0 khi sự kiện chỉ rơi vào vài tháng mỗi năm
+    (bão Việt Nam: 0 dù p = 0,035). p vẫn của Seasonal MK. Dùng anomaly để năm thiếu tháng không lệch theo mùa."""
     present = s.dropna()
     insufficient = present.index.year.nunique() < min_years or s.notna().mean() < min_frac
     smk = mk.seasonal_test(s.to_numpy(dtype="float64"), period=12)
@@ -23,10 +26,11 @@ def trend_one(s, min_years=10, min_frac=0.7):
     years = ((s.index - s.index[0]).days / 365.25).to_numpy()
     lr = stats.linregress(years[ok], a.to_numpy()[ok])
     ci = stats.t.ppf(0.975, ok.sum() - 2) * lr.stderr
-    return {"trend": smk.trend, "slope_per_decade": smk.slope * 10, "z": smk.z, "p_value": smk.p,
+    slope = mk.sens_slope(a.groupby(a.index.year).mean().to_numpy()).slope if annual else smk.slope
+    return {"trend": smk.trend, "slope_per_decade": slope * 10, "z": smk.z, "p_value": smk.p,
             "hr_slope_per_decade": hr.slope * 12 * 10, "hr_p_value": hr.p,
             "ols_slope_per_decade": lr.slope * 10, "ols_ci95_per_decade": ci * 10,
-            "method": "seasonal_mk_sen", "n_months": int(s.notna().sum()), "insufficient_data": insufficient}
+            "method": "seasonal_mk_sen_annual" if annual else "seasonal_mk_sen", "n_months": int(s.notna().sum()), "insufficient_data": insufficient}
 
 
 def bh_fdr(p):
