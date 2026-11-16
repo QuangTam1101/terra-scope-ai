@@ -131,7 +131,27 @@ export class ApiError extends Error {
   constructor(public code: string, message: string, public status?: number, public retryable = false) { super(message); }
 }
 
+// The hosting layer (not our backend) answers 500/502/503/504 with its own error while the container restarts or wakes up,
+// e.g. {"error":{"code":"500","message":"A server error has occurred"}}. Our backend always sends a word code
+// (INTERNAL_ERROR, NO_DATA...). Such hosting errors are retried once after a short wait; every endpoint is read-only.
 async function call<T>(path: string, init?: RequestInit, timeoutMs = 45000): Promise<T> {
+  try {
+    return await callOnce<T>(path, init, timeoutMs);
+  } catch (e) {
+    const hosting = e instanceof ApiError && (e.status ?? 0) >= 500 && !/^[A-Z_]+$/.test(e.code);
+    if (!hosting || init?.signal?.aborted) throw e;
+    await new Promise((ok) => setTimeout(ok, 2500));
+    try {
+      return await callOnce<T>(path, init, timeoutMs);
+    } catch (e2) {
+      if (e2 instanceof ApiError && (e2.status ?? 0) >= 500 && !/^[A-Z_]+$/.test(e2.code))
+        throw new ApiError("SERVER_RESTARTING", "The server is restarting. Please try again in a few seconds.", e2.status, true);
+      throw e2;
+    }
+  }
+}
+
+async function callOnce<T>(path: string, init?: RequestInit, timeoutMs = 45000): Promise<T> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   // A caller's signal (user cancel / newer request) and the timeout both abort the same fetch.

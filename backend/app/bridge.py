@@ -66,7 +66,9 @@ def source_label(pipeline_id: str) -> str:
     return f"{p.stem} (0.5° global grid, data-pipeline preprocess/clean.py)" if p else f"cube_{pipeline_id} (1° grid)"
 
 
-@lru_cache(maxsize=None)
+# Bounded: each global cube is ~80 MB (1°) to ~300 MB (0.5°) in RAM. With 24 datasets an unbounded cache outgrows the
+# hosted container's memory (Vercel Hobby: 2 GB) and the process is killed; least-recently-used cubes are re-read from disk.
+@lru_cache(maxsize=4)
 def _load_v2(path: str, _mtime: float):
     with xr.open_dataset(path) as ds:
         name = next(iter(ds.data_vars))
@@ -118,7 +120,7 @@ def load_cube(pipeline_id: str):
                        {"variable": pipeline_id}, retryable=False)
 
 
-@lru_cache(maxsize=32)
+@lru_cache(maxsize=12)
 def grid_result(pipeline_id: str, start: str, end: str):
     """Seasonal MK + Sen cho mọi ô + FDR toàn lưới (pipeline.grid.grid_trend). Cache vì tính cả lưới mất vài giây."""
     return grid_trend(load_cube(pipeline_id), start, end)
