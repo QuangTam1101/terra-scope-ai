@@ -234,9 +234,9 @@ body.no-scroll { overflow: hidden; }
 .lp-cta { min-height: 52px; padding: 0 26px; font-size: 16px; }
 .hero-globe { position: relative; margin: 0; display: grid; place-items: center; }
 .hero-globe::before { content: ""; position: absolute; width: min(118%, 430px); aspect-ratio: 1; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(circle, rgba(127, 178, 229, .35) 0%, rgba(196, 180, 240, .22) 45%, rgba(255, 255, 255, 0) 70%); }
+  background: radial-gradient(circle, rgba(40, 90, 170, .22) 0%, rgba(90, 140, 230, .14) 45%, rgba(255, 255, 255, 0) 70%); }
 .hero-globe-ball { width: min(100%, 360px); aspect-ratio: 1; border-radius: 50%; position: relative;
-  box-shadow: 0 22px 0 -6px rgba(46, 40, 80, .12), 0 0 40px 8px rgba(184, 222, 245, .55); }
+  box-shadow: 0 24px 50px -18px rgba(10, 30, 70, .45); }
 .hero-globe-ball canvas { width: 100%; height: 100%; display: block; border-radius: 50%; }
 .hero-globe-ball canvas { cursor: grab; touch-action: pan-y; outline: none; }
 .hero-globe-ball canvas.grabbing { cursor: grabbing; }
@@ -1111,3 +1111,12 @@ select.select::-ms-expand { display: none; }
 [data-theme="dark"] .terra-mascot { filter: drop-shadow(2px 0 0 #f3eefe) drop-shadow(-2px 0 0 #f3eefe) drop-shadow(0 2px 0 #f3eefe) drop-shadow(0 -2px 0 #f3eefe); }
 [data-theme="dark"] .rpage .terra-mascot { filter: none; }
 @media print { [data-theme="dark"] .terra-mascot { filter: none; } }
+
+/* 3D globe: data colours or the NASA Blue Marble photo as the surface */
+.globe-look { position: absolute; left: 12px; top: 12px; display: flex; gap: 4px; padding: 4px; border-radius: 14px;
+  background: rgba(10, 16, 34, .72); box-shadow: 0 4px 14px rgba(0, 0, 0, .3); }
+.globe-look button { border: 0; border-radius: 10px; padding: 7px 12px; background: transparent; color: #dfe6f5; font: 800 12.5px var(--body); cursor: pointer; }
+.globe-look button[aria-pressed="true"] { background: #fff; color: #1d1935; }
+.globe-look button:focus-visible { outline: 3px solid #9cc4ff; outline-offset: 1px; }
+.globe-credit { position: absolute; left: 12px; top: 58px; color: rgba(255, 255, 255, .78); font: 700 11.5px var(--body); pointer-events: none;
+  background: rgba(10, 16, 34, .55); padding: 3px 8px; border-radius: 8px; }

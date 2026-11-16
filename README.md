@@ -120,7 +120,7 @@ Backend unit tests (`pytest backend/tests`), frontend unit tests (`npm test` in 
 
 Hirsch, Slack and Smith (1982); Hirsch and Slack (1984); Sen (1968); Hamed and Rao (1998); Benjamini and Hochberg
 (1995); Kunsch (1989); Hussain and Mahmud (2019), pymannkendall. Full citations with DOIs are in the
-[technical report](report/Terra-scope_AI_Technical_Report.pdf). Coastlines: Natural Earth via world-atlas.
+[technical report](report/Terra-scope_AI_Technical_Report.pdf). Coastlines: Natural Earth via world-atlas. Globe surface photo: NASA Blue Marble Next Generation with topography and bathymetry (December 2004, NASA Earth Observatory / Visible Earth, public domain), resized to 2048 x 1024.
 
 ## Team
 

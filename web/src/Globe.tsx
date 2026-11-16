@@ -9,6 +9,7 @@ import { geoGraticule10, geoOrthographic, geoPath } from "d3-geo";
 import type { BBox, TrendGrid, ValueGrid } from "./api";
 import { H, land, paintMap, projection as flat, W, type Layer } from "./WorldMap";
 import { cellKey } from "./places";
+import { loadBlueMarble } from "./earthPhoto";
 
 const TEX = 2;                     // texture = 2 x logical map (1920 x 960)
 const MAX_ZOOM = 10;
@@ -26,6 +27,17 @@ interface Props {
 type Rot = { lon: number; lat: number; k: number };
 
 // fixed star field in unit coordinates, so it does not jump when the panel resizes
+// sun direction (view space, upper left and in front) and the half vector to the viewer, for the globe's lighting
+const SUN = [-0.55, 0.5, 0.67], SUN_N = Math.hypot(SUN[0], SUN[1], SUN[2]);
+const LX = SUN[0] / SUN_N, LY = SUN[1] / SUN_N, LZ = SUN[2] / SUN_N;
+const HN = Math.hypot(LX, LY, LZ + 1), HX = LX / HN, HY = LY / HN, HZ = (LZ + 1) / HN;
+const WEAK_UP = (255 << 24) | (0xc4 << 16) | (0xe0 << 8) | 0xfb, WEAK_DOWN = (255 << 24) | (0xf4 << 16) | (0xe1 << 8) | 0xcf;   // #fbe0c4, #cfe1f4
+const mix = (a: number, b: number, t: number) => {   // t = weight of a
+  const u = 1 - t;
+  return (255 << 24) | (((((a >> 16) & 255) * t + ((b >> 16) & 255) * u) | 0) << 16)
+    | (((((a >> 8) & 255) * t + ((b >> 8) & 255) * u) | 0) << 8) | (((a & 255) * t + (b & 255) * u) | 0);
+};
+
 const STARS = Array.from({ length: 140 }, (_, i) => {
   const r = (n: number) => { const x = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453; return x - Math.floor(x); };
   return { x: r(1), y: r(2), s: 0.4 + r(3) * 1.1, a: 0.25 + r(4) * 0.6 };
@@ -42,6 +54,15 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
   const [grabbing, setGrabbing] = useState(false);
   const drag = useRef<{ x: number; y: number; lon: number; lat: number; moved: boolean; t: number; vx: number; vy: number } | null>(null);
   const anim = useRef(0);
+  const [look, setLook] = useState<"data" | "photo">("data");
+  const [photo, setPhoto] = useState<Uint32Array | null>(null);
+  useEffect(() => {
+    if (look !== "photo" || photo) return;
+    let live = true;
+    loadBlueMarble(W * TEX, H * TEX).then((p) => { if (live) setPhoto(p); });
+    return () => { live = false; };
+  }, [look, photo]);
+  const showPhoto = look === "photo" && !!photo;
 
   // canvas resolution: CSS size x devicePixelRatio, capped for speed
   const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
@@ -67,8 +88,34 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
     const ctx = c.getContext("2d")!;
     ctx.setTransform(TEX, 0, 0, TEX, 0, 0);
     paintMap(ctx, geoPath(flat, ctx), layer, trend, values, scale, TEX);
-    return new Uint32Array(ctx.getImageData(0, 0, c.width, c.height).data.buffer);
-  }, [layer, trend, values, scale]);
+    const px = new Uint32Array(ctx.getImageData(0, 0, c.width, c.height).data.buffer);
+    // classification image painted with the same geometry (see paintMap's mask mode), so cells are never mistaken for
+    // sea because of a similar colour (the palest "falling" blue is close to the map's sea colour)
+    const mc = document.createElement("canvas"); mc.width = c.width; mc.height = c.height;
+    const mctx = mc.getContext("2d")!;
+    mctx.imageSmoothingEnabled = false;
+    mctx.setTransform(TEX, 0, 0, TEX, 0, 0);
+    paintMap(mctx, geoPath(flat, mctx), layer, trend, values, scale, TEX, true);
+    const cls = new Uint32Array(mctx.getImageData(0, 0, c.width, c.height).data.buffer);
+    // open sea with no cell becomes real deep ocean (or the Blue Marble photo); data cells and grey "no data" cells keep
+    // their exact map colours. With the satellite photo look, land with no cell shows the photo and data cells are laid
+    // over it at 45% (no-data cells at 25%) so both the place and the data stay readable.
+    const sea = new Uint8Array(px.length);
+    for (let i = 0; i < px.length; i++) {
+      const m = cls[i], r = m & 255, g = (m >> 8) & 255, b = (m >> 16) & 255;
+      const isSea = r > 160 && b > 160 && g < 96, isLand = g > 160 && r < 96 && b < 96, isNoData = b > 160 && r < 96 && g < 96;
+      if (isSea) {
+        sea[i] = 1;
+        px[i] = showPhoto ? photo![i] : (255 << 24) | (92 << 16) | (44 << 8) | 14;
+      } else if (showPhoto) {
+        // trends that could be chance: no hatching on the photo, only a faint tint of the palest rising / falling colour
+        const weakUp = r > 160 && g > 160 && b < 96, weakDown = g > 160 && b > 160 && r < 96;
+        px[i] = isLand ? photo![i] : isNoData ? mix(px[i], photo![i], 0.25)
+          : weakUp ? mix(WEAK_UP, photo![i], 0.22) : weakDown ? mix(WEAK_DOWN, photo![i], 0.22) : mix(px[i], photo![i], 0.5);
+      }
+    }
+    return { px, sea };
+  }, [layer, trend, values, scale, showPhoto, photo]);
 
   // slow spin until the user touches the globe
   useEffect(() => {
@@ -118,12 +165,12 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
 
     // space: gradient, stars, then the atmosphere glow around the disc
     const g = ctx.createRadialGradient(cx0, cy0 * 0.9, 0, cx0, cy0, Math.hypot(CW, CH) / 1.6);
-    g.addColorStop(0, "#2e2850"); g.addColorStop(1, "#141126");
+    g.addColorStop(0, "#101a36"); g.addColorStop(1, "#03050d");
     ctx.fillStyle = g; ctx.fillRect(0, 0, CW, CH);
     for (const s of STARS) { ctx.globalAlpha = s.a; ctx.fillStyle = "#fff"; ctx.fillRect(s.x * CW, s.y * CH, s.s * q, s.s * q); }
     ctx.globalAlpha = 1;
     const halo = ctx.createRadialGradient(cx0, cy0, R * 0.96, cx0, cy0, R * 1.12);
-    halo.addColorStop(0, "rgba(140,196,238,.55)"); halo.addColorStop(1, "rgba(140,196,238,0)");
+    halo.addColorStop(0, "rgba(110,170,255,.6)"); halo.addColorStop(0.4, "rgba(90,150,255,.25)"); halo.addColorStop(1, "rgba(80,140,255,0)");
     ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(cx0, cy0, R * 1.12, 0, Math.PI * 2); ctx.fill();
 
     // the sphere, pixel by pixel, only where it is on screen
@@ -144,18 +191,23 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
         const xw = X * cl + z1 * sl, zw = -X * sl + z1 * cl;
         const lat = Math.asin(Math.max(-1, Math.min(1, yy))), lon = Math.atan2(xw, zw);
         const tx = Math.min(TW - 1, ((lon / D + 180) / 360) * TW | 0), ty = Math.min(TH - 1, ((90 - lat / D) / 180) * TH | 0);
-        const c = tex[ty * TW + tx];
-        // soft light from the upper left, a little darker towards the limb so it reads as a ball
-        const shade = 0.68 + 0.32 * Math.max(0, Z * 0.85 - X * 0.22 + Y * 0.28);
-        const rr = (c & 255) * shade, gg = ((c >> 8) & 255) * shade, bb = ((c >> 16) & 255) * shade;
-        out[py * CW + px] = (255 << 24) | (Math.min(255, bb) << 16) | (Math.min(255, gg) << 8) | Math.min(255, rr);
+        const ti = ty * TW + tx, c = tex.px[ti];
+        // sunlight fixed in view space (upper left, in front): soft terminator and a dim but readable night side, so the
+        // data colours stay legible; a sun glint on open water; blue atmospheric haze towards the limb.
+        const d = X * LX + Y * LY + Z * LZ, day = Math.min(1, Math.max(0, (d + 0.15) / 0.55));
+        const shade = 0.42 + 0.58 * day * (0.6 + 0.4 * Math.max(0, d));
+        const glint = tex.sea[ti] ? Math.pow(Math.max(0, (X * HX + Y * HY + Z * HZ)), 60) * day * 0.8 : 0;
+        const haze = Math.pow(1 - Z, 2.4) * (0.3 + 0.5 * day) * 0.75;
+        let rr = (c & 255) * shade + 255 * glint, gg = ((c >> 8) & 255) * shade + 245 * glint, bb = ((c >> 16) & 255) * shade + 230 * glint;
+        rr += (110 - rr) * haze; gg += (170 - gg) * haze; bb += (255 - bb) * haze;
+        out[py * CW + px] = (255 << 24) | (Math.min(255, bb | 0) << 16) | (Math.min(255, gg | 0) << 8) | Math.min(255, rr | 0);
       }
     }
     ctx.putImageData(img, 0, 0);
 
     const path = geoPath(proj, ctx);
-    ctx.beginPath(); path(geoGraticule10()); ctx.strokeStyle = "rgba(43,37,64,.10)"; ctx.lineWidth = 0.7 * q; ctx.stroke();
-    ctx.beginPath(); path(land); ctx.strokeStyle = "rgba(90,70,40,.6)"; ctx.lineWidth = 0.9 * q; ctx.stroke();
+    ctx.beginPath(); path(geoGraticule10()); ctx.strokeStyle = "rgba(200,220,255,.08)"; ctx.lineWidth = 0.7 * q; ctx.stroke();
+    if (!showPhoto) { ctx.beginPath(); path(land); ctx.strokeStyle = "rgba(20,25,40,.45)"; ctx.lineWidth = 0.9 * q; ctx.stroke(); }
     if (selected) {
       const [w, s, e, n] = selected;
       const ring: [number, number][] = [];
@@ -176,8 +228,8 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
       }
     }
     // thin limb line
-    ctx.beginPath(); ctx.arc(cx0, cy0, R, 0, Math.PI * 2); ctx.strokeStyle = "rgba(190,220,245,.45)"; ctx.lineWidth = 1.2 * q; ctx.stroke();
-  }, [tex, rot, R, proj, selected, shape, CW, CH, q]);
+    ctx.beginPath(); ctx.arc(cx0, cy0, R, 0, Math.PI * 2); ctx.strokeStyle = "rgba(160,205,255,.5)"; ctx.lineWidth = 1.2 * q; ctx.stroke();
+  }, [tex, rot, R, proj, selected, shape, CW, CH, q, showPhoto]);
 
   // ---------- input ----------
   const toCanvas = (ev: { clientX: number; clientY: number }) => {
@@ -301,6 +353,13 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
       {hoverShown && hover && (
         <div className="num" style={{ position: "absolute", left: Math.min(hover.px + 14, size.w - 220), top: Math.min(hover.py + 18, size.h - 36), background: "var(--surface)", borderRadius: 12,
           padding: "4px 10px", font: "700 12.5px var(--body)", boxShadow: "var(--shadow)", pointerEvents: "none", whiteSpace: "nowrap" }}>{hover.text}</div>
+      )}
+      <div className="globe-look" role="group" aria-label="Globe surface">
+        <button type="button" aria-pressed={look === "data"} onClick={() => setLook("data")}>Data colours</button>
+        <button type="button" aria-pressed={look === "photo"} onClick={() => setLook("photo")}>Satellite photo</button>
+      </div>
+      {look === "photo" && (
+        <span className="globe-credit">{photo ? (layer === "trend" ? "Surface: NASA Blue Marble · strong colour = significant trend, faint tint = could be chance" : "Surface: NASA Blue Marble (Earth Observatory) · data laid over it") : "Loading the NASA Blue Marble photo…"}</span>
       )}
       <div className="col" style={{ position: "absolute", right: 12, top: 12, gap: 8 }}>
         <button type="button" aria-label="Zoom in" title="Zoom in (+)" style={iconBtn} disabled={rot.k >= MAX_ZOOM} onClick={() => zoomAt(1.5, undefined, undefined, true)}>+</button>

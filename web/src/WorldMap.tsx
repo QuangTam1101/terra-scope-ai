@@ -42,9 +42,13 @@ export function trendScale(grid: TrendGrid): number {
 
 /** Paints ocean, land, data cells, graticule and coastline in equirectangular logical units (W x H). Shared by the 2D map and the 3D globe texture. */
 export function paintMap(ctx: CanvasRenderingContext2D, path: ReturnType<typeof geoPath>, layer: Layer, trend: TrendGrid | null,
-  values: ValueGrid | null, scale: number, k: number) {
-  ctx.fillStyle = "#cdeaf0"; ctx.fillRect(0, 0, W, H);
-  ctx.beginPath(); path(land); ctx.fillStyle = "#f3e3c3"; ctx.fill();
+  values: ValueGrid | null, scale: number, k: number, mask = false) {
+  // mask = true paints a classification image instead of colours (used by the globe): magenta = open sea with no cell,
+  // green = land with no cell, blue = "no data" cell, white = data cell (yellow / cyan: trend not significant, rising /
+  // falling); no hatching, grid lines or coastlines
+  const nodata = mask ? "#0000ff" : NODATA;
+  ctx.fillStyle = mask ? "#ff00ff" : "#cdeaf0"; ctx.fillRect(0, 0, W, H);
+  ctx.beginPath(); path(land); ctx.fillStyle = mask ? "#00ff00" : "#f3e3c3"; ctx.fill();
 
   const pat = hatch(ctx);
   const gap = 0.3 / k;
@@ -52,7 +56,13 @@ export function paintMap(ctx: CanvasRenderingContext2D, path: ReturnType<typeof 
     const s = trend.cell_size_deg, cw = (s / 360) * W + gap, ch = (s / 180) * H + gap;
     for (const c of trend.cells) {
       const px = x(c.lon - s / 2), py = y(c.lat + s / 2);
-      if (!c.valid || c.slope_per_decade === null) { ctx.fillStyle = NODATA; ctx.fillRect(px, py, cw, ch); continue; }
+      if (!c.valid || c.slope_per_decade === null) { ctx.fillStyle = nodata; ctx.fillRect(px, py, cw, ch); continue; }
+      // mask: white = significant; yellow / cyan = not significant, rising / falling; exactly zero change = like empty land
+      if (mask) {
+        const z = c.slope_per_decade;
+        ctx.fillStyle = z === 0 ? "#00ff00" : c.significant_fdr ? "#fff" : z > 0 ? "#ffff00" : "#00ffff";
+        ctx.fillRect(px, py, cw, ch); continue;
+      }
       const v = c.slope_per_decade, ramp = v > 0 ? UP : v < 0 ? DOWN : null;
       if (c.significant_fdr && ramp) {
         ctx.fillStyle = Math.abs(v) / scale > 0.5 ? ramp[2] : ramp[1];
@@ -68,12 +78,14 @@ export function paintMap(ctx: CanvasRenderingContext2D, path: ReturnType<typeof 
     const { p02, p98 } = values.value_range;
     for (const c of values.cells) {
       const px = x(c.lon - s / 2), py = y(c.lat + s / 2);
-      if (c.value === null) { ctx.fillStyle = NODATA; ctx.fillRect(px, py, cw, ch); continue; }
+      if (c.value === null) { ctx.fillStyle = nodata; ctx.fillRect(px, py, cw, ch); continue; }
+      if (mask) { ctx.fillStyle = "#fff"; ctx.fillRect(px, py, cw, ch); continue; }
       const t = p98 > p02 ? (c.value - p02) / (p98 - p02) : 0.5;
       ctx.fillStyle = SEQ[Math.max(0, Math.min(5, Math.floor(t * 6)))];
       ctx.fillRect(px, py, cw, ch);
     }
   }
+  if (mask) return;
   ctx.beginPath(); path(geoGraticule10()); ctx.strokeStyle = "rgba(43,37,64,.07)"; ctx.lineWidth = 0.6 / k; ctx.stroke();
   ctx.beginPath(); path(land); ctx.strokeStyle = "rgba(90,70,40,.55)"; ctx.lineWidth = 0.8 / k; ctx.stroke();
 }

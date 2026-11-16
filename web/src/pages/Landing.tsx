@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type JSX } from "react";
 import { geoEquirectangular, geoOrthographic, geoPath } from "d3-geo";
 import heroTrend from "../assets/heroTrend.json";
+import { loadBlueMarble } from "../earthPhoto";
 import { land } from "../WorldMap";
 import { DEMO_VIDEO, driveEmbedUrl, hasPlayableVideo, youtubeEmbedUrl } from "../config/demo";
 import { Icon, Terra, VERDICT_TEXT } from "../ui";
@@ -312,13 +313,15 @@ const FEATURE_ICON: Record<string, () => JSX.Element> = {
 
 /** Hero globe painted with REAL NASA data: MERRA-2 2 m air temperature trend 2001 to 2025 (seasonal Sen slope per decade,
  * from the backend trend grid, averaged into 3° squares and stored in assets/heroTrend.json so the landing page needs no
- * server). Drawn in the app's cute flat style: land is coloured by the trend in the team's map palette (orange = warming,
- * blue = cooling, one step paler when not significant after FDR), oceans are a flat pastel blue, the 3° squares are smoothed
- * into soft blobs for display only, and the sphere has a cartoon shine and shadow instead of realistic lighting. */
+ * server). Land is coloured by the trend in the team's map palette (orange = warming, blue = cooling, one step paler when
+ * not significant after FDR); the 3° squares are smoothed for display only. The look is a realistic view from space:
+ * deep ocean, soft terrain grain, sunlight from the upper left with a dark night side, a sun glint on the water and a thin
+ * blue atmosphere at the edge. Lighting only changes brightness, never which colour a place gets. */
 const HERO_PX = 460;                          // internal canvas size (CSS scales it)
 const TEX_W = 720, TEX_H = 360;               // equirectangular texture, 0.5° per pixel
 const HERO_UP = [[251, 224, 196], [242, 166, 90], [196, 98, 26]], HERO_DOWN = [[207, 225, 244], [127, 178, 229], [47, 111, 179]];
-const HERO_FLAT = [253, 243, 228], HERO_SEA = [184, 222, 245];
+const HERO_FLAT = [236, 226, 206];
+const SEA_DEEP = [10, 38, 82], SEA_SHELF = [24, 78, 132];   // open ocean and near-coast water
 
 /** Trend of the 3° block under a point (the same numbers the globe is painted with), or null when the block has no value. */
 export function heroTrendAt(lon: number, lat: number): { slope: number; sig: boolean } | null {
@@ -353,17 +356,36 @@ function buildTexture(): { tex: Uint8ClampedArray; land: Uint8Array } {
   const eq = geoEquirectangular().scale(TEX_W / (2 * Math.PI)).translate([TEX_W / 2, TEX_H / 2]);
   mctx.fillStyle = "#fff"; mctx.beginPath(); geoPath(eq, mctx)(land); mctx.fill();
   const m = mctx.getImageData(0, 0, TEX_W, TEX_H).data;
+  // distance to the coast (blurred land mask) gives shallow water a lighter blue, like continental shelves seen from orbit
+  const near = document.createElement("canvas"); near.width = TEX_W; near.height = TEX_H;
+  const nctx = near.getContext("2d")!;
+  nctx.filter = "blur(5px)"; nctx.drawImage(mask, 0, 0);
+  const nm = nctx.getImageData(0, 0, TEX_W, TEX_H).data;
+  // fixed pseudo random grain so land and sea are not perfectly flat (same pattern on every load)
+  const grain = (x: number, y: number) => {
+    const h = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+    return h - Math.floor(h);
+  };
   const out = new Uint8ClampedArray(TEX_W * TEX_H * 3), isLand = new Uint8Array(TEX_W * TEX_H);
   for (let i = 0, j = 0; i < enc.length; i += 4, j += 3) {
-    let c = HERO_SEA;
+    const p = i / 4, x = p % TEX_W, y = (p / TEX_W) | 0;
+    const g = (grain(x, y) + grain(x >> 2, y >> 2) * 2) / 3;            // fine plus coarse grain, 0 to 1
+    let r: number, gg: number, b: number;
     if (m[i + 3] > 127) {
-      isLand[i / 4] = 1;
+      isLand[p] = 1;
       const slope = (enc[i] - 128) / 160, a = Math.abs(slope), sig = enc[i + 1] > 127;
       let k = a < 0.08 ? -1 : a < 0.25 ? 0 : a < 0.45 ? 1 : 2;
       if (!sig) k = Math.min(k, 0);
-      c = k < 0 ? HERO_FLAT : (slope >= 0 ? HERO_UP : HERO_DOWN)[k];
+      const c = k < 0 ? HERO_FLAT : (slope >= 0 ? HERO_UP : HERO_DOWN)[k];
+      const f = 0.9 + g * 0.16;                                          // terrain grain: brightness only
+      r = c[0] * f; gg = c[1] * f; b = c[2] * f;
+    } else {
+      const shelf = Math.min(1, (nm[i + 3] / 255) * 1.6), f = 0.94 + g * 0.08;
+      r = (SEA_DEEP[0] + (SEA_SHELF[0] - SEA_DEEP[0]) * shelf) * f;
+      gg = (SEA_DEEP[1] + (SEA_SHELF[1] - SEA_DEEP[1]) * shelf) * f;
+      b = (SEA_DEEP[2] + (SEA_SHELF[2] - SEA_DEEP[2]) * shelf) * f;
     }
-    out[j] = c[0]; out[j + 1] = c[1]; out[j + 2] = c[2];
+    out[j] = r; out[j + 1] = gg; out[j + 2] = b;
   }
   return { tex: out, land: isLand };
 }
@@ -381,16 +403,39 @@ function HeroGlobe() {
     const cv = ref.current, ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
     const { tex, land: landTex } = buildTexture();
-    const S = HERO_PX, R = S / 2 - 10, TILT0 = 18;
-    // per pixel on the disc: screen position on the unit sphere and a two-tone cartoon shade (fixed, light does not move)
-    const idx: number[] = [], vx: number[] = [], vy: number[] = [], vz: number[] = [], lit: number[] = [];
+    let alive = true;
+    // swap the drawn sea for the real NASA Blue Marble ocean once the photo has loaded; land keeps its data colours,
+    // only gaining a little relief from the photo's brightness
+    loadBlueMarble(TEX_W, TEX_H).then((photo) => {
+      if (!alive || !photo) return;
+      for (let p = 0, j = 0; p < photo.length; p++, j += 3) {
+        const v = photo[p], r = v & 255, g = (v >> 8) & 255, b = (v >> 16) & 255;
+        if (landTex[p]) {
+          const f = 0.86 + 0.3 * ((r + g + b) / 765) ;
+          tex[j] = Math.min(255, tex[j] * f); tex[j + 1] = Math.min(255, tex[j + 1] * f); tex[j + 2] = Math.min(255, tex[j + 2] * f);
+        } else { tex[j] = r; tex[j + 1] = g; tex[j + 2] = b; }
+      }
+      dirty = true;
+    });
+    const S = HERO_PX, R = S / 2 - 18, TILT0 = 18;
+    // per pixel on the disc: position on the unit sphere and its lighting. The sun is fixed in view space (upper left,
+    // slightly in front), so the shading is computed once: daylight, a soft terminator, a dim night side, a specular sun
+    // glint (used on water only) and blue scattering towards the edge of the disc.
+    const idx: number[] = [], vx: number[] = [], vy: number[] = [], vz: number[] = [];
+    const lit: number[] = [], glint: number[] = [], haze: number[] = [];
+    const L = [-0.55, 0.5, 0.67], Ln = Math.hypot(L[0], L[1], L[2]);
+    const lx = L[0] / Ln, ly = L[1] / Ln, lz = L[2] / Ln;
+    const hx = lx, hy = ly, hz = lz + 1, hn = Math.hypot(hx, hy, hz);     // half vector with the viewer at +z
     for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
       const nx = (x + 0.5 - S / 2) / R, ny = -(y + 0.5 - S / 2) / R, rr = nx * nx + ny * ny;
       if (rr > 1) continue;
-      idx.push((y * S + x) * 4); vx.push(nx); vy.push(ny); vz.push(Math.sqrt(1 - rr));
-      // cel shading: a crescent on the lower right is one flat step darker
-      const sx = nx - 0.16, sy = ny + 0.16;
-      lit.push(sx * sx + sy * sy > 0.86 && nx - ny > -0.2 ? 0.88 : 1);
+      const nz = Math.sqrt(1 - rr);
+      idx.push((y * S + x) * 4); vx.push(nx); vy.push(ny); vz.push(nz);
+      const d = nx * lx + ny * ly + nz * lz;
+      const day = Math.min(1, Math.max(0, (d + 0.12) / 0.5));            // smooth terminator
+      lit.push(0.16 + 0.84 * day * (0.55 + 0.45 * Math.max(0, d)));
+      glint.push(Math.pow(Math.max(0, (nx * hx + ny * hy + nz * hz) / hn), 70) * day);
+      haze.push(Math.pow(1 - nz, 2.2) * (0.35 + 0.65 * day));
     }
     const n = idx.length, row = new Int32Array(n), off = new Float32Array(n);
     let tiltDone = NaN;
@@ -417,20 +462,26 @@ function HeroGlobe() {
       for (let k = 0; k < n; k++) {
         let lon = centre + off[k];
         lon = ((lon + 180) % 360 + 360) % 360;
-        const t = (row[k] * TEX_W + Math.min(TEX_W - 1, Math.floor(lon * 2))) * 3, o = idx[k], f = lit[k];
-        px[o] = tex[t] * f; px[o + 1] = tex[t + 1] * f; px[o + 2] = tex[t + 2] * f; px[o + 3] = 255;
+        const ti = row[k] * TEX_W + Math.min(TEX_W - 1, Math.floor(lon * 2)), t = ti * 3, o = idx[k], f = lit[k];
+        const sp = landTex[ti] ? glint[k] * 0.12 : glint[k] * 0.9, h = haze[k];
+        // lit colour, then the sun glint, then a blue atmospheric veil near the edge
+        const r = tex[t] * f + 255 * sp, g = tex[t + 1] * f + 245 * sp, b = tex[t + 2] * f + 230 * sp;
+        px[o] = r + (110 - r) * h * 0.7; px[o + 1] = g + (170 - g) * h * 0.7; px[o + 2] = b + (255 - b) * h * 0.7; px[o + 3] = 255;
       }
       ctx.putImageData(frame, 0, 0);
       proj.rotate([-centre, -tiltDone]);
       ctx.lineJoin = "round"; ctx.lineCap = "round";
-      ctx.beginPath(); path(land); ctx.strokeStyle = "#2e2850"; ctx.lineWidth = 2.2; ctx.stroke();
-      // cartoon shine: a soft white oval and a small dot on the upper left
-      ctx.save(); ctx.translate(S * 0.33, S * 0.27); ctx.rotate(-0.6);
-      ctx.beginPath(); ctx.ellipse(0, 0, S * 0.11, S * 0.05, 0, 0, 2 * Math.PI); ctx.fillStyle = "rgba(255, 255, 255, .55)"; ctx.fill();
+      // faint coastlines only, so the continents read without a cartoon ink line
+      ctx.beginPath(); path(land); ctx.strokeStyle = "rgba(10, 20, 40, .28)"; ctx.lineWidth = 0.8; ctx.stroke();
+      // atmosphere: a thin glowing rim just outside the disc, brighter on the sunlit side
+      const glow = ctx.createRadialGradient(S / 2, S / 2, R * 0.97, S / 2, S / 2, R + 16);
+      glow.addColorStop(0, "rgba(120, 180, 255, .55)"); glow.addColorStop(0.35, "rgba(90, 150, 255, .28)"); glow.addColorStop(1, "rgba(80, 140, 255, 0)");
+      ctx.save(); ctx.globalCompositeOperation = "destination-over";
+      ctx.beginPath(); ctx.arc(S / 2, S / 2, R + 16, 0, 2 * Math.PI); ctx.fillStyle = glow; ctx.fill();
       ctx.restore();
-      ctx.beginPath(); ctx.arc(S * 0.22, S * 0.38, S * 0.018, 0, 2 * Math.PI); ctx.fillStyle = "rgba(255, 255, 255, .6)"; ctx.fill();
-      // thick ink outline, like the rest of the illustrations
-      ctx.beginPath(); ctx.arc(S / 2, S / 2, R, 0, 2 * Math.PI); ctx.strokeStyle = "#2e2850"; ctx.lineWidth = 9; ctx.stroke();
+      const rim = ctx.createLinearGradient(S * 0.2, S * 0.2, S * 0.85, S * 0.85);
+      rim.addColorStop(0, "rgba(160, 205, 255, .55)"); rim.addColorStop(1, "rgba(160, 205, 255, .05)");
+      ctx.beginPath(); ctx.arc(S / 2, S / 2, R + 0.5, 0, 2 * Math.PI); ctx.strokeStyle = rim; ctx.lineWidth = 1.6; ctx.stroke();
     };
     const tick = (t: number) => {
       const dt = last ? Math.min(64, t - last) : 0;
@@ -497,6 +548,7 @@ function HeroGlobe() {
     cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
     cv.addEventListener("pointerleave", leave); cv.addEventListener("keydown", key); cv.addEventListener("dblclick", reset);
     return () => {
+      alive = false;
       cancelAnimationFrame(raf);
       cv.removeEventListener("pointerdown", down); cv.removeEventListener("pointermove", move);
       cv.removeEventListener("pointerup", up); cv.removeEventListener("pointercancel", up);
