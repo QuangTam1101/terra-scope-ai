@@ -196,7 +196,7 @@ export const api = {
 export function errorText(e: unknown): string {
   if (!(e instanceof ApiError)) return "Something went wrong.";
   const map: Record<string, string> = {
-    NO_DATA: "No data for this place and period. Land-only datasets have no values over the sea.",
+    NO_DATA: "This dataset has no values here for this period: some datasets cover only land, others only the sea.",
     REGION_TOO_SMALL: "This area is smaller than one grid cell. Pick a larger area.",
     REGION_TOO_LARGE: "This area is too large.",
     DATA_NOT_READY: "This dataset is not on the server yet.",

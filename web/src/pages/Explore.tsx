@@ -39,7 +39,7 @@ const fitPeriod = (v: Variable, start: string, end: string): Partial<Selection> 
 };
 
 export function Explore() {
-  const { variables, sel, setSel, variable, runAnalysis, running, run, showError, go, tempUnit, setTempUnit, progress, cancelAnalysis, audience, regions, ready, page } = useStore();
+  const { variables, sel, setSel, variable, runAnalysis, running, run, failed, showError, go, tempUnit, setTempUnit, progress, cancelAnalysis, audience, regions, ready, page } = useStore();
   const sci = audience === "scientist";
   const [layer, setLayer] = useState<Layer>("trend");
   const [timelapse, setTimelapse] = useState(false);   // 2D time-lapse replaces the static map while on
@@ -128,9 +128,10 @@ export function Explore() {
   }) : null, [gridOp, variable, sel.startYear, sel.endYear, sel.startMonth, sel.endMonth, month]);
 
   /** Change what to analyse. Once a result is showing (or on its way), re-run it for the same place so the result,
-   * chart and tables never show the previous variable, dataset or period; an impossible period only updates the pickers. */
+   * chart and tables never show the previous variable, dataset or period (a "no data here" answer counts as a result);
+   * an impossible period only updates the pickers. */
   const update = (patch: Partial<typeof sel>) =>
-    (run || running) && periodMonths({ ...sel, ...patch }) >= 1 ? void runAnalysis(patch) : setSel(patch);
+    (run || running || failed) && periodMonths({ ...sel, ...patch }) >= 1 ? void runAnalysis(patch) : setSel(patch);
   /** Choosing a variable or a dataset resets the period to that dataset's whole record. */
   const pickVariable = (v: Variable) => update({ parameter: v.parameter, variableId: v.id, ...(v.coverage ? periodSel(v.coverage.start, v.coverage.end) : {}) });
   const pickParameter = (p: string) => {
@@ -339,7 +340,14 @@ export function Explore() {
             </div>
           );
         })()}
-        {!running && !result && (
+        {!running && !result && failed && (
+          <div className="col" role="status" style={{ gap: 6 }}>
+            <b style={{ font: "700 17px var(--display)" }}>No data for {failed.place.label}</b>
+            <p style={{ font: "600 14.5px/1.5 var(--body)", margin: 0 }}>{failed.message}</p>
+            <span className="small muted">{failed.variable.parameter_name} · {failed.variable.dataset_name}. Pick another place or another dataset.</span>
+          </div>
+        )}
+        {!running && !result && !failed && (
           <div className="col" style={{ alignItems: "center", textAlign: "center", padding: "20px 0" }}>
             <Terra size={110} label="Terra the detective" />
             <p style={{ font: "700 15px/1.5 var(--body)", margin: 0 }}>Pick a place on the map or from the list, then press Run analysis. I'll check if the change is real or just noise.</p>
@@ -348,13 +356,16 @@ export function Explore() {
         {!running && result && <ResultBody share={share} />}
       </section>
       <ChartCard />
-      {!running && result && (
-        <section className="card pad col" aria-labelledby="compare-title">
-          <h2 id="compare-title" style={{ fontSize: 20 }}>What's changing here?</h2>
-          <PlaceCompare place={result.place} start={result.trend.start} end={result.trend.end} variables={variables}
-            onOpen={(id) => openVariable(id, result.place, result.trend.start, result.trend.end)} />
-        </section>
-      )}
+      {!running && (result || failed) && (() => {      // a "no data" place still shows what the other datasets say there
+        const place = result?.place ?? failed!.place;
+        const start = result?.trend.start ?? periodStart(sel), end = result?.trend.end ?? periodEnd(sel);
+        return (
+          <section className="card pad col" aria-labelledby="compare-title">
+            <h2 id="compare-title" style={{ fontSize: 20 }}>What's changing here?</h2>
+            <PlaceCompare place={place} start={start} end={end} variables={variables} onOpen={(id) => openVariable(id, place, start, end)} />
+          </section>
+        );
+      })()}
       <MoreYears />
       {!running && <ExploreFurther />}
       <span className="footer explore-foot">
