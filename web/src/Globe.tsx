@@ -304,7 +304,7 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
       )}
       {hoverShown && hover && (
         <div className="num" style={{ position: "absolute", left: Math.min(hover.px + 14, size.w - 220), top: Math.min(hover.py + 18, size.h - 36), background: "var(--surface)", borderRadius: 12,
-          padding: "4px 10px", font: "700 12.5px var(--body)", boxShadow: "var(--shadow)", pointerEvents: "none", whiteSpace: "nowrap" }}>{hover.text}</div>
+          padding: "6px 12px", font: "800 14px var(--body)", boxShadow: "var(--shadow)", pointerEvents: "none", whiteSpace: "nowrap" }}>{hover.text}</div>
       )}
       <div className="col" style={{ position: "absolute", right: 12, top: 12, gap: 8 }}>
         <button type="button" aria-label="Zoom in" title="Zoom in (+)" style={iconBtn} disabled={rot.k >= MAX_ZOOM} onClick={() => zoomAt(1.5, undefined, undefined, true)}>+</button>

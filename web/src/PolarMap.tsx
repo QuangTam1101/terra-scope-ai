@@ -238,7 +238,7 @@ export function PolarMap({ layer, trend, values, loading, loadingInfo, units, pl
         )}
         {hover && !drag && (
           <div className="num" style={{ position: "absolute", left: hover.px + 12, top: hover.py + 12, background: "var(--surface)", borderRadius: 12,
-            padding: "4px 10px", font: "700 12.5px var(--body)", boxShadow: "var(--shadow)", pointerEvents: "none", whiteSpace: "nowrap" }}>
+            padding: "6px 12px", font: "800 14px var(--body)", boxShadow: "var(--shadow)", pointerEvents: "none", whiteSpace: "nowrap" }}>
             {hover.text}
           </div>
         )}
@@ -254,7 +254,7 @@ export function PolarMap({ layer, trend, values, loading, loadingInfo, units, pl
             <span>{loadingInfo?.title ?? "Loading the map…"}{loadingInfo?.detail && <><br /><span style={{ font: "600 13px var(--body)" }}>{loadingInfo.detail}</span></>}</span>
           </div>
         )}
-        <span className="num" style={{ position: "absolute", left: 10, bottom: 8, font: "700 11px var(--body)", background: "var(--surface)", opacity: 0.92,
+        <span className="num" style={{ position: "absolute", left: 10, bottom: 8, font: "700 12.5px var(--body)", background: "var(--surface)", opacity: 0.92,
           padding: "2px 8px", borderRadius: 999 }}>{name} · 25 km pixels · zoom {view.k.toFixed(1)}×</span>
       </div>
       )}

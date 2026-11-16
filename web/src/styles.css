@@ -43,12 +43,12 @@ button { font-family: var(--body); }
 .chip.on { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
 .chip:disabled { opacity: .5; cursor: not-allowed; }
 .chip { max-width: 100%; white-space: normal; text-align: left; line-height: 1.25; padding-top: 6px; padding-bottom: 6px; }
-.chip .soon { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--lavender-2); font-size: 11.5px; font-weight: 800; white-space: nowrap; }
+.chip .soon { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--lavender-2); font-size: 12.5px; font-weight: 800; white-space: nowrap; }
 .seg { display: inline-flex; background: var(--track); border-radius: 999px; padding: 4px; }
-.seg button { min-height: 38px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; font: 800 14px var(--body); color: var(--muted); cursor: pointer; }
+.seg button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; font: 800 15px var(--body); color: var(--muted); cursor: pointer; }
 .seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 3px 8px rgba(90, 70, 40, .12); }
 .select { min-height: 44px; border-radius: 999px; border: 2px solid var(--line); background: var(--surface); padding: 0 14px; font: 700 14px var(--body); color: var(--ink); }
-.label { font: 800 12px var(--body); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.label { font: 800 13px var(--body); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .prelim { display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; border-radius: 999px; background: var(--peach); color: var(--peach-ink); font: 700 11.5px var(--body); }
 .badge { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 14px; border-radius: 999px; font: 800 14px var(--body); }
 .badge.sig { background: var(--sig-bg); color: var(--sig-ink); }
@@ -57,9 +57,9 @@ button { font-family: var(--body); }
 .stat { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 18px; background: var(--lavender-2); }
 .stat b { font: 800 17px var(--body); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .stat small { font: 700 12px var(--body); color: var(--muted); }
-.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 18px; padding: 10px 14px; font: 700 13.5px/1.45 var(--body); }
+.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 18px; padding: 10px 14px; font: 700 14.5px/1.45 var(--body); }
 .muted { color: var(--muted); }
-.small { font-size: 12.5px; }
+.small { font-size: 14px; line-height: 1.45; }
 .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .col { display: flex; flex-direction: column; gap: 12px; }
 .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -68,7 +68,7 @@ button { font-family: var(--body); }
 .toast button { border: 0; background: transparent; font: 800 18px var(--body); color: inherit; cursor: pointer; min-width: 32px; min-height: 32px; }
 .skel { background: linear-gradient(90deg, #f1ebdf 25%, #f8f3ea 50%, #f1ebdf 75%); background-size: 200% 100%; animation: sk 1.2s infinite; border-radius: 14px; }
 @keyframes sk { to { background-position: -200% 0; } }
-.footer { font: 600 11.5px var(--body); color: var(--muted-2); }
+.footer { font: 600 12.5px var(--body); color: var(--muted-2); }
 
 /* Explore layout */
 .explore { display: grid; grid-template-columns: minmax(260px, 310px) minmax(0, 1fr); gap: 18px; align-items: start; width: 100%; }
@@ -87,7 +87,7 @@ button { font-family: var(--body); }
 /* Sea-ice polar map (PolarMap.tsx): one pole at a time, a fixed-height canvas the grid is fitted into */
 .mapwrap .polar-canvas { width: 100%; height: clamp(340px, 64vh, 640px); touch-action: none; background: #e3eef1; }
 .polar-chip { position: absolute; left: 12px; top: 12px; background: #2b2540; color: #fff; border-radius: 999px; padding: 3px 4px 3px 12px;
-  font: 800 12.5px var(--body); box-shadow: 0 4px 12px rgba(0,0,0,.25); display: flex; align-items: center; gap: 8px; max-width: 290px; }
+  font: 800 13.5px var(--body); box-shadow: 0 4px 12px rgba(0,0,0,.25); display: flex; align-items: center; gap: 8px; max-width: 290px; }
 .polar-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .polar-chip button { width: 22px; height: 22px; border-radius: 999px; border: 0; cursor: pointer; background: rgba(255,255,255,.2); color: inherit;
   font: 800 14px/1 var(--body); display: inline-grid; place-items: center; }
@@ -486,7 +486,7 @@ body.no-scroll { overflow: hidden; }
 .cf { display: inline-block; padding: 2px 10px; border-radius: 999px; font: 800 12px var(--body); white-space: nowrap; }
 .cf.high { background: #d6f2e3; color: #14683f; } .cf.moderate { background: #fdeccd; color: #8a5a06; }
 .cf.low { background: #e6e9f5; color: #3d4a85; } .cf.none { background: #ece9e2; color: #6b6676; }
-.tip { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--lavender-2); color: var(--ink); font: 800 11px var(--body); cursor: help; margin-left: 4px; }
+.tip { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--lavender-2); color: var(--ink); font: 800 12px var(--body); cursor: help; margin-left: 4px; }
 .banner { background: var(--lavender); border-radius: 14px; padding: 10px 14px; font-size: 13.5px; line-height: 1.5; }
 .cond { display: inline-flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 14px; background: var(--lavender); }
 .cond b { font-size: 14px; } .cond small { color: var(--muted); font-size: 12px; }
@@ -559,7 +559,7 @@ dl.gloss dt { font-weight: 800; font-size: 14.5px; } dl.gloss dd { margin: 2px 0
   text-transform: none; letter-spacing: normal; }   /* the button often sits in an uppercase .label: don't inherit it */
 .term-pop b { font: 700 14px var(--body); }
 .term-pop strong { font-weight: 700; }
-.term-pop .small { font-size: 12px; }
+.term-pop .small { font-size: 13.5px; }
 .term-wrap { position: relative; display: inline; }
 .glossary-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .glossary-list > div { background: var(--hover); border-radius: 16px; padding: 10px 12px; font: 600 13.5px/1.5 var(--body); }
@@ -616,7 +616,7 @@ select.select::-ms-expand { display: none; }
 .tl-month { font: 700 26px var(--display); font-variant-numeric: tabular-nums; min-width: 110px; text-align: right; }
 .tl-overlay { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 20px; border-radius: 20px;
   background: rgba(251, 246, 236, .7); font: 800 15px var(--body); }
-.tl-tip { position: absolute; background: var(--surface); border-radius: 12px; padding: 4px 10px; font: 700 12.5px var(--body); box-shadow: var(--shadow);
+.tl-tip { position: absolute; background: var(--surface); border-radius: 12px; padding: 6px 12px; font: 800 14px var(--body); box-shadow: var(--shadow);
   pointer-events: none; white-space: nowrap; }
 .tl-controls { gap: 10px; align-items: center; }
 .tl-legend { height: 14px; border-radius: 999px; box-shadow: inset 0 0 0 1px rgba(43, 37, 64, .12); }
@@ -1032,7 +1032,7 @@ select.select::-ms-expand { display: none; }
 .pat-grid .pat-cell.on { box-shadow: inset 0 0 0 2px var(--ink); }
 .pat-stripes:focus-visible, .pat-grid:focus-visible { outline: 3px solid var(--down-3); outline-offset: 2px; }
 
-.param-theme { font: 700 12px var(--body); color: var(--muted); }
+.param-theme { font: 800 13px var(--body); color: var(--muted); }
 .param-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
 .param-tile { display: flex; align-items: center; gap: 7px; min-height: 40px; padding: 4px 8px 4px 5px; border-radius: 12px; border: 2px solid var(--line);
   background: var(--surface); color: var(--ink); font: 800 12px/1.15 var(--body); text-align: left; cursor: pointer; hyphens: auto; }

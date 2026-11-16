@@ -339,7 +339,7 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
           const top = sy > 40 ? sy - 34 : Math.max(8, sy + 8);
           return (
             <div style={{ position: "absolute", left, top: top - 2, background: "#2b2540", color: "#fff", borderRadius: 999, padding: "3px 4px 3px 12px",
-              font: "800 12.5px var(--body)", boxShadow: "0 4px 12px rgba(0,0,0,.25)", pointerEvents: "none", whiteSpace: "nowrap",
+              font: "800 13.5px var(--body)", boxShadow: "0 4px 12px rgba(0,0,0,.25)", pointerEvents: "none", whiteSpace: "nowrap",
               display: "flex", alignItems: "center", maxWidth: 290 }}>
               <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>⌖ {selectedLabel}</span>
               <button type="button" aria-label="Clear the selection" title="Clear the selection (Esc)" onClick={onClear}
@@ -350,7 +350,7 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
         })()}
         {hover && !drag && (
           <div className="num" style={{ position: "absolute", left: hover.px + 12, top: hover.py + 12, background: "var(--surface)", borderRadius: 12,
-            padding: "4px 10px", font: "700 12.5px var(--body)", boxShadow: "var(--shadow)", pointerEvents: "none", whiteSpace: "nowrap" }}>
+            padding: "6px 12px", font: "800 14px var(--body)", boxShadow: "var(--shadow)", pointerEvents: "none", whiteSpace: "nowrap" }}>
             {hover.text}
           </div>
         )}
@@ -365,7 +365,7 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
             <span>{loadingInfo?.title ?? "Loading the map…"}{loadingInfo?.detail && <><br /><span style={{ font: "600 13px var(--body)" }}>{loadingInfo.detail}</span></>}</span>
           </div>
         )}
-        <span className="num" style={{ position: "absolute", left: 10, bottom: 8, font: "700 11px var(--body)", background: "var(--surface)", opacity: 0.92,
+        <span className="num" style={{ position: "absolute", left: 10, bottom: 8, font: "700 12.5px var(--body)", background: "var(--surface)", opacity: 0.92,
           padding: "2px 8px", borderRadius: 999 }}>{cellDeg}° grid · zoom {view.k.toFixed(1)}×</span>
       </div>
       )}
@@ -424,7 +424,7 @@ function TrendLegend({ trend, units }: { trend: TrendGrid | null; units: string 
   return (
     <div className="col" style={{ gap: 10 }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-        <span style={{ font: "800 14px var(--body)" }}>How is it changing?</span>
+        <span style={{ font: "800 16px var(--body)" }}>How is it changing?</span>
         <span className="small muted">change per decade, in {rateUnit(units)}</span>
       </div>
 
@@ -433,8 +433,8 @@ function TrendLegend({ trend, units }: { trend: TrendGrid | null; units: string 
         {cols.map((c) => (
           <div key={c.name} className="col" style={{ gap: 3, alignItems: "center", textAlign: "center" }}>
             <div style={{ width: "100%", height: 18, borderRadius: 8, background: c.bg }} />
-            <span style={{ font: "800 12.5px var(--body)" }}>{c.name}</span>
-            {c.range && <span className="num small muted" style={{ fontSize: 11.5 }}>{c.range}</span>}
+            <span style={{ font: "800 14px var(--body)" }}>{c.name}</span>
+            {c.range && <span className="num small muted" style={{ fontSize: 13 }}>{c.range}</span>}
           </div>
         ))}
       </div>

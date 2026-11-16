@@ -95,8 +95,11 @@ export function Explore() {
     else void mapRef.current?.requestFullscreen?.().catch(() => undefined);
   }, []);
   const conv = convFor(units, tempUnit, audience);   // map grids come raw from the API
-  const shownTrend = useMemo(() => (trendGrid && conv ? convTrendGrid(trendGrid, conv) : trendGrid), [trendGrid, conv]);
-  const shownValues = useMemo(() => (valueGrid && conv ? convValueGrid(valueGrid, conv) : valueGrid), [valueGrid, conv]);
+  // Only a map of the chosen dataset is shown: while a new one loads, the previous dataset's map, legend counts and
+  // ranges must not appear under the new name and units (sea ice numbers were labelled mm/month).
+  const ownTrend = trendGrid?.variable_id === variable?.id ? trendGrid : null, ownValues = valueGrid?.variable_id === variable?.id ? valueGrid : null;
+  const shownTrend = useMemo(() => (ownTrend && conv ? convTrendGrid(ownTrend, conv) : ownTrend), [ownTrend, conv]);
+  const shownValues = useMemo(() => (ownValues && conv ? convValueGrid(ownValues, conv) : ownValues), [ownValues, conv]);
 
   // Load the map layer for the chosen dataset and period (cached per combination). Before fetching, ask the
   // server whether this map is already computed so the message says what is really happening (Phase 8.5A).
