@@ -747,21 +747,12 @@ export function Landing({ onStart }: { onStart: () => void }) {
             );
           })}
         </div>
-        <div className="lp-two">
-          <div className="lp-limits">
+        <div className="lp-limits">
             <h3>What Terra-scope does not claim</h3>
             <ul className="lp-list">
               {LIMITS.map((l) => <li key={l.title}><b>{l.title}</b> {l.text}</li>)}
             </ul>
           </div>
-          <div className="lp-team">
-            <Terra size={72} />
-            <div>
-              <h3>A student project</h3>
-              <p>Built by a student team for NASA Space Apps Challenge 2026. It is not an official NASA product.</p>
-            </div>
-          </div>
-        </div>
       </section>
 
       <DemoVideoSection />
@@ -775,7 +766,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
             ))}
           </nav>
         </div>
-        <p className="small muted">Data: NASA GES DISC (GPM IMERG, GLDAS Noah, MERRA-2), LP DAAC (MODIS), NSIDC DAAC (SMAP) and OB.DAAC (SeaWiFS); GPCC (DWD) and CRU TS (UEA) for cross-checks. Not affiliated with or endorsed by NASA.
+        <p className="small muted">Data: NASA GES DISC (GPM IMERG, GLDAS Noah, MERRA-2), LP DAAC (MODIS), NSIDC DAAC (SMAP) and OB.DAAC (SeaWiFS); GPCC (DWD) and CRU TS (UEA) for cross-checks. Terra-scope AI is not an official NASA product. Not affiliated with or endorsed by NASA.
           Built for NASA Space Apps Challenge 2026: "Be An Earth System Trend Detective!"</p>
       </footer>
     </div>
