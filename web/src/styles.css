@@ -84,6 +84,16 @@ button { font-family: var(--body); }
 .detective { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; width: 100%; }
 @media (max-width: 1100px) { .detective { grid-template-columns: minmax(0, 1fr); } }
 .mapwrap { position: relative; }
+/* Sea-ice polar map (PolarMap.tsx): one panel per pole, panel width ∝ grid columns so both share one km scale */
+.polar-row { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.polar-panel { margin: 0; flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.polar-panel figcaption { font: 800 13px var(--body); color: var(--muted); }
+.mapwrap .polar-panel canvas { image-rendering: pixelated; border-radius: 16px; }
+.polar-chip { position: absolute; left: 12px; top: 30px; background: #2b2540; color: #fff; border-radius: 999px; padding: 3px 4px 3px 12px;
+  font: 800 12.5px var(--body); box-shadow: 0 4px 12px rgba(0,0,0,.25); display: flex; align-items: center; gap: 8px; max-width: 290px; }
+.polar-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.polar-chip button { width: 22px; height: 22px; border-radius: 999px; border: 0; cursor: pointer; background: rgba(255,255,255,.2); color: inherit;
+  font: 800 14px/1 var(--body); display: inline-grid; place-items: center; }
 .mapwrap canvas { width: 100%; height: auto; display: block; border-radius: 20px; cursor: crosshair; background: #cdeaf0; }
 .legend-ramp { display: flex; height: 12px; border-radius: 6px; overflow: hidden; }
 .legend-ramp div { flex: 1; }

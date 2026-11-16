@@ -14,9 +14,9 @@ try {
   const { GLOSSARY } = await server.ssrLoadModule('/src/glossary.ts');
   const words = (s) => s.trim().split(/\s+/).length;
 
-  const F11 = ['gpcc_precip', 'smap_soil_moisture_surface', 'gldas_root_zone_moisture', 'seawifs_chlorophyll', 'cru_precip',
+  const F11 = ['gpcc_precip', 'smap_soil_moisture_surface', 'gldas_root_zone_moisture', 'modisa_chlorophyll', 'cru_precip',
     'gldas_soil_moisture_10_40cm', 'gldas_soil_moisture_40_100cm', 'gldas_soil_moisture_100_200cm'];
-  const DATASETS = ['imerg', 'gldas', 'merra2', 'modis', 'gpcc', 'cru', 'smap', 'seawifs'].map((d) => `dataset:${d}`);
+  const DATASETS = ['imerg', 'gldas', 'merra2', 'modis', 'gpcc', 'cru', 'smap', 'modisa', 'nsidc'].map((d) => `dataset:${d}`);
   const TERMS = ['root-zone', 'chlorophyll', 'rain-gauge', 'model-vs-satellite', 'trend', 'rate-per-decade', 'sens-slope', 'mann-kendall',
     'p-value', 'significant', 'not-significant', 'seasonal-cycle', 'anomaly', 'confidence-interval', 'fdr', 'autocorrelation', 'time-series',
     'grid-cell', 'forecast-vs-trend'];

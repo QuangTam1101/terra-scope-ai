@@ -24,8 +24,10 @@ const CRU: Source = { product: "CRU TS 4.10 precipitation", provider: "Universit
 const SMAP: Source = { product: "SPL3SMP v009 (36 km)", provider: "NASA NSIDC DAAC", url: "https://nsidc.org/data/spl3smp/versions/9" };
 const MODIS_NDVI: Source = { product: "MOD13C2 v061 (0.05°)", provider: "NASA LP DAAC", url: "https://lpdaac.usgs.gov/products/mod13c2v061/" };
 const MODIS_LST: Source = { product: "MOD11C3 v061 (0.05°)", provider: "NASA LP DAAC", url: "https://lpdaac.usgs.gov/products/mod11c3v061/" };
-const SEAWIFS: Source = { product: "SeaWiFS L3m monthly CHL, 9 km, R2022.0", provider: "NASA OB.DAAC",
-  url: "https://cmr.earthdata.nasa.gov/search/concepts/C3113254690-OB_CLOUD.html" };
+const MODISA: Source = { product: "MODISA_L3m_CHL monthly CHL, 9 km, R2022.0", provider: "NASA OB.DAAC",
+  url: "https://doi.org/10.5067/AQUA/MODIS/L3M/CHL/2022.0" };
+const NSIDC: Source = { product: "NSIDC-0051 v2 (25 km polar stereographic)", provider: "NASA NSIDC DAAC",
+  url: "https://doi.org/10.5067/MPYG15WAA4WX" };
 
 const GRACE: Source = { product: "TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4", provider: "NASA JPL / PO.DAAC", url: "https://doi.org/10.5067/TEMSC-3JC634" };
 const MERRA2_AER: Source = { product: "M2TMNXAER 5.12.4", provider: "NASA GMAO / GES DISC", url: "https://disc.gsfc.nasa.gov/datasets/M2TMNXAER_5.12.4/summary" };
@@ -42,7 +44,8 @@ const MORE = {
   gpcc: "https://www.dwd.de/EN/ourservices/gpcc/gpcc.html",
   cru: "https://crudata.uea.ac.uk/cru/data/hrg/",
   smap: "https://smap.jpl.nasa.gov/",
-  seawifs: "https://www.earthdata.nasa.gov/data/instruments/seawifs",
+  modis: "https://www.earthdata.nasa.gov/data/instruments/modis",
+  seaice: "https://nsidc.org/learn/parts-cryosphere/sea-ice",
   cuahsi: "https://www.cuahsi.org/",
   hydroshare: "https://www.hydroshare.org/",
   gibs: "https://nasa-gibs.github.io/gibs-api-docs/",
@@ -114,11 +117,16 @@ export const DEFINITIONS: Record<string, Definition> = {
     science: "GLDAS Noah 2.1 RootMoist_inst, total water in the root zone. Root depth varies with vegetation class (about 1 m for crops, deeper for forests), so compare trends between places, not amounts. Model output.",
     why: "Shows whether plants can reach water in a dry spell, deeper than the top layer.",
     units: "kg/m² (= mm of water)", source: GLDAS, more: MORE.gldas },
-  seawifs_chlorophyll: { title: "Ocean chlorophyll (SeaWiFS)",
+  modisa_chlorophyll: { title: "Ocean chlorophyll (MODIS-Aqua)",
     simple: "How much green algae floats near the sea surface; more algae makes the water greener.",
-    science: "SeaWiFS Level-3 monthly chlorophyll-a (9 km, 2022 reprocessing, NASA OB.DAAC), averaged to 0.5°, ocean only, 2001–2010. Values are very skewed, so a regional mean is dominated by coastal blooms.",
+    science: "MODIS-Aqua Level-3 monthly chlorophyll-a (9 km, 2022 reprocessing, NASA OB.DAAC), averaged to 1° where at least half the pixels are valid, ocean only, from July 2002. Values are very skewed, so a regional mean is dominated by coastal blooms.",
     why: "Algae feed sea life; changes near river mouths can reflect floods, farm runoff or warming.",
-    units: "mg/m³", source: SEAWIFS, more: MORE.seawifs },
+    units: "mg/m³", source: MODISA, more: MORE.modis },
+  nsidc_sea_ice: { title: "Sea ice (NSIDC)",
+    simple: "How much of the sea surface is frozen over, from 0 % (open water) to 100 % (solid ice).",
+    science: "NSIDC-0051 v2 monthly sea-ice concentration from passive microwave satellites (NASA Team algorithm), on NSIDC's 25 km polar stereographic grids, not regridded. Pixels that never reach 15 % ice, and the unseen hole at the North Pole, are left out.",
+    why: "Sea ice cools the planet by reflecting sunlight; its loss is one of the clearest signs of warming.",
+    units: "%", source: NSIDC, more: MORE.seaice },
   grace_water_storage: { title: "Land water storage (GRACE)",
     simple: "All the water on and under the land, from lakes and soil to snow, ice and groundwater, weighed from space by its pull.",
     science: "GRACE/GRACE-FO JPL Mascon RL06.3 CRI v04: monthly change in total water (cm of water) from the 2004–2009 mean, land only, 3° mascons averaged to 1°. Gap 2017-07 to 2018-05.",
@@ -226,11 +234,16 @@ export const DEFINITIONS: Record<string, Definition> = {
     science: "Soil Moisture Active Passive L-band radiometer, SPL3SMP v009 (36 km EASE-Grid 2.0, daily), NASA NSIDC DAAC. Retrievals flagged not recommended are removed, then averaged monthly to 0.5°. Starts April 2015.",
     why: "Real measurements of soil water to check the land model; but the record is short.",
     source: SMAP, more: MORE.smap },
-  "dataset:seawifs": { title: "SeaWiFS",
-    simple: "A NASA ocean-colour camera in space that saw how green the sea was, from 1997 until it stopped in 2010.",
-    science: "Sea-viewing Wide Field-of-view Sensor, Level-3 mapped monthly chlorophyll-a (2022 reprocessing, 9 km), NASA OB.DAAC. Ocean only; ended December 2010, so 2001–2010 here, with a few months missing.",
-    why: "Shows how ocean life near coasts changed, but only for 2001 to 2010.",
-    source: SEAWIFS, more: MORE.seawifs },
+  "dataset:modisa": { title: "MODIS on Aqua",
+    simple: "A NASA camera on the Aqua satellite that sees how green the sea is, every day since 2002.",
+    science: "Moderate Resolution Imaging Spectroradiometer on Aqua, Level-3 mapped monthly chlorophyll-a (2022 reprocessing, 9 km), NASA OB.DAAC. Ocean only, from July 2002; clouds and the polar night leave gaps. Aqua has drifted to an earlier crossing time since 2022.",
+    why: "The longest single-sensor record of ocean colour, so a trend is not an artefact of switching satellites.",
+    source: MODISA, more: MORE.modis },
+  "dataset:nsidc": { title: "NSIDC sea ice",
+    simple: "A record of sea ice around both poles, made from satellites that sense the faint microwaves ice and water give off.",
+    science: "NSIDC-0051 v2, NASA NSIDC DAAC: sea-ice concentration from Nimbus-7 SMMR, DMSP SSM/I and SSMIS, NASA Team algorithm, monthly, 25 km polar stereographic grids. Sensor changes are inter-calibrated.",
+    why: "One consistent record since 1978, the standard for tracking sea-ice loss.",
+    source: NSIDC, more: MORE.seaice },
 
   "dataset:grace": { title: "GRACE and GRACE-FO",
     simple: "Twin NASA satellites that weigh the water on land by measuring tiny changes in Earth's gravity as they fly over.",
@@ -260,9 +273,9 @@ export const DEFINITIONS: Record<string, Definition> = {
     why: "Plants feel the root zone, not just the surface; it decides whether crops survive a dry month." },
   chlorophyll: { title: "Chlorophyll",
     simple: "The green colour in plants and algae. More of it in seawater means more tiny algae floating there.",
-    science: "Chlorophyll-a concentration (mg/m³) estimated from ocean colour: blue-to-green reflectance band ratios, with a colour-index method for clear water, in the SeaWiFS Level-3 product. Values are roughly log-normal.",
+    science: "Chlorophyll-a concentration (mg/m³) estimated from ocean colour: blue-to-green reflectance band ratios, with a colour-index method for clear water, in the MODIS-Aqua Level-3 product. Values are roughly log-normal.",
     why: "Algae are the base of the ocean food chain; their trend shows how seas respond to change.",
-    units: "mg/m³", more: MORE.seawifs },
+    units: "mg/m³", more: MORE.modis },
   "rain-gauge": { title: "Rain gauge",
     simple: "A simple open container that collects rain so people can measure how much fell, like a measuring cup outdoors.",
     science: "In-situ precipitation measurement. Gridded gauge products (GPCC, CRU TS; not NASA data) interpolate station totals; accuracy drops where stations are sparse, and gauges undercatch snow and wind-driven rain.",

@@ -116,6 +116,7 @@ class VariableItem(BaseModel):
     extent: Optional[BBox] = Field(None, description="Vùng có dữ liệu [W, S, E, N]; ngoài vùng này → NO_DATA")
     available: bool
     source: DataSource
+    grid: Literal["latlon", "polar"] = Field("latlon", description="polar: lưới cực NSIDC 25 km (băng biển), web vẽ bản đồ hai cực")
 
 
 class VariablesResponse(BaseModel):
@@ -199,7 +200,20 @@ class TrendResponse(BaseModel):
     warnings: list[str]
 
 
-class GridCell(BaseModel):
+class PolarPixel(BaseModel):
+    """Hàng/cột pixel trên lưới cực của bán cầu đó; chỉ có ở biến lưới cực (ô lat/lon không ghi ba trường này)."""
+    hemi: Optional[Literal["N", "S"]] = None
+    row: Optional[int] = None
+    col: Optional[int] = None
+
+
+class PolarGrid(BaseModel):
+    rows: int
+    cols: int
+    land_b64: str = Field(description="Mặt nạ đất + bờ của lưới (np.packbits theo hàng, base64)")
+
+
+class GridCell(PolarPixel):
     lon: float
     lat: float
     slope_per_decade: Optional[float]
@@ -226,9 +240,11 @@ class GridResponse(BaseModel):
     cells: list[GridCell]
     precomputed: bool
     warnings: list[str]
+    grid: Literal["latlon", "polar"] = "latlon"
+    polar: Optional[dict[Literal["N", "S"], PolarGrid]] = None
 
 
-class ValueCell(BaseModel):
+class ValueCell(PolarPixel):
     lon: float
     lat: float
     value: Optional[float]
@@ -253,6 +269,8 @@ class ValueGridResponse(BaseModel):
     value_range: ValueRangeFull
     cells: list[ValueCell]
     warnings: list[str]
+    grid: Literal["latlon", "polar"] = "latlon"
+    polar: Optional[dict[Literal["N", "S"], PolarGrid]] = None
 
 
 class Difference(BaseModel):

@@ -47,7 +47,7 @@ test('the hand-off link carries variable and period, opens Hunt, and rejects bad
 test('default period: whole calendar years, the rule the server uses for its precomputed maps', () => {
   assert.deepEqual(O.wholeYears({ start: '2001-01', end: '2026-07' }), { start: '2001-01', end: '2025-12' });   // GLDAS to July 2026
   assert.deepEqual(O.wholeYears({ start: '2015-04', end: '2025-12' }), { start: '2016-01', end: '2025-12' });   // SMAP
-  assert.deepEqual(O.wholeYears({ start: '2001-01', end: '2010-12' }), { start: '2001-01', end: '2010-12' });   // SeaWiFS
+  assert.deepEqual(O.wholeYears({ start: '2001-01', end: '2010-12' }), { start: '2001-01', end: '2010-12' });   // a record of exactly 10 years
   assert.equal(O.wholeYears(null), null);
   assert.equal(O.wholeYears({ start: '2020-03', end: '2020-11' }), null);
 });
@@ -66,7 +66,7 @@ test('the pair shown first passed the difference test when any did; otherwise th
 test('mechanism rows: one per variable family, checked sources, examples covered, scan within the tile limit', () => {
   assert.equal(O.mechanismFor('imerg_precip').id, 'rain');
   assert.equal(O.mechanismFor('gldas_root_zone_moisture').id, 'soil');
-  assert.equal(O.mechanismFor('seawifs_chlorophyll').id, 'algae');
+  assert.equal(O.mechanismFor('modisa_chlorophyll').id, 'algae');
   assert.equal(O.mechanismFor('merra2_air_temperature_2m'), null, 'no checked explanation for temperature');
   const ids = O.MECHANISMS.flatMap((m) => m.variables);
   assert.equal(new Set(ids).size, ids.length, 'a variable belongs to one row');

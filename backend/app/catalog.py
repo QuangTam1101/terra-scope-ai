@@ -134,14 +134,22 @@ _VARS = [
              "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary",
              _MODEL_NOTE + " Root depth changes with the type of plants, so compare places by their trend, "
              "not their amounts."),
-    Variable("seawifs_chlorophyll", "chlor_a_seawifs", "Ocean chlorophyll", "ocean",
+    Variable("modisa_chlorophyll", "chlor_a_modis", "Ocean chlorophyll", "ocean",
              "How much green algae floats near the sea surface; more algae makes the water greener.",
-             "SeaWiFS Level-3 mapped monthly chlorophyll-a (9 km, reprocessing 2022.0), ocean only, "
-             "on a common global grid.",
-             "mg/m³", 0.083, "SeaWiFS_L3m_CHL", "2022.0", "NASA OB.DAAC",
-             "https://doi.org/10.5067/ORBVIEW-2/SeaWiFS/L3M/CHL/2022.0",
-             "Ocean only. The satellite stopped in December 2010, so this covers 2001–2010. Values are very uneven: "
-             "a regional average is dominated by coastal blooms."),
+             "MODIS-Aqua Level-3 mapped monthly chlorophyll-a (9 km, reprocessing 2022.0), ocean only, averaged to "
+             "1° (a cell needs at least half of its 9 km pixels valid).",
+             "mg/m³", 0.083, "MODISA_L3m_CHL", "2022.0", "NASA OB.DAAC",
+             "https://doi.org/10.5067/AQUA/MODIS/L3M/CHL/2022.0",
+             "Ocean only, from July 2002. Clouds and the polar night leave gaps (no winter values near the poles). "
+             "Values are very uneven: a regional average is dominated by coastal blooms."),
+    Variable("nsidc_sea_ice", "seaice_nsidc", "Sea ice", "ocean",
+             "How much of the sea surface is covered by ice, from 0 % (open water) to 100 % (solid ice).",
+             "NSIDC-0051 v2 sea ice concentration from passive microwave satellites (DMSP SSM/I and SSMIS, NASA Team "
+             "algorithm), monthly, kept on NSIDC's own 25 km polar stereographic grids (no regridding). Sea pixels "
+             "that never reach 15 % ice, coast pixels and the pole hole are left out.",
+             "%", 0.25, "NSIDC-0051", "2", "NASA NSIDC DAAC", "https://doi.org/10.5067/MPYG15WAA4WX",
+             "Polar seas only, shown on maps centred on the North and South Poles. A regional value is the average "
+             "ice cover of the sea pixels there that ever have ice (each about 25 km across)."),
     Variable("cru_precip", "precip_cru", "Precipitation (station grid)", "water",
              "Monthly rain from weather stations, spread onto a map grid.",
              "CRU TS 4.10 monthly precipitation (0.5°), interpolated from weather stations, land only; "
@@ -259,6 +267,7 @@ PARAMETERS = {
     "land_surface_temperature": "Land surface temperature",
     "root_zone_water": "Root-zone soil water",
     "ocean_chlorophyll": "Ocean chlorophyll (algae)",
+    "sea_ice": "Sea ice",
     "water_storage": "Land water storage",
     "snow": "Snow water",
     "air_haze": "Air haze (aerosols)",
@@ -284,7 +293,8 @@ VARIABLE_PARAMETER = {
     "gldas_soil_moisture_40_100cm": ("soil_moisture", "GLDAS Noah 40–100 cm (land model)"),
     "gldas_soil_moisture_100_200cm": ("soil_moisture", "GLDAS Noah 100–200 cm (land model)"),
     "gldas_root_zone_moisture": ("root_zone_water", "GLDAS Noah (land model)"),
-    "seawifs_chlorophyll": ("ocean_chlorophyll", "SeaWiFS (satellite, ocean only)"),
+    "modisa_chlorophyll": ("ocean_chlorophyll", "MODIS-Aqua (satellite, ocean only)"),
+    "nsidc_sea_ice": ("sea_ice", "NSIDC passive microwave (satellite, polar seas)"),
     "grace_water_storage": ("water_storage", "GRACE / GRACE-FO (satellite gravity)"),
     "gldas_snow_water": ("snow", "GLDAS Noah (land model)"),
     "merra2_aerosol": ("air_haze", "MERRA-2, all aerosols"),
@@ -338,6 +348,9 @@ def _load_regions() -> dict[str, Region]:
     regions["southern_amazon"] = Region("southern_amazon", "Southern Amazon", (-65.0, -15.0, -45.0, -5.0))
     regions["europe"] = Region("europe", "Europe", (-10.0, 36.0, 40.0, 70.0))
     regions["mediterranean"] = Region("mediterranean", "Mediterranean", (-10.0, 30.0, 40.0, 45.0))
+    # Vùng cực cho băng biển (lưới cực NSIDC), dùng được cho mọi biến.
+    regions["arctic"] = Region("arctic", "Arctic (north of 60°N)", (-180.0, 60.0, 180.0, 90.0))
+    regions["antarctic"] = Region("antarctic", "Antarctic seas (south of 50°S)", (-180.0, -90.0, 180.0, -50.0))
     return regions
 
 

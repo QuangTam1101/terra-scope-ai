@@ -78,11 +78,12 @@ vì backend đọc khoảng thời gian từ trục `time`, nên số tháng kh�
 | `grid/cube_sm_40_100cm_gldas.nc` | Ẩm đất GLDAS 40–100 cm | 2001-01 → 2025-12 | m³/m³ | 15 MB |
 | `grid/cube_sm_100_200cm_gldas.nc` | Ẩm đất GLDAS 100–200 cm | 2001-01 → 2025-12 | m³/m³ | 14 MB |
 | `grid/cube_rootmoist_gldas.nc` | Nước trong đất vùng rễ GLDAS (độ sâu đổi theo lớp thực vật, không chia cho độ dày cố định) | 2001-01 → 2025-12 | kg/m² | 16 MB |
-| `grid/cube_chlor_a_seawifs.nc` | Chlorophyll-a mặt biển SeaWiFS (vệ tinh ngừng cuối 2010) | 2001-01 → 2010-12 | mg/m³ | 12 MB |
+
+`cube_chlor_a_seawifs.nc` (SeaWiFS 2001–2010) đã bỏ khỏi web 16/11/2026: MODIS-Aqua thay (§3.1c).
 
 Muốn file vào container backend thì phải thêm tên file vào `.dockerignore` (danh sách cho phép từng file).
 
-### 3.1c Mười cube 1° thêm ngày 16/11/2026 (cho web: nước trên đất liền, tuyết, sol khí, nhiệt độ cao/thấp nhất, cháy, hạn hán; cube bão IBTrACS đã thêm rồi bỏ theo yêu cầu người dùng 16/11)
+### 3.1c Mười hai cube thêm ngày 16/11/2026 (cho web: nước trên đất liền, tuyết, sol khí, nhiệt độ cao/thấp nhất, cháy, hạn hán, chlorophyll MODIS-Aqua, băng biển trên lưới cực; cube bão IBTrACS đã thêm rồi bỏ theo yêu cầu người dùng 16/11)
 
 Dựng thẳng từ file thô (`data/raw/` của thư mục dự án, giữ nguyên như nhà phát hành giao) bằng `build_extra_cubes.py`, không qua
 `preprocess/clean.py`. Mỗi nguồn một hàm đọc, rồi `bin_to_grid` (trung bình khối về 1°) từng tháng. Trục thời gian là **trục tháng liền**
@@ -101,6 +102,8 @@ không bị bỏ (bỏ thì backend lỗi 500).
 | `grid/cube_fire_count_firms.nc` | Số điểm cháy thảm thực vật, NASA FIRMS MODIS C6.1 (MCD14ML) Terra + Aqua, `type` = 0, độ tin cậy ≥ 30 %; ô đất liền không có điểm = 0. Từ 2003: trước 07/2002 chỉ có Terra (file 2001: 31,5 MB, các năm sau 65–90 MB) | 2003-01 → 2025-12 | điểm/tháng | 17.392 | 4 MB |
 | `grid/cube_drought_rtz_grace.nc` | % số bản đồ tuần trong tháng có phần trăm vị ẩm đất vùng rễ ≤ 20 (so với 1948–2012), GRACE-DA-DM Global v3.0 `rtzsm_inst` | 2003-02 → 2025-12 | % tuần | 16.581 | 6 MB |
 | `grid/cube_drought_gws_grace.nc` | Như trên với nước ngầm `gws_inst` | 2003-02 → 2025-12 | % tuần | 16.581 | 5 MB |
+| `grid/cube_chlor_a_modis.nc` | Chlorophyll-a mặt biển MODIS-Aqua L3m tháng 9 km R2022.0 (`MODISA_L3m_CHL`, OB.DAAC), thay SeaWiFS; ô 1° chỉ có giá trị khi ≥ 72/144 pixel hợp lệ (0,001–100 mg/m³) | 2002-07 → 2025-12 | mg/m³ | 40.186 | 18 MB |
+| `grid/cube_seaice_nsidc.nc` | Mật độ băng biển NSIDC-0051 v2 (NASA Team), **giữ lưới cực stereographic 25 km gốc**, không gộp về 1° | 2001-01 → 2025-12 | % | 68.752 pixel | 18 MB |
 
 - Chuỗi đếm (cháy, số điểm cháy, tuần hạn) phần lớn là 0 ở nhiều ô và tháng. Sen theo mùa là trung vị độ dốc của mọi cặp
   năm trong 12 tháng, nên ra 0 hoặc nhỏ hơn nhiều so với CI của OLS dù Mann-Kendall có ý nghĩa (điểm cháy Sahel: Sen theo mùa
@@ -110,6 +113,12 @@ không bị bỏ (bỏ thì backend lỗi 500).
   Web hiện tốc độ đổi của số điểm cháy theo năm (×12, `web/src/units.ts` `rateOf`/`rateUnit`).
 - FIRMS 2025 thấp hơn 2024 (07–09: −36 % Aqua, −46 % Terra): chủ yếu do 2024 là năm cháy kỷ lục ở Nam Mỹ (09/2024: 245 nghìn
   điểm, 09/2025: 58 nghìn); Terra giảm mạnh hơn, khớp với quỹ đạo Terra trôi từ 2020. Cả chuỗi cùng phiên bản 61.03. Số ngày cực đoan GSOM (`DP1X`/`DX90`) từng có cube, đã bỏ khỏi web theo yêu cầu người dùng (16/11).
+- **Băng biển là cube `(time, cell)`, không phải `(time, lat, lon)`**: mỗi `cell` một pixel biển của lưới cực từng có ≥ 15 % băng
+  (bỏ đất, bờ, lỗ cực Bắc), toạ độ `lat`/`lon` (float32, từ `x`, `y` qua pyproj), `hemi` (+1 Bắc, −1 Nam), `row`/`col` trên lưới
+  448 × 304 (Bắc) / 332 × 316 (Nam); attrs `shape_n`/`shape_s` và `land_n`/`land_s` (mặt nạ đất + bờ, `np.packbits` theo hàng) để
+  web vẽ đất đúng từng pixel. `grid_trend` chạy trên mọi chiều khác `time`; `region_series` với cube có `cell` lấy TB đều các pixel có
+  tâm trong bbox / đường viền (pixel 25 km gần bằng diện tích nhau). Time-lapse chưa hỗ trợ lưới cực (`/values/frames` trả 400).
+  Nạp vào RAM ~82 MB (68 752 × 300 float32); dựng cả hai cube: RSS đỉnh 1,9 GB, 17 s.
 - AOD lưu với `least_significant_digit = 4` (lệch tối đa 3·10⁻⁵ so với float32 đầy đủ; 55 → 27 MB và 16 MB).
 - **Sét không có**: chuỗi sét toàn cầu của NASA (LIS/OTD `lolrmts`) chỉ chạy 1995-05 → 2015-04, ISS LIS 2017-03 → 2023-11; bản
   ERA5 công khai trên Google Cloud (ARCO) không có biến sét (ERA5 có sét mô hình hoá, nhưng phải qua tài khoản Copernicus CDS).
@@ -119,6 +128,11 @@ không bị bỏ (bỏ thì backend lỗi 500).
 - Kiểm nhanh chuỗi đếm (16/11/2026, `/api/v1/trends`): điểm cháy toàn cầu −2,57/tháng/thập kỷ (p = 4·10⁻¹³), Indonesia −3,71,
   Brazil −1,51 (cả hai có ý nghĩa), Canada không (p = 0,79); hạn vùng rễ toàn cầu +8,5 điểm %/thập kỷ, Amazon (75–50°W, 15°S–5°N) +14,1, châu Âu +10,2;
   hạn nước ngầm toàn cầu +9,0, Bắc Ấn Độ +20,6 (mọi p ≈ 0). Amazon: đỉnh hạn 2005, 2010, 2015–16, 2023–24 (67 % số tuần năm 2024).
+- Kiểm nhanh băng biển và MODIS-Aqua (16/11/2026, `/api/v1/trends`, 2001–2025): Bắc 60°N trở lên −2,52 %/thập kỷ, Nam 50°S trở xuống
+  −1,60, biển Barents (20–50°E, 70–80°N) −1,89 (cả ba p < 10⁻¹⁰); chlorophyll vịnh Mexico gần châu thổ Mississippi 2003–2025 +0,167
+  mg/m³/thập kỷ (p = 1,4·10⁻⁹). Cặp "ngược chiều" của SeaWiFS (Nam Đại Tây Dương / nhiệt đới) không còn đạt trên MODIS-Aqua
+  2003–2025; thay bằng thềm Patagonia (70–60°W, 50–40°S) tăng / Đại Tây Dương ngoài Bồ Đào Nha (20–10°W, 30–40°N) giảm (`/compare`:
+  `opposite_significant`, p hiệu chỉnh 0,0001 và 0,0014).
 
 **Code:** `build_extra_cubes.py` (`python build_extra_cubes.py [id ...]`, chạy từ `data-pipeline/`; thư mục thô đọc từ biến môi
 trường `TERRA_RAW`, mặc định `../../data/raw`).

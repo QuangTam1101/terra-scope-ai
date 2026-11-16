@@ -23,7 +23,7 @@ test('matches on variable and place', () => {
 });
 
 test('no match: wrong variable, other place, or an area far bigger than the study', () => {
-  assert.deepEqual(readingFor([preset('seawifs_chlorophyll', HANOI)]), []);
+  assert.deepEqual(readingFor([preset('modisa_chlorophyll', HANOI)]), []);
   assert.deepEqual(readingFor([preset('gldas_air_temperature', [104.4, 8.5, 106.9, 11.1])]), []); // Mekong Delta
   assert.deepEqual(readingFor([preset('gldas_air_temperature', WORLD)]), []);
   assert.deepEqual(readingFor([preset('gldas_air_temperature', [104.5, 20.1, 107.25, 22.25])]), []); // Northern Vietnam ⊃ Hanoi

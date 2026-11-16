@@ -12,6 +12,7 @@ import { periodEnd, periodMonths, periodStart } from "../period";
 import { PlacePicker } from "../PlacePicker";
 import { countryPlace, placeShape } from "../places";
 import { Legend, WorldMap, type Layer } from "../WorldMap";
+import { PolarMap } from "../PolarMap";
 import { TrendChart } from "../TrendChart";
 import { byTheme, ParamIcon, paramShort, Terra } from "../ui";
 import { ExplorerResult, ScientistResult } from "../ResultViews";
@@ -31,7 +32,7 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 /** Selection fields for a "YYYY-MM" to "YYYY-MM" period. */
 const periodSel = (start: string, end: string): Partial<Selection> =>
   ({ startYear: +start.slice(0, 4), startMonth: +start.slice(5, 7), endYear: +end.slice(0, 4), endMonth: +end.slice(5, 7) });
-/** The period clamped to a variable's record (GPCC, SMAP and SeaWiFS are shorter); the whole record when they do not overlap. */
+/** The period clamped to a variable's record (GPCC, SMAP and MODIS-Aqua chlorophyll are shorter); the whole record when they do not overlap. */
 const fitPeriod = (v: Variable, start: string, end: string): Partial<Selection> => {
   if (!v.coverage) return {};
   const p = clampPeriod(start, end, v.coverage) ?? { start: v.coverage.start, end: v.coverage.end };
@@ -64,6 +65,9 @@ export function Explore() {
     return Array.from({ length: b - a + 1 }, (_, i) => a + i);
   }, [variable]);
   const units = variable?.display_units ?? "";
+  // Sea ice lives on NSIDC's polar grids: its map is PolarMap (both poles); every other dataset uses the world map.
+  const polar = variable?.grid === "polar";
+  useEffect(() => { if (polar && timelapse) setTimelapse(false); }, [polar, timelapse]);   // no time-lapse on the polar grid
   // Large map mode: the map card fills the workspace (and optionally the screen). Escape leaves it first,
   // before the map's own Escape (clear selection) handler runs.
   const mapRef = useRef<HTMLElement>(null);
@@ -139,7 +143,7 @@ export function Explore() {
     if (first) pickVariable(first);
   };
   const result = run;
-  // A dataset with a shorter record (SeaWiFS 2001-2010, GPCC 2001-2020, SMAP 2015-2025) pulls the chosen period inside it.
+  // A dataset with a shorter record (MODIS-Aqua chlorophyll from 2002-07, GPCC 2001-2020, SMAP 2015-2025) pulls the chosen period inside it.
   useEffect(() => {
     if (!variable?.coverage) return;
     const fit = fitPeriod(variable, periodStart(sel), periodEnd(sel)), s = sel;
@@ -279,7 +283,7 @@ export function Explore() {
           <div className="seg" role="group" aria-label="Map layer">
             <button type="button" className={!timelapse && layer === "values" ? "on" : ""} aria-pressed={!timelapse && layer === "values"} onClick={() => { setTimelapse(false); setLayer("values"); }}>Values</button>
             <button type="button" className={!timelapse && layer === "trend" ? "on" : ""} aria-pressed={!timelapse && layer === "trend"} onClick={() => { setTimelapse(false); setLayer("trend"); }}>Trend</button>
-            <button type="button" className={timelapse ? "on" : ""} aria-pressed={timelapse} onClick={() => setTimelapse(true)}>Time-lapse</button>
+            {!polar && <button type="button" className={timelapse ? "on" : ""} aria-pressed={timelapse} onClick={() => setTimelapse(true)}>Time-lapse</button>}
           </div>
           <span style={{ font: "800 14px var(--body)" }}>{variable?.parameter_name} · {variable?.dataset_name} · {periodLabel(periodStart(sel))} to {periodLabel(periodEnd(sel))}</span>
           {!timelapse && layer === "values" && (
@@ -297,16 +301,22 @@ export function Explore() {
             </button>
           </div>
         </div>
-        {timelapse && variable?.available ? (
+        {timelapse && variable?.available && !polar ? (
           <Timelapse variable={variable} start={periodStart(sel)} end={periodEnd(sel)} conv={conv}
             bbox={sel.place.bbox[2] - sel.place.bbox[0] >= 360 ? null : sel.place.bbox} />
         ) : <>
+        {polar ? (
+          <PolarMap layer={layer} trend={shownTrend} values={shownValues} loading={gridLoading} loadingInfo={gridInfo} units={units}
+            selected={sel.place.bbox} selectedLabel={sel.place.label} onClear={() => runAnalysis({ place: WORLD })}
+            onPick={(lon, lat) => runAnalysis({ place: cellPlace(lon, lat) })} />
+        ) : (
         <WorldMap layer={layer} trend={shownTrend} values={shownValues} loading={gridLoading} loadingInfo={gridInfo} units={units}
           selected={sel.place.bbox[2] - sel.place.bbox[0] >= 360 && sel.place.ref.type !== "country" ? null : sel.place.bbox}
           shape={placeShape(sel.place)} selectedLabel={sel.place.label}
           onClear={() => runAnalysis({ place: WORLD })}
           onPick={(lon, lat) => { const p = cellPlace(lon, lat); runAnalysis({ place: p }); }}
           onArea={(bbox) => runAnalysis({ place: areaPlace(bbox) })} />
+        )}
         <Legend layer={layer} trend={shownTrend} values={shownValues} units={units} />
         {variable && sci && (
           <span className="small muted">
@@ -369,7 +379,7 @@ export function Explore() {
       <MoreYears />
       {!running && <ExploreFurther />}
       <span className="footer explore-foot">
-        <a href="#guide">Numbers checked against an independent recalculation</a> · not peer reviewed · NASA data: GPM IMERG, GLDAS Noah, MERRA-2, MODIS, SMAP, SeaWiFS, GRACE, MiCASA, FIRMS; not NASA: GPCC, CRU TS ({variable?.spatial_resolution_deg ?? 0.5}° global grid, {years[0]} to {years[years.length - 1]}).{" "}
+        <a href="#guide">Numbers checked against an independent recalculation</a> · not peer reviewed · NASA data: GPM IMERG, GLDAS Noah, MERRA-2, MODIS, SMAP, NSIDC sea ice, GRACE, MiCASA, FIRMS; not NASA: GPCC, CRU TS ({polar ? "25 km polar grids" : `${variable?.spatial_resolution_deg ?? 0.5}° global grid`}, {years[0]} to {years[years.length - 1]}).{" "}
         <button type="button" className="btn soft" style={{ minHeight: 32, padding: "0 12px", fontSize: 12.5 }} onClick={() => go("report")}>Open report</button>
       </span>
     </div>

@@ -94,6 +94,16 @@ describe("Terra-scope full feature E2E", { skip: !up && "servers not running", c
     await page.waitFor(settled(/mm\/month/), { timeout: 60000, label: "result back on rainfall" });
   });
 
+  it("explore: sea ice swaps in the two polar maps; any other topic brings the world map back", async () => {
+    const polar = `document.querySelectorAll(".mapcard .polar-panel canvas").length`;
+    const timelapse = `[...document.querySelectorAll('.mapcard [aria-label="Map layer"] button')].some((b) => b.innerText === "Time-lapse")`;
+    await page.click(`document.querySelector('[data-tour="variable"] button[aria-label="Sea ice"]')`);
+    await page.waitFor(`${polar} === 2 && !${timelapse}`, { timeout: 60000, label: "Arctic and Antarctic panels, no time-lapse" });
+    await page.waitFor(`/No data for Mekong Delta/.test(document.querySelector(".result")?.innerText ?? "")`, { timeout: 60000, label: "no sea ice in the Mekong Delta" });
+    await page.click(`document.querySelector('[data-tour="variable"] button[aria-label="Precipitation"]')`);
+    await page.waitFor(`${polar} === 0 && ${timelapse} && /mm\\/month/.test(document.querySelector(".result")?.innerText ?? "")`, { timeout: 60000, label: "world map and rainfall back" });
+  });
+
   it("explore: map overlay names the real grid operation", async () => {
     const from = `[...document.querySelectorAll('[data-tour="years"] select')][0]`;
     await page.evaluate(`const s = ${from}; const set = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set; set.call(s, "2003"); s.dispatchEvent(new Event("change", {bubbles: true})); return true;`);

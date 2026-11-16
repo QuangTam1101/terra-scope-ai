@@ -34,7 +34,6 @@ VARIABLES = {
     "sm_40_100cm_gldas": ("Độ ẩm đất 40–100 cm", "m3/m3", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) SoilMoi40_100cm_inst qua Giovanni/Harmony"),
     "sm_100_200cm_gldas": ("Độ ẩm đất 100–200 cm", "m3/m3", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) SoilMoi100_200cm_inst qua Giovanni/Harmony"),
     "rootmoist_gldas": ("Nước trong đất vùng rễ", "kg/m2", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) RootMoist_inst qua Giovanni/Harmony"),
-    "chlor_a_seawifs": ("Chlorophyll-a mặt biển", "mg/m3", "SeaWiFS Level-3 mapped monthly CHL 9 km, bản 2022.0 (SeaWiFS_L3m_CHL), NASA OB.DAAC"),
     # Cube 1° thêm 16/11/2026 (build_extra_cubes.py)
     "tws_grace": ("Tổng lượng nước lục địa (GRACE)", "cm", "GRACE/GRACE-FO JPL Mascon RL06.3 CRI v04 (TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4), NASA JPL / PO.DAAC; doi:10.5067/TEMSC-3JC634"),
     "swe_gldas": ("Nước trong tuyết (GLDAS)", "kg/m2", "GLDAS Noah 0.25° Monthly v2.1 (GLDAS_NOAH025_M.2.1) SWE_inst qua Giovanni/Harmony"),
@@ -45,6 +44,8 @@ VARIABLES = {
     "fire_count_firms": ("Số điểm cháy (MODIS, NASA FIRMS)", "fires/month", "NASA FIRMS MODIS Collection 6.1 active fire detections (MCD14ML, Terra + Aqua); điểm cháy thảm thực vật (type 0), độ tin cậy ≥ 30 %, đếm theo ô 1°, từ 2003"),
     "drought_rtz_grace": ("Tỉ lệ tuần hạn hán vùng rễ (GRACE-DA)", "% of weeks", "GRACE-DA-DM Global v3.0 (GRACEDADM_CLSM025GL_7D), NASA GSFC / GES DISC; tuần có rtzsm_inst ≤ phần trăm vị 20 (so với 1948–2012)"),
     "drought_gws_grace": ("Tỉ lệ tuần hạn hán nước ngầm (GRACE-DA)", "% of weeks", "GRACE-DA-DM Global v3.0 (GRACEDADM_CLSM025GL_7D), NASA GSFC / GES DISC; tuần có gws_inst ≤ phần trăm vị 20 (so với 1948–2012)"),
+    "chlor_a_modis": ("Chlorophyll-a mặt biển (MODIS-Aqua)", "mg/m3", "MODIS-Aqua Level-3 mapped monthly CHL 9 km, bản 2022.0 (MODISA_L3m_CHL), NASA OB.DAAC; doi:10.5067/AQUA/MODIS/L3M/CHL/2022.0; TB khối 1°, ô cần ≥ 50 % pixel hợp lệ"),
+    "seaice_nsidc": ("Mật độ băng biển (NSIDC)", "%", "NSIDC-0051 v2 Sea Ice Concentrations from Nimbus-7 SMMR and DMSP SSM/I-SSMIS Passive Microwave Data (thuật toán NASA Team), lưới cực stereographic 25 km, NASA NSIDC DAAC; doi:10.5067/MPYG15WAA4WX"),
     "fire_micasa": ("Phát thải carbon do cháy (MiCASA)", "gC/m2/month", "MiCASA v1 monthly 0.1° (MICASA_FLUX_M.1) FIRE, tính từ diện tích cháy MODIS MCD64A1, NASA GES DISC"),
 }
 # Chuỗi đếm sự kiện theo mùa: độ dốc = Sen trên trung bình năm (trends.trend_one annual=True), vì Sen theo mùa ra 0.
@@ -56,7 +57,8 @@ LIMITATIONS = [
     "Lưới 1°: vùng nhỏ hơn ~100 km không phân tích được; ô ven biển có thể lẫn biển (IMERG, MERRA-2).",
     "Biến MODIS (NDVI, LST, ET) trên lưới là 1 pixel mẫu mỗi ô, không phải trung bình ô; thiếu khi trời nhiều mây.",
     "GLDAS và MERRA-2 là mô hình / tái phân tích, không phải quan sát trực tiếp.",
-    "Chlorophyll SeaWiFS chỉ có 2001–2010 (vệ tinh ngừng cuối 2010) và chỉ trên biển.",
+    "Chlorophyll MODIS-Aqua chỉ có từ 07/2002 và chỉ trên biển; mây và đêm cực để lại tháng trống.",
+    "Băng biển nằm trên lưới cực 25 km của NSIDC (không nội suy về lat/lon); giá trị vùng là TB mật độ băng của các pixel từng có băng ≥ 15 %.",
 ]
 
 

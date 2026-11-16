@@ -111,9 +111,12 @@ const SOURCES = [
   { kind: "Satellite measurement", art: "smap", tint: "#efe6f8", name: "SMAP", product: "SPL3SMP V009", center: "NASA NSIDC DAAC",
     what: "Water in the top 5 cm of soil, measured by radiometer since 2015.",
     vars: ["Soil moisture (surface)"], url: "https://nsidc.org/data/spl3smp/versions/9" },
-  { kind: "Satellite measurement", art: "seawifs", tint: "#dcefef", name: "SeaWiFS", product: "SeaWiFS L3m CHL R2022.0", center: "NASA OB.DAAC",
-    what: "Ocean colour: how much algae floats near the sea surface (2001 to 2010 in the app).",
-    vars: ["Ocean chlorophyll"], url: "https://doi.org/10.5067/ORBVIEW-2/SeaWiFS/L3M/CHL/2022.0" },
+  { kind: "Satellite measurement", art: "ocean", tint: "#dcefef", name: "MODIS Aqua", product: "MODISA_L3m_CHL R2022.0", center: "NASA OB.DAAC",
+    what: "Ocean colour: how much algae floats near the sea surface, since July 2002.",
+    vars: ["Ocean chlorophyll"], url: "https://doi.org/10.5067/AQUA/MODIS/L3M/CHL/2022.0" },
+  { kind: "Satellite measurement", art: "ice", tint: "#e4eef7", name: "NSIDC sea ice", product: "NSIDC-0051 v2", center: "NASA NSIDC DAAC",
+    what: "How much of the polar seas is frozen, from satellite microwaves, on 25 km grids around each pole.",
+    vars: ["Sea ice"], url: "https://doi.org/10.5067/MPYG15WAA4WX" },
   { kind: "Satellite gravity", art: "satellite", tint: "#e6e9fb", name: "GRACE and GRACE-FO", product: "JPL Mascon RL06.3 · GRACE-DA-DM v3.0", center: "NASA JPL / GSFC",
     what: "Twin satellites weigh the water on land; a NASA model turns that into weekly drought maps.",
     vars: ["Land water storage", "Drought (root zone)", "Groundwater drought"], url: "https://doi.org/10.5067/TEMSC-3JC634" },
@@ -149,7 +152,20 @@ const SOURCE_ART: Record<string, () => JSX.Element> = {
       <path d="M58 30l-10 4M102 30l10 4" stroke="#2b2540" strokeWidth="2.5" strokeLinecap="round" />
       <path d="M70 38q10 8 20 0M64 46q16 12 32 0" fill="none" stroke="#7d6fb0" strokeWidth="2" strokeLinecap="round" strokeDasharray="3 4" />
     </svg>),
-  seawifs: () => (
+  ice: () => (
+    <svg viewBox="0 0 160 90" aria-hidden="true">
+      <path d="M10 56h140V84H10z" fill="#7fb2e5" />
+      <path d="M10 56h140" stroke="#2b2540" strokeWidth="2.5" strokeLinecap="round" />
+      {["M18 56l6 10h26l8-10", "M66 56l4 8h30l6-8", "M114 56l5 12h20l5-12"].map((d) => <path key={d} d={d} fill="#fff" stroke="#2b2540" strokeWidth="2" strokeLinejoin="round" />)}
+      <g transform="rotate(10 80 20)">
+        <rect x="56" y="14" width="18" height="10" rx="2" fill="#7fb2e5" stroke="#2b2540" strokeWidth="2" />
+        <rect x="88" y="14" width="18" height="10" rx="2" fill="#7fb2e5" stroke="#2b2540" strokeWidth="2" />
+        <path d="M74 19h14" stroke="#2b2540" strokeWidth="2.5" />
+        <rect x="76" y="10" width="12" height="18" rx="4" fill="#fff" stroke="#2b2540" strokeWidth="2.5" />
+      </g>
+      <path d="M70 38q10 8 20 0" fill="none" stroke="#7d6fb0" strokeWidth="2" strokeLinecap="round" strokeDasharray="3 4" />
+    </svg>),
+  ocean: () => (
     <svg viewBox="0 0 160 90" aria-hidden="true">
       <path d="M10 56q12-8 24 0t24 0t24 0t24 0t24 0t24 0V84H10z" fill="#7fb2e5" />
       <path d="M10 56q12-8 24 0t24 0t24 0t24 0t24 0t24 0" fill="none" stroke="#2b2540" strokeWidth="2.5" strokeLinecap="round" />
@@ -772,7 +788,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
             ))}
           </nav>
         </div>
-        <p className="small muted">Data: NASA GES DISC (GPM IMERG, GLDAS Noah, MERRA-2, MiCASA, GRACE-DA), LP DAAC (MODIS), NSIDC DAAC (SMAP), OB.DAAC (SeaWiFS), JPL (GRACE) and FIRMS; not NASA: GPCC (DWD), CRU TS (UEA). Terra-scope AI is not an official NASA product. Not affiliated with or endorsed by NASA.
+        <p className="small muted">Data: NASA GES DISC (GPM IMERG, GLDAS Noah, MERRA-2, MiCASA, GRACE-DA), LP DAAC (MODIS), NSIDC DAAC (SMAP, sea ice), OB.DAAC (MODIS-Aqua chlorophyll), JPL (GRACE) and FIRMS; not NASA: GPCC (DWD), CRU TS (UEA). Terra-scope AI is not an official NASA product. Not affiliated with or endorsed by NASA.
           Built for NASA Space Apps Challenge 2026: "Be An Earth System Trend Detective!"</p>
       </footer>
     </div>

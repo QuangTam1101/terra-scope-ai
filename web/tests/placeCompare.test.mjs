@@ -23,7 +23,7 @@ try {
     assert.deepEqual(clampPeriod('2001-01', '2025-12', full), { start: '2001-01', end: '2025-12', clamped: false, short: false });
     assert.deepEqual(clampPeriod('2001-01', '2025-12', { start: '2001-01', end: '2020-12' }), { start: '2001-01', end: '2020-12', clamped: true, short: false });   // GPCC
     assert.deepEqual(clampPeriod('2001-01', '2025-12', { start: '2015-04', end: '2025-12' }), { start: '2015-04', end: '2025-12', clamped: true, short: false });   // SMAP: 11 years
-    assert.equal(clampPeriod('2001-01', '2025-12', { start: '2001-01', end: '2010-12' }).short, false);   // SeaWiFS: exactly 10 years
+    assert.equal(clampPeriod('2001-01', '2025-12', { start: '2001-01', end: '2010-12' }).short, false);   // a record of exactly 10 years
     assert.equal(clampPeriod('2005-01', '2025-12', { start: '2001-01', end: '2010-12' }).short, true);    // 2005–2010 only
     assert.equal(clampPeriod('2001-01', '2008-12', full).short, true);
     assert.equal(clampPeriod('2001-01', '2014-12', { start: '2015-04', end: '2025-12' }), null, 'no overlap');

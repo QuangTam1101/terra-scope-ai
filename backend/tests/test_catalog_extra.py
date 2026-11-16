@@ -16,7 +16,8 @@ F11 = {
     "gldas_soil_moisture_40_100cm": ("soil_moisture", "m³/m³"),
     "gldas_soil_moisture_100_200cm": ("soil_moisture", "m³/m³"),
     "gldas_root_zone_moisture": ("root_zone_water", "kg/m²"),
-    "seawifs_chlorophyll": ("ocean_chlorophyll", "mg/m³"),
+    "modisa_chlorophyll": ("ocean_chlorophyll", "mg/m³"),
+    "nsidc_sea_ice": ("sea_ice", "%"),
 }
 
 
@@ -25,7 +26,7 @@ def test_f11_variables_listed(client):
     for vid, (param, units) in F11.items():
         assert vs[vid]["parameter"] == param and vs[vid]["display_units"] == units, vid
         assert vs[vid]["parameter_name"] and vs[vid]["source"]["citation"]
-    assert vs["seawifs_chlorophyll"]["category"] == "ocean"
+    assert vs["modisa_chlorophyll"]["category"] == vs["nsidc_sea_ice"]["category"] == "ocean"
     assert vs["gldas_soil_moisture_0_10cm"]["dataset_name"] == "GLDAS Noah 0–10 cm (land model)"
 
 
@@ -59,7 +60,7 @@ def test_chat_dataset_choice(client):
     assert _resolve("soil moisture 40-100 cm in the Mekong Delta").variable_id == "gldas_soil_moisture_40_100cm"
     assert _resolve("root zone soil moisture in the Mekong Delta").variable_id == "gldas_root_zone_moisture"
     ctx, _op, question = prepare(ChatRequest(message="chlorophyll trend in the Mekong Delta"))
-    assert ctx.variable_id == "seawifs_chlorophyll" and "not supported" not in (question or "")
+    assert ctx.variable_id == "modisa_chlorophyll" and "not supported" not in (question or "")
 
 
 def test_chat_fits_page_period_to_dataset_coverage(client):
