@@ -5,14 +5,15 @@
 // Interaction: drag to turn (with a little momentum), wheel or pinch-free buttons to zoom towards the pointer, double-click
 // to fly to a place, arrow keys to turn, + and - to zoom, click to pick a grid cell.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { geoGraticule10, geoOrthographic, geoPath } from "d3-geo";
+import { geoDistance, geoGraticule10, geoOrthographic, geoPath } from "d3-geo";
 import type { BBox, TrendGrid, ValueGrid } from "./api";
 import { H, land, paintMap, projection as flat, W, type Layer } from "./WorldMap";
 import { cellKey } from "./places";
 import { loadBlueMarble } from "./earthPhoto";
+import { borders, compose, drawLabels, labelList, loadAdmin, plan, request, traceAdmin, webZoom, type Detail } from "./globeLayers";
 
 const TEX = 2;                     // texture = 2 x logical map (1920 x 960)
-const MAX_ZOOM = 10;
+const MAX_ZOOM = 24;               // deep enough for regional views; the satellite look loads sharper tiles as you zoom
 const D = Math.PI / 180;
 const MAX_PX = 900;                // longest canvas side in device pixels (per-pixel rendering cost)
 const wrap = (lon: number) => ((lon + 540) % 360) - 180;
@@ -100,10 +101,11 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
     // open sea with no cell becomes real deep ocean (or the Blue Marble photo); data cells and grey "no data" cells keep
     // their exact map colours. With the satellite photo look, land with no cell shows the photo and data cells are laid
     // over it at 45% (no-data cells at 25%) so both the place and the data stay readable.
-    const sea = new Uint8Array(px.length);
+    const sea = new Uint8Array(px.length), code = new Uint8Array(px.length), raw = px.slice();
     for (let i = 0; i < px.length; i++) {
       const m = cls[i], r = m & 255, g = (m >> 8) & 255, b = (m >> 16) & 255;
       const isSea = r > 160 && b > 160 && g < 96, isLand = g > 160 && r < 96 && b < 96, isNoData = b > 160 && r < 96 && g < 96;
+      code[i] = isSea ? 0 : isLand ? 1 : isNoData ? 2 : (r > 160 && g > 160 && b < 96) ? 3 : (g > 160 && b > 160 && r < 96) ? 4 : 5;
       if (isSea) {
         sea[i] = 1;
         px[i] = showPhoto ? photo![i] : (255 << 24) | (92 << 16) | (44 << 8) | 14;
@@ -114,7 +116,7 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
           : weakUp ? mix(WEAK_UP, photo![i], 0.22) : weakDown ? mix(WEAK_DOWN, photo![i], 0.22) : mix(px[i], photo![i], 0.5);
       }
     }
-    return { px, sea };
+    return { px, sea, code, raw };
   }, [layer, trend, values, scale, showPhoto, photo]);
 
   // slow spin until the user touches the globe
@@ -152,6 +154,22 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
     animateTo({ lon: (w + e) / 2, lat: clampLat(lat), k: Math.max(1, Math.min(MAX_ZOOM, 80 / span)) }, 700);
   }, [shape]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // sharper NASA GIBS tiles for the part in view (satellite look, zoomed in); recomputed shortly after the view settles
+  const [detail, setDetail] = useState<Detail | null>(null);
+  const [bordersReady, setBordersReady] = useState(0);
+  useEffect(() => {
+    if (!showPhoto) { setDetail(null); return; }
+    const degPerPx = 180 / Math.PI / R;
+    const half = Math.hypot(CW, CH) / 2 / R;                       // screen half diagonal in globe radii
+    const radiusDeg = half >= 1 ? 90 : (Math.asin(half) * 180) / Math.PI;
+    const p = plan({ lon: rot.lon, lat: rot.lat, degPerPx, radiusDeg });
+    if (!p) { setDetail(null); return; }
+    let live = true, timer = 0;
+    const rebuild = () => { if (!timer) timer = window.setTimeout(() => { timer = 0; if (live) setDetail(compose(p)); }, 120); };
+    const start = window.setTimeout(() => { if (!live) return; setDetail(compose(p)); request(p, rebuild); }, 160);
+    return () => { live = false; clearTimeout(start); clearTimeout(timer); };
+  }, [showPhoto, rot.lon, rot.lat, R, CW, CH]);
+
   const proj = useMemo(() => geoOrthographic().translate([CW / 2, CH / 2]).scale(R).rotate([-rot.lon, -rot.lat]).clipAngle(90), [CW, CH, R, rot.lon, rot.lat]);
 
   // ---------- render ----------
@@ -179,6 +197,8 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
     const TW = W * TEX, TH = H * TEX;
     const l0 = rot.lon * D, p0 = rot.lat * D, cl = Math.cos(l0), sl = Math.sin(l0), cp = Math.cos(p0), sp = Math.sin(p0);
     const y0 = Math.max(0, Math.floor(cy0 - R)), y1 = Math.min(CH, Math.ceil(cy0 + R));
+    const gl = 0.8 / (rot.k * rot.k);                               // sun glint fades when zoomed in (it would be a huge blob)
+    const det = showPhoto ? detail : null, dsc = det ? 512 / det.span : 0;   // detail pixels per degree
     for (let py = y0; py < y1; py++) {
       const Y = -(py + 0.5 - cy0) / R;
       const half = Math.sqrt(Math.max(0, 1 - Y * Y)) * R;
@@ -191,12 +211,24 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
         const xw = X * cl + z1 * sl, zw = -X * sl + z1 * cl;
         const lat = Math.asin(Math.max(-1, Math.min(1, yy))), lon = Math.atan2(xw, zw);
         const tx = Math.min(TW - 1, ((lon / D + 180) / 360) * TW | 0), ty = Math.min(TH - 1, ((90 - lat / D) / 180) * TH | 0);
-        const ti = ty * TW + tx, c = tex.px[ti];
+        const ti = ty * TW + tx;
+        let c = tex.px[ti];
+        if (det) {
+          // inside the sharp tile image: the tile pixel, with the data laid over it exactly as on the base photo
+          const dx = (((lon / D) - det.west) * dsc) | 0, dy = ((det.north - lat / D) * dsc) | 0;
+          if (dx >= 0 && dy >= 0 && dx < det.w && dy < det.h) {
+            const p = det.px[dy * det.w + dx];
+            if (p >>> 24) {
+              const k = tex.code[ti];
+              c = k <= 1 ? p : k === 2 ? mix(tex.raw[ti], p, 0.25) : k === 3 ? mix(WEAK_UP, p, 0.22) : k === 4 ? mix(WEAK_DOWN, p, 0.22) : mix(tex.raw[ti], p, 0.5);
+            }
+          }
+        }
         // sunlight fixed in view space (upper left, in front): soft terminator and a dim but readable night side, so the
         // data colours stay legible; a sun glint on open water; blue atmospheric haze towards the limb.
         const d = X * LX + Y * LY + Z * LZ, day = Math.min(1, Math.max(0, (d + 0.15) / 0.55));
         const shade = 0.42 + 0.58 * day * (0.6 + 0.4 * Math.max(0, d));
-        const glint = tex.sea[ti] ? Math.pow(Math.max(0, (X * HX + Y * HY + Z * HZ)), 60) * day * 0.8 : 0;
+        const glint = tex.sea[ti] && gl > 0.02 ? Math.pow(Math.max(0, (X * HX + Y * HY + Z * HZ)), 60) * day * gl : 0;
         const haze = Math.pow(1 - Z, 2.4) * (0.3 + 0.5 * day) * 0.75;
         let rr = (c & 255) * shade + 255 * glint, gg = ((c >> 8) & 255) * shade + 245 * glint, bb = ((c >> 16) & 255) * shade + 230 * glint;
         rr += (110 - rr) * haze; gg += (170 - gg) * haze; bb += (255 - bb) * haze;
@@ -208,6 +240,29 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
     const path = geoPath(proj, ctx);
     ctx.beginPath(); path(geoGraticule10()); ctx.strokeStyle = "rgba(200,220,255,.08)"; ctx.lineWidth = 0.7 * q; ctx.stroke();
     if (!showPhoto) { ctx.beginPath(); path(land); ctx.strokeStyle = "rgba(20,25,40,.45)"; ctx.lineWidth = 0.9 * q; ctx.stroke(); }
+    // country borders from zoom 1.6, sharper set from zoom 4
+    if (rot.k >= 1.6) {
+      ctx.beginPath(); path(borders(rot.k >= 4, () => setBordersReady((n) => n + 1)));
+      ctx.strokeStyle = showPhoto ? "rgba(255,255,255,.55)" : "rgba(30,25,50,.45)"; ctx.lineWidth = (showPhoto ? 0.9 : 0.8) * q; ctx.stroke();
+    }
+    // states / provinces (Natural Earth 1:10m, loaded on the first zoom past 2.5x), only the part in view
+    const zoom = webZoom(R / q);
+    const half = Math.hypot(CW, CH) / 2 / R, radiusDeg = half >= 1 ? 90 : (Math.asin(half) * 180) / Math.PI;
+    const adm = rot.k >= 2.5 ? loadAdmin(() => setBordersReady((n) => n + 1)) : null;
+    if (adm) {
+      ctx.beginPath();
+      traceAdmin(ctx, adm, { lon: rot.lon, lat: rot.lat, R, cx: cx0, cy: cy0, zoom, radiusDeg });
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = showPhoto ? "rgba(240,244,255,.6)" : "rgba(30,25,50,.45)"; ctx.lineWidth = 0.9 * q; ctx.stroke();
+    }
+    // labels: countries large enough on screen, then cities and states by their minimum zoom; skipped when they overlap
+    if (rot.k >= 1.4) {
+      const centre: [number, number] = [rot.lon, rot.lat];
+      drawLabels(ctx, labelList(adm, zoom, rot.lat - radiusDeg, rot.lat + radiusDeg), {
+        project: (lon, lat) => (geoDistance(centre, [lon, lat]) > 1.45 ? null : (proj([lon, lat]) as [number, number] | null)),
+        s: q, Rpx: R, k: rot.k, width: CW, height: CH, onDark: true,
+      });
+    }
     if (selected) {
       const [w, s, e, n] = selected;
       const ring: [number, number][] = [];
@@ -229,7 +284,7 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
     }
     // thin limb line
     ctx.beginPath(); ctx.arc(cx0, cy0, R, 0, Math.PI * 2); ctx.strokeStyle = "rgba(160,205,255,.5)"; ctx.lineWidth = 1.2 * q; ctx.stroke();
-  }, [tex, rot, R, proj, selected, shape, CW, CH, q, showPhoto]);
+  }, [tex, rot, R, proj, selected, shape, CW, CH, q, showPhoto, detail, bordersReady]);
 
   // ---------- input ----------
   const toCanvas = (ev: { clientX: number; clientY: number }) => {

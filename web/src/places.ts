@@ -39,6 +39,9 @@ const COUNTRIES: PlaceHit[] = fc.features.map((f) => {
   return { kind: "Country", name: f.properties.name, place: { ref: { type: "country", id: f.properties.name }, label: f.properties.name, bbox } };
 });
 const SHAPES = new Map(fc.features.map((f) => [f.properties.name, f]));
+/** Natural Earth 1:110m country polygons (also used for the globe's labels). */
+export const COUNTRY_FEATURES = fc.features;
+export const COUNTRY_TOPO = topo;
 /** Place for a Natural Earth country name; undefined for an unknown name. */
 export const countryPlace = (name: string): Place | undefined => COUNTRIES.find((c) => c.name === name)?.place;
 /** Border to draw for a place: countries only (other places are boxes or cells). */
@@ -70,6 +73,8 @@ const CITY_DATA: [string, string, number, number][] = [
   ["Sydney", "Australia", -33.87, 151.21], ["Melbourne", "Australia", -37.81, 144.96], ["Perth", "Australia", -31.95, 115.86],
   ["Auckland", "New Zealand", -36.85, 174.76],
 ];
+/** City points for map labels: name, country, lat, lon. */
+export const CITY_POINTS: readonly (readonly [string, string, number, number])[] = CITY_DATA;
 // Other names people type (Vietnamese spellings, old names); searched but not shown.
 const ALIASES: Record<string, string[]> = {
   "Ho Chi Minh City": ["Saigon", "Sai Gon", "Thanh pho Ho Chi Minh", "TPHCM", "HCMC"],

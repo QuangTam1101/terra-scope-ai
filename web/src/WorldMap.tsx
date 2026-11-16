@@ -7,6 +7,7 @@ import type { BBox, TrendGrid, ValueGrid } from "./api";
 import { plain, signed } from "./ui";
 import { rateOf, rateUnit } from "./units";
 import { Globe } from "./Globe";
+import { borders, drawLabels, labelList, loadAdmin, traceAdminFlat, webZoom } from "./globeLayers";
 import { cellKey, gridCell } from "./places";
 
 export type Layer = "values" | "trend";
@@ -107,7 +108,8 @@ interface Props {
 
 export function WorldMap({ layer, trend, values, loading, loadingInfo, selected, selectedLabel, onClear, onPick, onArea, units, shape }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const [cssW, setCssW] = useState(0);                       // displayed canvas width, to place the selection label
+  const [cssW, setCssW] = useState(0);
+  const [layersReady, setLayersReady] = useState(0);                 // bumps when the detailed borders arrive                       // displayed canvas width, to place the selection label
   const [mode, setMode] = useState<"2d" | "3d">("2d");       // the flat canvas is a new element after each globe visit
   useEffect(() => {
     if (!ref.current) return;
@@ -207,7 +209,23 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
         ctx.strokeStyle = "#2b2540"; ctx.lineWidth = 2.2 / k; ctx.stroke();
       }
     }
-  }, [layer, trend, values, selected, shape, scale, view, mode]);
+    // country borders, states / provinces and place names: the same layers and zoom rules as the 3D globe
+    const css = cssW || W, zoom = webZoom((css * k) / (2 * Math.PI)), bump = () => setLayersReady((n) => n + 1);
+    const vw = (ox / W) * 360 - 180, ve = ((ox + W / k) / W) * 360 - 180, vn = 90 - (oy / H) * 180, vs = 90 - ((oy + H / k) / H) * 180;
+    ctx.lineJoin = "round";
+    if (k >= 1.6) { ctx.beginPath(); path(borders(k >= 4, bump)); ctx.strokeStyle = "rgba(30,25,50,.5)"; ctx.lineWidth = 0.8 / k; ctx.stroke(); }
+    const adm = k >= 2.5 ? loadAdmin(bump) : null;
+    if (adm) {
+      ctx.beginPath(); traceAdminFlat(ctx, adm, { w: vw, s: vs, e: ve, n: vn, zoom, x, y });
+      ctx.strokeStyle = "rgba(30,25,50,.38)"; ctx.lineWidth = 0.7 / k; ctx.stroke();
+    }
+    if (k >= 1.4) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawLabels(ctx, labelList(adm, zoom, vs, vn), {
+        project: (lon, lat) => [(x(lon) - ox) * k, (y(lat) - oy) * k], s: W / css, Rpx: (W * k) / (2 * Math.PI), k, width: W, height: H, onDark: false,
+      });
+    }
+  }, [layer, trend, values, selected, shape, scale, view, mode, cssW, layersReady]);
 
   // ---------- coordinates & zoom ----------
   const toLonLat = (clientX: number, clientY: number) => {
