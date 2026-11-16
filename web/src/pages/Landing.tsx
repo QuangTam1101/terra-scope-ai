@@ -95,19 +95,66 @@ const FEATURE_ART: Record<string, () => JSX.Element> = {
 };
 
 const SOURCES = [
-  { kind: "Satellite estimate", art: "satellite", tint: "#e2ecf8", name: "GPM IMERG", product: "GPM_3IMERGM V07",
+  { kind: "Satellite estimate", art: "satellite", tint: "#e2ecf8", name: "GPM IMERG", product: "GPM_3IMERGM V07", center: "NASA GES DISC",
     what: "Monthly rainfall from satellites, checked against rain gauges.",
     vars: ["Precipitation"], url: "https://disc.gsfc.nasa.gov/datasets/GPM_3IMERGM_07/summary" },
-  { kind: "Land surface model", art: "land", tint: "#e3f1ea", name: "GLDAS Noah", product: "GLDAS_NOAH025_M 2.1",
-    what: "Soil moisture, air temperature and evaporation over land.",
-    vars: ["Soil moisture", "Air temperature", "Evapotranspiration"], url: "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary" },
-  { kind: "Reanalysis", art: "reanalysis", tint: "#fde9da", name: "MERRA-2", product: "M2IMNXASM 5.12.4",
+  { kind: "Land surface model", art: "land", tint: "#e3f1ea", name: "GLDAS Noah", product: "GLDAS_NOAH025_M 2.1", center: "NASA GES DISC",
+    what: "Water and energy at the land surface, from the top 10 cm down to 2 m.",
+    vars: ["Soil moisture (4 layers)", "Root-zone soil water", "Air temperature", "Evapotranspiration", "Potential evapotranspiration"],
+    url: "https://disc.gsfc.nasa.gov/datasets/GLDAS_NOAH025_M_2.1/summary" },
+  { kind: "Reanalysis", art: "reanalysis", tint: "#fde9da", name: "MERRA-2", product: "M2IMNXASM 5.12.4", center: "NASA GES DISC",
     what: "Air temperature over land and sea.",
     vars: ["Air temperature (land and sea)"], url: "https://disc.gsfc.nasa.gov/datasets/M2IMNXASM_5.12.4/summary" },
+  { kind: "Satellite measurement", art: "modis", tint: "#e8f4dc", name: "MODIS Terra", product: "MOD13C2 / MOD11C3 V061", center: "NASA LP DAAC",
+    what: "How green the plants are and how hot the ground is, seen from orbit.",
+    vars: ["Vegetation greenness (NDVI)", "Land surface temperature (day and night)"], url: "https://lpdaac.usgs.gov/products/mod13c2v061/" },
+  { kind: "Satellite measurement", art: "smap", tint: "#efe6f8", name: "SMAP", product: "SPL3SMP V009", center: "NASA NSIDC DAAC",
+    what: "Water in the top 5 cm of soil, measured by radiometer since 2015.",
+    vars: ["Soil moisture (surface)"], url: "https://nsidc.org/data/spl3smp/versions/9" },
+  { kind: "Satellite measurement", art: "seawifs", tint: "#dcefef", name: "SeaWiFS", product: "SeaWiFS L3m CHL R2022.0", center: "NASA OB.DAAC",
+    what: "Ocean colour: how much algae floats near the sea surface (2001 to 2010 in the app).",
+    vars: ["Ocean chlorophyll"], url: "https://doi.org/10.5067/ORBVIEW-2/SeaWiFS/L3M/CHL/2022.0" },
 ] as const;
 
-/** Schematic drawings of the three kinds of evidence (not data). */
+/** Schematic drawings of each kind of evidence (not data). */
 const SOURCE_ART: Record<string, () => JSX.Element> = {
+  modis: () => (
+    <svg viewBox="0 0 160 90" aria-hidden="true">
+      <path d="M10 82h140" stroke="#2b2540" strokeWidth="3" strokeLinecap="round" />
+      <g transform="rotate(-12 80 22)">
+        <rect x="50" y="16" width="20" height="11" rx="2" fill="#7fb2e5" stroke="#2b2540" strokeWidth="2" />
+        <rect x="90" y="16" width="20" height="11" rx="2" fill="#7fb2e5" stroke="#2b2540" strokeWidth="2" />
+        <path d="M70 22h20" stroke="#2b2540" strokeWidth="2.5" />
+        <rect x="73" y="12" width="14" height="19" rx="4" fill="#fff" stroke="#2b2540" strokeWidth="2.5" />
+      </g>
+      <path d="M80 38l-28 40h56z" fill="#f6c94c" fillOpacity=".25" />
+      <path d="M44 82V62M44 70c-8-2-12-8-10-12 6 0 10 5 10 12zM44 66c6-4 12-4 14 0-4 4-10 4-14 0z" fill="#5fae7d" stroke="#2f6b46" strokeWidth="1.5" />
+      <rect x="106" y="54" width="8" height="22" rx="4" fill="#fff" stroke="#2b2540" strokeWidth="2" />
+      <circle cx="110" cy="78" r="6" fill="#e8735a" stroke="#2b2540" strokeWidth="2" />
+      <path d="M110 74V62" stroke="#e8735a" strokeWidth="3" strokeLinecap="round" />
+    </svg>),
+  smap: () => (
+    <svg viewBox="0 0 160 90" aria-hidden="true">
+      <rect x="14" y="58" width="132" height="24" fill="#a9825c" />
+      <path d="M14 58h132" stroke="#2b2540" strokeWidth="3" strokeLinecap="round" />
+      {[0, 1, 2, 3, 4].map((i) => <circle key={i} cx={30 + i * 24} cy={68 + (i % 2) * 6} r="2.6" fill="#7fb2e5" />)}
+      <circle cx="80" cy="22" r="13" fill="#fff" stroke="#2b2540" strokeWidth="2.5" />
+      <path d="M68 22h24M80 10v24" stroke="#c9bfae" strokeWidth="1.5" />
+      <path d="M58 30l-10 4M102 30l10 4" stroke="#2b2540" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M70 38q10 8 20 0M64 46q16 12 32 0" fill="none" stroke="#7d6fb0" strokeWidth="2" strokeLinecap="round" strokeDasharray="3 4" />
+    </svg>),
+  seawifs: () => (
+    <svg viewBox="0 0 160 90" aria-hidden="true">
+      <path d="M10 56q12-8 24 0t24 0t24 0t24 0t24 0t24 0V84H10z" fill="#7fb2e5" />
+      <path d="M10 56q12-8 24 0t24 0t24 0t24 0t24 0t24 0" fill="none" stroke="#2b2540" strokeWidth="2.5" strokeLinecap="round" />
+      {[[30, 66], [52, 72], [70, 64], [96, 70], [118, 66], [136, 74], [84, 78]].map(([x, y]) => <circle key={`${x}-${y}`} cx={x} cy={y} r="3" fill="#5fae7d" />)}
+      <g transform="rotate(10 80 20)">
+        <rect x="56" y="14" width="18" height="10" rx="2" fill="#7fb2e5" stroke="#2b2540" strokeWidth="2" />
+        <rect x="88" y="14" width="18" height="10" rx="2" fill="#7fb2e5" stroke="#2b2540" strokeWidth="2" />
+        <path d="M74 19h14" stroke="#2b2540" strokeWidth="2.5" />
+        <rect x="76" y="10" width="12" height="18" rx="4" fill="#fff" stroke="#2b2540" strokeWidth="2.5" />
+      </g>
+    </svg>),
   satellite: () => (
     <svg viewBox="0 0 160 90" aria-hidden="true">
       <path d="M10 82h140" stroke="#2b2540" strokeWidth="3" strokeLinecap="round" />
@@ -659,7 +706,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
       <section id="data" className="lp-section" aria-labelledby="data-title">
         <span className="lp-eyebrow">Data</span>
         <h2 id="data-title" className="lp-h2">Built on NASA Earth observation data</h2>
-        <p className="lp-lead">Three public datasets from NASA GES DISC, the same ones NASA Giovanni uses.</p>
+        <p className="lp-lead">Six public NASA datasets from GES DISC, LP DAAC, NSIDC and OB.DAAC. Two rain-gauge products (GPCC and CRU TS, not NASA) are offered as cross-checks.</p>
         <div className="lp-grid3">
           {SOURCES.map((s) => {
             const Art = SOURCE_ART[s.art];
@@ -676,7 +723,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
                     {s.vars.map((x) => <li key={x}>{x}</li>)}
                   </ul>
                   <a className="lp-src-link" href={s.url} target="_blank" rel="noreferrer">
-                    {s.product} at NASA GES DISC<span className="sr-only"> (opens in a new tab)</span>
+                    {s.product} at {s.center}<span className="sr-only"> (opens in a new tab)</span>
                   </a>
                 </div>
               </article>
@@ -728,7 +775,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
             ))}
           </nav>
         </div>
-        <p className="small muted">Data: NASA GES DISC (GPM IMERG, GLDAS Noah, MERRA-2). Not affiliated with or endorsed by NASA.
+        <p className="small muted">Data: NASA GES DISC (GPM IMERG, GLDAS Noah, MERRA-2), LP DAAC (MODIS), NSIDC DAAC (SMAP) and OB.DAAC (SeaWiFS); GPCC (DWD) and CRU TS (UEA) for cross-checks. Not affiliated with or endorsed by NASA.
           Built for NASA Space Apps Challenge 2026: "Be An Earth System Trend Detective!"</p>
       </footer>
     </div>

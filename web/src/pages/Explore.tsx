@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Dropdown } from "../Dropdown";
 import { api, ApiError, type SensitivityResponse, type TrendGrid, type ValueGrid, type Variable } from "../api";
 import { areaPlace, cellPlace, useStore, WORLD, type Place, type Selection } from "../store";
 import { clampPeriod, PlaceCompare } from "../PlaceCompare";
@@ -195,12 +196,9 @@ export function Explore() {
         <h2 id="setup" style={{ fontSize: 22 }}>{sci ? "Analysis parameters" : "Set up your case"}</h2>
         <div className="col" style={{ gap: 8 }} data-tour="variable">
           <span className="label">{sci ? "1 · Variable" : "1 · What would you like to investigate?"}</span>
-          <select className="select param-select" aria-label={sci ? "Variable" : "What would you like to investigate?"}
-            value={sel.parameter} onChange={(e) => pickParameter(e.target.value)}>
-            {parameters.map(([id, p]) => (
-              <option key={id} value={id} disabled={!p.available}>{p.name}{p.available ? "" : " (not available yet)"}</option>
-            ))}
-          </select>
+          <Dropdown className="param-dd" ariaLabel={sci ? "Variable" : "What would you like to investigate?"} value={sel.parameter}
+            onChange={pickParameter}
+            options={parameters.map(([id, p]) => ({ value: id, label: p.name, disabled: !p.available, hint: p.available ? undefined : "Not available yet" }))} />
           {variable && <span className="small muted">{sci ? variable.description_technical : variable.description_simple} <InfoButton id={variable.id} /></span>}
           {(units === "°C" || units === "°F") && (
             <div className="row" style={{ gap: 8 }}>
