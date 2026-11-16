@@ -155,7 +155,7 @@ export function Report() {
       <section className="card pad col noprint" data-tour="report">
         <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
           <h1 style={{ fontSize: 30 }}>Evidence report</h1>
-          <a className="prelim" href="#guide">Numbers checked · not peer reviewed</a>
+
         </div>
         <nav aria-label="Report steps" className="rsteps">
           {STEPS.map((s, i) => (

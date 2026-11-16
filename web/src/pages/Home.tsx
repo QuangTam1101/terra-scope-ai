@@ -181,7 +181,6 @@ export function Home() {
       <section className="card pad row" style={{ gap: 22, alignItems: "center" }}>
         <Terra size={130} label="Terra, a round Earth detective with a hat and a magnifying glass" />
         <div className="col" style={{ flex: 1, minWidth: 260 }}>
-          <a className="prelim" href="#guide?proof" onClick={jump("guide-right")} style={{ alignSelf: "flex-start" }}>Numbers checked · not peer reviewed</a>
           <h1 style={{ fontSize: 38, lineHeight: 1.1 }}>Is it really changing?</h1>
           <p style={{ font: "700 17px/1.45 var(--body)", margin: 0 }}>Pick a clue and a place. Terra checks 25 years of NASA data (2001 to 2025) and tells you if the change is real.</p>
           <div className="row">
