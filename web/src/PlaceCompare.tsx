@@ -83,10 +83,13 @@ export function PlaceCompare({ place, start, end, variables, onOpen }: {
     const p = clampPeriod(start, end, v.coverage);
     return { v, p, key: p ? keyOf(v.id, place, p.start, p.end) : "" };
   });
-  const todo = rows.filter((r) => r.p && !r.p.short && !cache.has(r.key));
-  const todoKey = todo.map((r) => r.key).join(";");
+  // Restart only when the place, period or variable list changes. Keying on "what is still missing" restarted the
+  // workers after every finished row, aborting the other in-flight request and re-asking failed rows each time: on the
+  // live server that became a request storm (HTTP 503). Each failed row is now tried once per place/period.
+  const allKey = rows.map((r) => r.key).join(";");
 
   useEffect(() => {
+    const todo = rows.filter((r) => r.p && !r.p.short && !cache.has(r.key));
     if (!todo.length) return;
     const ctrl = new AbortController();
     let next = 0;
@@ -103,7 +106,7 @@ export function PlaceCompare({ place, start, end, variables, onOpen }: {
     };
     void worker(); void worker();
     return () => ctrl.abort();
-  }, [todoKey]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [allKey]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const view = rows.map((r) => ({ ...r, row: r.p ? cache.get(r.key) ?? errors.get(r.key) : ({ kind: "nodata" } as Row) }));
   const groups = [...new Set(view.map((r) => r.v.parameter_name))];
