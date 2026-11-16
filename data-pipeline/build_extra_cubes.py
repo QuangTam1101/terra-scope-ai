@@ -9,7 +9,6 @@ import sys
 from multiprocessing import Pool
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -19,7 +18,6 @@ from pipeline.grid import bin_to_grid, global_coords
 RAW = Path(os.environ.get("TERRA_RAW", "../../data/raw")).resolve()
 OUT = Path("processed_data/grid")
 SWE_ICE_MM = 10          # ô có tuyết ≥ 10 mm nước ở mọi tháng 2001–2025 = băng vĩnh cửu (1.167 ô 1°)
-GSOM_MIN_MONTHS = 240   # trạm phải có ≥ 20 năm số liệu 2001–2025 của cột đó: mạng trạm đổi theo thời gian không tạo xu hướng giả
 
 
 def _month(t):
@@ -88,38 +86,6 @@ def fire():
     return cube.where(_land()).assign_attrs(units="gC/m2/month", dataset="MICASA_FLUX_M.1 FIRE")
 
 
-def _station(path):
-    try:
-        df = pd.read_csv(path, usecols=lambda c: c in {"DATE", "LATITUDE", "LONGITUDE", "DP1X", "DX90"})
-    except ValueError:
-        return None
-    df = df[(df["DATE"] >= "2001-01") & (df["DATE"] <= "2025-12")]
-    return df if len(df) >= GSOM_MIN_MONTHS else None
-
-
-_GSOM = {}
-
-
-def gsom(col):
-    """Số ngày cực đoan mỗi tháng tại trạm GSOM, TB các trạm (≥ 20 năm số liệu cột đó) có tâm trong ô 1°.
-    DP1X: ngày mưa ≥ 25,4 mm (1 inch); DX90: ngày nhiệt độ cao nhất ≥ 32,2 °C (90 °F)."""
-    if not _GSOM:
-        files = sorted((RAW / "cdo_gsom" / "csv").glob("*.csv"))
-        with Pool(8) as pool:
-            _GSOM["all"] = pd.concat([d for d in pool.imap_unordered(_station, files, chunksize=200) if d is not None])
-    df = _GSOM["all"]
-    if col not in df:
-        raise SystemExit(f"không trạm nào có {col}")
-    df = df.dropna(subset=[col])
-    df = df[df.groupby(["LATITUDE", "LONGITUDE"])[col].transform("size") >= GSOM_MIN_MONTHS]
-    s = df.assign(time=pd.to_datetime(df["DATE"] + "-01"),
-                  lat=np.floor(df["LATITUDE"].clip(-90, 90 - 1e-9)) + 0.5,
-                  lon=np.floor((df["LONGITUDE"] + 180) % 360 - 180) + 0.5).groupby(["time", "lat", "lon"])[col].mean()
-    lat, lon = global_coords()
-    print(col, "trạm:", df.groupby(["LATITUDE", "LONGITUDE"]).ngroups, "ô:", s.reset_index()[["lat", "lon"]].drop_duplicates().shape[0])
-    return xr.DataArray.from_series(s).reindex(lat=lat, lon=lon).assign_attrs(units="days", dataset=f"NOAA GSOM {col}")
-
-
 # AOD phủ cả biển, float32 đầy đủ nén kém (55 MB/cube): giữ 4 chữ số thập phân (xu hướng ~0,01/thập kỷ)
 LSD = {"aod_merra2": 4, "dust_aod_merra2": 4}
 
@@ -131,8 +97,6 @@ BUILDERS = {
     "tmax_cru": lambda: cru("tmx"),
     "tmin_cru": lambda: cru("tmn"),
     "fire_micasa": fire,
-    "heavy_rain_days_gsom": lambda: gsom("DP1X"),
-    "hot_days_gsom": lambda: gsom("DX90"),
 }
 
 if __name__ == "__main__":

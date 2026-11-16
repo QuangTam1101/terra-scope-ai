@@ -92,14 +92,13 @@ const PARAM_ICON: Record<string, [string, ReactNode, string]> = {
   snow: ["#e8f1ff", <><path {...P} d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M10 4.5l2 1.5 2-1.5M10 19.5l2-1.5 2 1.5" /></>, "Snow"],
   air_haze: ["#ece9e4", <><path {...P} d="M4 7h10M7 11h13M4 15h11M8 19h9M18 7h.01M18 15h.01" /></>, "Air haze"],
   fire: ["#ffd9cc", <><path {...P} d="M12 3c1 3 5 5 5 10a5 5 0 0 1-10 0c0-3 2-4 2-6 1.5 1 2 2 2 3 1-2 1-4 1-7z" /></>, "Fire"],
-  extreme_days: ["#ede6fb", <><path {...P} d="M13 2L5 13h6l-1 9 8-11h-6l1-9z" /></>, "Extreme days"],
 };
 export const paramShort = (id: string, name: string) => PARAM_ICON[id]?.[2] ?? name;
 
 // Tiles in three themes, so 14 choices read as 3 small groups. A parameter missing here joins the last theme.
 const THEMES: [string, string[]][] = [
   ["Water", ["precipitation", "soil_moisture", "root_zone_water", "water_storage", "snow", "evapotranspiration", "potential_evapotranspiration"]],
-  ["Heat and extremes", ["air_temperature", "land_surface_temperature", "extreme_days"]],
+  ["Heat", ["air_temperature", "land_surface_temperature"]],
   ["Life, fire and air", ["vegetation", "ocean_chlorophyll", "fire", "air_haze"]],
 ];
 export function byTheme<T>(items: [string, T][]): [string, [string, T][]][] {

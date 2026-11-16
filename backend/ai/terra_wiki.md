@@ -56,9 +56,8 @@ forecast the future.
 | Air haze: all aerosols / desert dust | **MERRA-2** (`M2TMNXAER` v5.12.4, `TOTEXTTAU` / `DUEXTTAU`), NASA GMAO | Aerosol optical depth at 550 nm: how much smoke, dust, pollution and sea salt dim sunlight (0 = clear, about 1 = very hazy) | unitless | Land and sea, whole globe |
 | Daytime highs / night-time lows | **CRU TS 4.10** `tmx` / `tmn`, University of East Anglia (not NASA) | Monthly mean of daily maximum / minimum air temperature, interpolated from weather stations | °C | Land only; cells with no nearby station removed |
 | Fire activity | **MiCASA v1** (`MICASA_FLUX_M`, `FIRE`), NASA GES DISC, driven by MODIS burned area | Carbon released by fires each month | g C/m²/month | Land only, 2001–2024 |
-| Heavy-rain days / hot days | **NOAA GSOM** `DP1X` / `DX90` from GHCN stations (not NASA) | Days per month with at least 25.4 mm of rain / a high of at least 32.2 °C, mean of long-running stations in each 1° cell | days | Only cells with a station that has 20+ years of data (mostly North America, Europe, Australia) |
 
-Count variables (fire, hot days, heavy-rain days) are zero in most months in many places. Their trend slope is a
+Fire activity is zero in most months in many places. Its trend slope is a
 median and can be exactly 0 while the p-value is still significant: then say the number of events is changing but
 the typical month is still zero, and point to the Month by year view.
 

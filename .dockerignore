@@ -39,8 +39,6 @@
 !data-pipeline/processed_data/grid/cube_tmax_cru.nc
 !data-pipeline/processed_data/grid/cube_tmin_cru.nc
 !data-pipeline/processed_data/grid/cube_fire_micasa.nc
-!data-pipeline/processed_data/grid/cube_heavy_rain_days_gsom.nc
-!data-pipeline/processed_data/grid/cube_hot_days_gsom.nc
 !data-pipeline/processed_data/indices/
 !data-pipeline/processed_data/indices/climate_indices.csv
 !data-pipeline/models/

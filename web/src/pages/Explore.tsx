@@ -226,7 +226,7 @@ export function Explore() {
               </button>
             ))}
           </div>
-          {datasets.filter((d) => d.available).length > 1 && !["air_haze", "extreme_days"].includes(sel.parameter) && (   // those list different quantities, not rival datasets
+          {datasets.filter((d) => d.available).length > 1 && sel.parameter !== "air_haze" && (   // haze lists different quantities, not rival datasets
             <span className="warn small">Datasets can disagree{sel.parameter === "air_temperature"
               ? ". For the Sahel, MERRA-2 and GLDAS give opposite temperature trends, so compare both" : ", so compare them"} before you trust one.</span>
           )}

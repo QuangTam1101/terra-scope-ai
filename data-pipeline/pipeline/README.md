@@ -6,7 +6,7 @@ Script ở gốc dự án:
 - `appeears.py`: client AppEEARS (gửi task, poll bằng `task_status`, tải). `appeears_adapter.py` gọi nó.
 - `download_appeears.sh`: gửi các request vùng mẫu R1–R4.
 - `build_regions.py`: thư mục thô AppEEARS R1–R3 → `normalize_area` → `validate` → `data/processed/regions/observations.parquet`, in sanity, `trend_ready` và kiểm tra chéo LST với cube GLDAS Tair (02 §3.5). Request chưa tải xong thì bỏ qua; chạy lại được.
-- `build_extra_cubes.py`: file thô ở `data/raw/` của thư mục dự án (GRACE, GLDAS SWE, MERRA-2 sol khí, CRU tmx/tmn, MiCASA, GSOM) → `processed_data/grid/cube_<id>.nc` 1°, trục tháng liền (processed_data/README.md §3.1c).
+- `build_extra_cubes.py`: file thô ở `data/raw/` của thư mục dự án (GRACE, GLDAS SWE, MERRA-2 sol khí, CRU tmx/tmn, MiCASA) → `processed_data/grid/cube_<id>.nc` 1°, trục tháng liền (processed_data/README.md §3.1c).
 - `download_grid.py`: tải lưới toàn cầu qua Harmony HOSS → `data/raw/harmony_grid/<VAR_ID>/` → `data/processed/grid/cube_<biến>.nc` (02 §4.6). Cần tài khoản đã authorize app GES DISC (docs/04, T-1; xong 13/11).
 
 Luồng chính của web: **cube lưới 1° toàn cầu** (`grid.py`) → `api.py` (hàm cho backend và cho AI) → `report.py`. Bảng `observations` (`schema.py`) dùng cho vùng mẫu và dữ liệu point trước khi thành cube.

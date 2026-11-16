@@ -32,8 +32,6 @@ const MERRA2_AER: Source = { product: "M2TMNXAER 5.12.4", provider: "NASA GMAO /
 const CRU_T: Source = { product: "CRU TS 4.10 tmx / tmn", provider: "University of East Anglia, Climatic Research Unit, not NASA",
   url: "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/", license: "Open Database License (ODbL)" };
 const MICASA: Source = { product: "MICASA_FLUX_M v1 (0.1°)", provider: "NASA GES DISC", url: "https://disc.gsfc.nasa.gov/datasets/MICASA_FLUX_M_1/summary" };
-const GSOM: Source = { product: "Global Summary of the Month (GHCN stations)", provider: "NOAA NCEI, not NASA",
-  url: "https://www.ncei.noaa.gov/products/land-based-station/global-summary-of-the-month" };
 
 const MORE = {
   imerg: "https://gpm.nasa.gov/data/imerg",
@@ -154,16 +152,6 @@ export const DEFINITIONS: Record<string, Definition> = {
     science: "MiCASA v1 monthly fire carbon emissions (FIRE, 0.1°), driven by MODIS MCD64A1 burned area, in g C/m² per month, land only, 2001–2024, averaged to 1°.",
     why: "Shows where fire seasons grow or shrink, from savanna burning to record forest fires.",
     units: "g of carbon per m² per month", source: MICASA },
-  gsom_heavy_rain_days: { title: "Heavy-rain days (weather stations)",
-    simple: "Not NASA data: how many days each month bring at least 25.4 mm (one inch) of rain at long-running weather stations.",
-    science: "Not NASA data. NOAA NCEI Global Summary of the Month DP1X (days with at least 25.4 mm), mean of GHCN stations with 20+ years in 2001–2025 per 1° cell.",
-    why: "Counts how often downpours strike, which matters more for floods than monthly totals.",
-    units: "days per month", source: GSOM },
-  gsom_hot_days: { title: "Hot days ≥ 32 °C (weather stations)",
-    simple: "Not NASA data: how many days each month reach at least 32.2 °C (90 °F) at long-running weather stations.",
-    science: "Not NASA data. NOAA NCEI Global Summary of the Month DX90 (days with maximum at least 32.2 °C), mean of GHCN stations with 20+ years in 2001–2025 per 1° cell.",
-    why: "Counts dangerous heat days directly, instead of averaging them away into a monthly mean.",
-    units: "days per month", source: GSOM },
   cru_precip: { title: "Precipitation (station grid)",
     simple: "Not NASA data: monthly rain from weather stations, spread onto a map grid.",
     science: "Not NASA data. CRU TS 4.10 (University of East Anglia), station precipitation interpolated to 0.5°, land only, 2001–2025. Cells with no station nearby are left empty. Open Database License.",
@@ -237,11 +225,6 @@ export const DEFINITIONS: Record<string, Definition> = {
     science: "MiCASA v1 (NASA GSFC), a CASA-based biosphere model at 0.1°, monthly. FIRE flux is driven by MODIS MCD64A1 burned area; converted here to g C/m²/month, land only, 2001–2024.",
     why: "Shows whether fires are becoming more or less common and intense in a place.",
     source: MICASA },
-  "dataset:gsom": { title: "GSOM (weather stations)",
-    simple: "Not NASA data: counts of very hot days and very wet days from long-running weather stations, collected by the United States weather agency.",
-    science: "Not NASA data. NOAA NCEI Global Summary of the Month from GHCN-Daily: DX90 (days with high ≥ 32.2 °C) and DP1X (days with ≥ 25.4 mm), stations with 20+ years in 2001–2025, averaged per 1° cell.",
-    why: "Real event counts on the ground, but only where long-running stations exist.",
-    source: GSOM },
 
   // ---------- data terms ----------
   "root-zone": { title: "Root zone",

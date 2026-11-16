@@ -82,7 +82,7 @@ vì backend đọc khoảng thời gian từ trục `time`, nên số tháng kh�
 
 Muốn file vào container backend thì phải thêm tên file vào `.dockerignore` (danh sách cho phép từng file).
 
-### 3.1c Chín cube 1° thêm ngày 16/11/2026 (cho web: nước trên đất liền, tuyết, sol khí, cháy, ngày cực đoan)
+### 3.1c Bảy cube 1° thêm ngày 16/11/2026 (cho web: nước trên đất liền, tuyết, sol khí, nhiệt độ cao/thấp nhất, cháy)
 
 Dựng thẳng từ file thô (`data/raw/` của thư mục dự án, giữ nguyên như nhà phát hành giao) bằng `build_extra_cubes.py`, không qua
 `preprocess/clean.py`. Mỗi nguồn một hàm đọc, rồi `bin_to_grid` (trung bình khối về 1°) từng tháng. Trục thời gian là **trục tháng liền**
@@ -98,11 +98,9 @@ không bị bỏ (bỏ thì backend lỗi 500).
 | `grid/cube_tmax_cru.nc` | TB tháng của nhiệt độ cao nhất ngày, CRU TS 4.10 `tmx` (bỏ ô `stn = 0`; không phải NASA) | 2001-01 → 2025-12 | °C | 17.457 | 13 MB |
 | `grid/cube_tmin_cru.nc` | TB tháng của nhiệt độ thấp nhất ngày, CRU TS 4.10 `tmn` (bỏ ô `stn = 0`; không phải NASA) | 2001-01 → 2025-12 | °C | 17.457 | 13 MB |
 | `grid/cube_fire_micasa.nc` | Carbon phát thải do cháy, MiCASA v1 `FIRE` (từ diện tích cháy MODIS), × 1000 × số giây của tháng; chỉ ô đất liền | 2001-01 → 2024-12 | g C/m²/tháng | 17.392 | 6 MB |
-| `grid/cube_heavy_rain_days_gsom.nc` | Số ngày mưa ≥ 25,4 mm, GSOM `DP1X`, TB các trạm có ≥ 240 tháng (11.340 trạm; không phải NASA) | 2001-01 → 2025-12 | ngày | 2.585 | 2 MB |
-| `grid/cube_hot_days_gsom.nc` | Số ngày nhiệt độ cao nhất ≥ 32,2 °C, GSOM `DX90`, TB các trạm có ≥ 240 tháng (7.152 trạm; không phải NASA) | 2001-01 → 2025-12 | ngày | 2.467 | 2 MB |
 
-- Chuỗi đếm (cháy, ngày nóng, ngày mưa lớn) phần lớn là 0 ở nhiều ô và tháng: hệ số Sen (trung vị) có thể bằng 0 trong khi
-  Mann-Kendall có ý nghĩa (ví dụ ngày nóng châu Âu: Sen 0,000, p = 5,7·10⁻⁶). Catalog ghi chú điều này cho người dùng.
+- Chuỗi cháy phần lớn là 0 ở nhiều ô và tháng: hệ số Sen (trung vị) có thể bằng 0 trong khi Mann-Kendall có ý nghĩa.
+  Catalog ghi chú điều này cho người dùng. Số ngày cực đoan GSOM (`DP1X`/`DX90`) từng có cube, đã bỏ khỏi web theo yêu cầu người dùng (16/11).
 - AOD lưu với `least_significant_digit = 4` (lệch tối đa 3·10⁻⁵ so với float32 đầy đủ; 55 → 27 MB và 16 MB).
 - **Sét không có**: chuỗi sét toàn cầu của NASA (LIS/OTD `lolrmts`) chỉ chạy 1995-05 → 2015-04, không phủ 2001–2025.
 - Kiểm nhanh (16/11/2026, `/api/v1/trends`): GRACE Bắc Ấn Độ (70–90°E, 22–32°N) −11,9 cm/thập kỷ, Greenland −110,5; cháy châu Phi

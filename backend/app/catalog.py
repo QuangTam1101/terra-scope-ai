@@ -218,22 +218,6 @@ _VARS = [
              "https://disc.gsfc.nasa.gov/datasets/MICASA_FLUX_M_1/summary",
              _MODEL_NOTE + " Covers 2001–2024. Fire years are very uneven: one record season (Canada 2023) can "
              "dominate a regional trend, so read Each year as well as the slope." + _ZERO_NOTE),
-    Variable("gsom_heavy_rain_days", "heavy_rain_days_gsom", "Heavy-rain days (weather stations)", "extremes",
-             "How many days each month bring at least 25.4 mm (1 inch) of rain.",
-             "NOAA NCEI Global Summary of the Month DP1X (days with ≥ 25.4 mm), averaged over GHCN stations with "
-             "at least 20 years of data in 2001–2025 inside each 1° cell.",
-             "days", 1.0, "GSOM (GHCN)", "latest", "NOAA NCEI",
-             "https://www.ncei.noaa.gov/products/land-based-station/global-summary-of-the-month",
-             "Not NASA data: real rain-gauge counts, but only where long-running stations exist (mostly North "
-             "America, Europe, Australia, parts of Asia); empty cells mean no station, not no rain."),
-    Variable("gsom_hot_days", "hot_days_gsom", "Hot days ≥ 32 °C (weather stations)", "extremes",
-             "How many days each month reach at least 32.2 °C (90 °F).",
-             "NOAA NCEI Global Summary of the Month DX90 (days with maximum temperature ≥ 32.2 °C), averaged over "
-             "GHCN stations with at least 20 years of data in 2001–2025 inside each 1° cell.",
-             "days", 1.0, "GSOM (GHCN)", "latest", "NOAA NCEI",
-             "https://www.ncei.noaa.gov/products/land-based-station/global-summary-of-the-month",
-             "Not NASA data: real thermometer counts, but only where long-running stations exist; empty cells "
-             "mean no station. Cool places show 0 most months." + _ZERO_NOTE),
 ]
 VARIABLES: dict[str, Variable] = {v.id: v for v in _VARS}
 
@@ -253,7 +237,6 @@ PARAMETERS = {
     "snow": "Snow water",
     "air_haze": "Air haze (aerosols)",
     "fire": "Fire activity",
-    "extreme_days": "Extreme weather days",
 }
 # variable id → (parameter, tên dataset ngắn để hiển thị)
 VARIABLE_PARAMETER = {
@@ -282,8 +265,6 @@ VARIABLE_PARAMETER = {
     "cru_tmax": ("air_temperature", "CRU TS daytime highs (stations, not NASA)"),
     "cru_tmin": ("air_temperature", "CRU TS night-time lows (stations, not NASA)"),
     "micasa_fire": ("fire", "MiCASA (from MODIS burned area)"),
-    "gsom_heavy_rain_days": ("extreme_days", "Heavy-rain days ≥ 25.4 mm (stations, not NASA)"),
-    "gsom_hot_days": ("extreme_days", "Hot days ≥ 32.2 °C (stations, not NASA)"),
 }
 # Chat: câu hỏi chung chung ("precipitation", "soil moisture") không nêu dataset/độ sâu thì chọn biến mặc định này.
 DEFAULT_VARIABLE = {"precipitation": "imerg_precip", "soil_moisture": "gldas_soil_moisture_0_10cm"}

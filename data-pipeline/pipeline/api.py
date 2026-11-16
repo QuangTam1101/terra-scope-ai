@@ -43,8 +43,6 @@ VARIABLES = {
     "tmax_cru": ("Nhiệt độ cao nhất ngày (CRU TS)", "degC", "CRU TS 4.10 tmx, University of East Anglia (không phải NASA; nội suy từ trạm)"),
     "tmin_cru": ("Nhiệt độ thấp nhất ngày (CRU TS)", "degC", "CRU TS 4.10 tmn, University of East Anglia (không phải NASA; nội suy từ trạm)"),
     "fire_micasa": ("Phát thải carbon do cháy (MiCASA)", "gC/m2/month", "MiCASA v1 monthly 0.1° (MICASA_FLUX_M.1) FIRE, tính từ diện tích cháy MODIS MCD64A1, NASA GES DISC"),
-    "heavy_rain_days_gsom": ("Số ngày mưa ≥ 25,4 mm (trạm GSOM)", "days", "NOAA NCEI Global Summary of the Month DP1X, trạm GHCN có ≥ 20 năm số liệu 2001–2025, TB theo ô 1°"),
-    "hot_days_gsom": ("Số ngày nóng ≥ 32,2 °C (trạm GSOM)", "days", "NOAA NCEI Global Summary of the Month DX90, trạm GHCN có ≥ 20 năm số liệu 2001–2025, TB theo ô 1°"),
 }
 METHOD = ("Trung bình vùng trên lưới 1° (trọng số cos vĩ độ); Seasonal Mann-Kendall + Sen's slope theo mùa; "
           "Hamed-Rao MK trên anomaly (hiệu chỉnh tự tương quan); OLS trên anomaly ± CI 95%; FDR Benjamini–Hochberg cho bản đồ")

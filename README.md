@@ -45,9 +45,8 @@ from NASA LP DAAC (each 0.5° cell is the mean of its valid 0.05° pixels). Ever
 | [MERRA-2 tavgM_2d_aer_Nx V5.12.4](https://doi.org/10.5067/FH9A0MLJPC7N) | Aerosol optical depth: total and dust | 0.5° x 0.625° |
 | [MiCASA v1 monthly](https://disc.gsfc.nasa.gov/datasets/MICASA_FLUX_M_1/summary) | Fire carbon emission (from MODIS burned area), 2001–2024 | 0.1° |
 | CRU TS 4.10 `tmx`/`tmn` (not NASA) | Daytime highs and night-time lows (stations, land only) | 0.5° |
-| NOAA GSOM `DP1X`/`DX90` (not NASA) | Heavy-rain days (≥ 25.4 mm) and hot days (≥ 32.2 °C), stations with 20+ years | stations |
 
-The variables added on 16/11/2026 (last six rows) are built straight from the raw files into 1° cubes by
+The variables added on 16/11/2026 (last five rows) are built straight from the raw files into 1° cubes by
 `data-pipeline/build_extra_cubes.py`.
 
 Regional series were validated against [Giovanni](https://giovanni.gsfc.nasa.gov/giovanni/) Time Series,
