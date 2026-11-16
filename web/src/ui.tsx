@@ -47,8 +47,8 @@ export function Stat({ value, label, title }: { value: ReactNode; label: ReactNo
 export function Terra({ size = 96, label }: { size?: number; label?: string }) {
   return (
     <svg viewBox="0 0 110 100" width={size} height={size * 0.9} role={label ? "img" : undefined}
-      aria-label={label} aria-hidden={label ? undefined : true} style={{ flex: "none" }}>
-      <circle cx="50" cy="58" r="34" fill="#8cc4ee" />
+      aria-label={label} aria-hidden={label ? undefined : true} className="terra-mascot" style={{ flex: "none" }}>
+      <circle className="terra-body" cx="50" cy="58" r="34" fill="#8cc4ee" />
       <path d="M26 50c5-9 17-8 19 0s-5 13-11 13-12-5-8-13z" fill="#9edbb5" />
       <path d="M58 74c4-6 14-6 16 0s-4 9-9 9-9-4-7-9z" fill="#9edbb5" />
       <path d="M60 40c6-3 13 1 11 7s-9 5-12 1-2-7 1-8z" fill="#9edbb5" />
@@ -56,11 +56,11 @@ export function Terra({ size = 96, label }: { size?: number; label?: string }) {
       <circle cx="41.3" cy="58.6" r="1.3" fill="#fff" /><circle cx="59.3" cy="58.6" r="1.3" fill="#fff" />
       <circle cx="33" cy="68" r="4.5" fill="#f6a7a0" opacity=".75" /><circle cx="65" cy="68" r="4.5" fill="#f6a7a0" opacity=".75" />
       <path d="M43 69q6 5 12 0" fill="none" stroke="#2b2540" strokeWidth="2.6" strokeLinecap="round" />
-      <ellipse cx="50" cy="31" rx="33" ry="6" fill="#7a4a2e" />
-      <path d="M29 31q1-19 21-19t21 19z" fill="#9b6440" />
+      <ellipse className="terra-hat" cx="50" cy="31" rx="33" ry="6" fill="#7a4a2e" />
+      <path className="terra-hat" d="M29 31q1-19 21-19t21 19z" fill="#9b6440" />
       <rect x="30" y="24" width="40" height="5" rx="2.5" fill="#f6c94c" />
-      <circle cx="92" cy="70" r="11" fill="#eaf7ff" stroke="#2b2540" strokeWidth="4" />
-      <path d="M84 78l-10 10" stroke="#2b2540" strokeWidth="5.5" strokeLinecap="round" />
+      <circle className="terra-lens" cx="92" cy="70" r="11" fill="#eaf7ff" stroke="#2b2540" strokeWidth="4" />
+      <path className="terra-handle" d="M84 78l-10 10" stroke="#2b2540" strokeWidth="5.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -84,13 +84,13 @@ const PARAM_ICON: Record<string, [string, ReactNode, string]> = {
   soil_moisture: ["#f3e3cf", <><path {...P} d="M12 3c-2.5 3.2-4 5.4-4 7.3a4 4 0 0 0 8 0C16 8.4 14.5 6.2 12 3z" /><path {...P} d="M4 17.5h16M7 21h10" /></>, "Soil moisture"],
   air_temperature: ["#ffe1d6", <><path {...P} d="M10 13.5V5a2 2 0 1 1 4 0v8.5a4 4 0 1 1-4 0z" /><path {...P} d="M12 9v7" /></>, "Air temperature"],
   evapotranspiration: ["#dff3e6", <><path {...P} d="M12 21v-6M12 15c-3.5 0-5.5-2-5.5-5.5 3.5 0 5.5 2 5.5 5.5zM12 15c0-3.5 2-5.5 5.5-5.5 0 3.5-2 5.5-5.5 5.5z" /><path {...P} d="M9 2.5c1 1 1 2 0 3M15 2.5c1 1 1 2 0 3" /></>, "Evaporation"],
-  potential_evapotranspiration: ["#fff1c9", <><circle {...P} cx="12" cy="15" r="3.5" /><path {...P} d="M4 21h16M8 3c1 1 1 2 0 3M12 2c1 1 1 2 0 3M16 3c1 1 1 2 0 3" /></>, "Water demand"],
+  potential_evapotranspiration: ["#fff1c9", <><circle {...P} cx="18" cy="6" r="2.4" /><path {...P} d="M18 1.8v.6M18 9.6v.6M13.8 6h.6M21.6 6h.6M15.1 3.1l.4.4M20.5 8.5l.4.4M15.1 8.9l.4-.4M20.5 3.5l.4-.4" /><path {...P} d="M8 10c-2.4 3-3.8 5.1-3.8 6.9a3.8 3.8 0 0 0 7.6 0C11.8 15.1 10.4 13 8 10z" /><path {...P} d="M15.5 20v-7M13.3 15.2l2.2-2.2 2.2 2.2" /></>, "Water demand"],
   vegetation: ["#dcf3dc", <><path {...P} d="M12 21v-9M12 12C12 8 9 5 4 5c0 5 3 7 8 7zM12 12c0-3.5 3-6 8-6 0 4-3 6-8 6z" /></>, "Greenness"],
   land_surface_temperature: ["#ffe8c7", <><circle {...P} cx="12" cy="10" r="3.5" /><path {...P} d="M12 3v1.5M5 10h1.5M17.5 10H19M7 5l1 1M17 5l-1 1M3 19h18M7 16h10" /></>, "Ground temperature"],
   root_zone_water: ["#eadfce", <><path {...P} d="M12 11V4M12 7c-2 0-4-1.5-4-4 2 0 4 1.5 4 4zM4 11h16M12 11v9M12 14.5l-3.5 3.5M12 14.5l3.5 3.5" /></>, "Root-zone water"],
   ocean_chlorophyll: ["#d8f0f3", <><path {...P} d="M3 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0M3 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0M7 19h.01M12 19.5h.01M17 19h.01" /></>, "Ocean algae"],
-  water_storage: ["#dfe6ff", <><path {...P} d="M12 7c-2 2.6-3.5 4.4-3.5 6a3.5 3.5 0 0 0 7 0c0-1.6-1.5-3.4-3.5-6z" /><path {...P} d="M3.5 15.5c2 4 15 4 17 0M17 3h3v3h-3zM15.5 6.5l1.5-1.5" /></>, "Land water"],
-  snow: ["#e8f1ff", <><path {...P} d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M10 4.5l2 1.5 2-1.5M10 19.5l2-1.5 2 1.5" /></>, "Snow"],
+  water_storage: ["#dfe6ff", <><path {...P} d="M3 8h18M6 8l-1-2.5M8.5 8l.6-2.5M15.5 8l-.6-2.5M18 8l1-2.5" /><path {...P} d="M3 12.5c2-1.4 4-1.4 6 0s4 1.4 6 0 4-1.4 6 0M3 17c2-1.4 4-1.4 6 0s4 1.4 6 0 4-1.4 6 0" /><path {...P} d="M3 21h18" /></>, "Land water"],
+  snow: ["#e8f1ff", <><path {...P} d="M12.0 20.8L12.0 3.2M12.0 6.9L10.2 5.1M12.0 6.9L13.8 5.1M19.6 16.4L4.4 7.6M7.6 9.4L5.1 10.1M7.6 9.4L6.9 6.9M19.6 7.6L4.4 16.4M7.6 14.6L6.9 17.1M7.6 14.6L5.1 13.9M12.0 17.1L13.8 18.9M12.0 17.1L10.2 18.9M16.4 14.6L18.9 13.9M16.4 14.6L17.1 17.1M16.4 9.4L17.1 6.9M16.4 9.4L18.9 10.1" /></>, "Snow"],
   sea_ice: ["#e4eef7", <><path {...P} d="M3 15c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0M3 19.5c2-1.5 4-1.5 6 0s4 1.5 6 0 4-1.5 6 0M5 11l2-5h6l2 5M15 11l1.5-3h3L21 11" /></>, "Sea ice"],
   air_haze: ["#ece9e4", <><path {...P} d="M4 7h10M7 11h13M4 15h11M8 19h9M18 7h.01M18 15h.01" /></>, "Air haze"],
   drought: ["#fbe3c4", <><circle {...P} cx="12" cy="7" r="3" /><path {...P} d="M3 14h18M6 14l2 3-1 3M13 14l-1 3 2 3M18 14l-1 2" /></>, "Drought"],

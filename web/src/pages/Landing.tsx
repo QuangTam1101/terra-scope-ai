@@ -369,14 +369,12 @@ function buildTexture(): { tex: Uint8ClampedArray; land: Uint8Array } {
 }
 
 type HeroTip = { x: number; y: number; lon: number; lat: number; land: boolean; trend: ReturnType<typeof heroTrendAt> };
-const fmtCoord = (lon: number, lat: number) =>
-  `${Math.abs(lat).toFixed(0)}°${lat >= 0 ? "N" : "S"}, ${Math.abs(lon).toFixed(0)}°${lon >= 0 ? "E" : "W"}`;
 
 /** Interactive: drag to spin (with a little momentum) and tilt, hover or tap to read the trend under the pointer,
  * arrow keys rotate, double-click resets. Auto-spin pauses while the user is interacting and resumes after a few seconds. */
 function HeroGlobe() {
   const ref = useRef<HTMLCanvasElement>(null);
-  const [tip, setTip] = useState<HeroTip | null>(null);
+  const [, setTip] = useState<HeroTip | null>(null);   // hover reading kept for pausing the spin; no tooltip is drawn
   const [grabbing, setGrabbing] = useState(false);
 
   useEffect(() => {
@@ -506,25 +504,12 @@ function HeroGlobe() {
     };
   }, []);
 
-  const label = "Interactive globe showing real NASA data: MERRA-2 air temperature trend per decade, 2001 to 2025. Land is coloured by the trend: orange areas warmed, blue areas cooled; pale colours are not statistically significant. Drag or use the arrow keys to rotate; point at a place to read its trend.";
-  const t = tip?.trend;
+  const label = "Interactive globe showing real NASA data: MERRA-2 air temperature trend per decade, 2001 to 2025. Land is coloured by the trend: orange areas warmed, blue areas cooled; pale colours are not statistically significant. Drag or use the arrow keys to rotate.";
   return (
     <figure className="hero-globe" aria-label={label}>
       <div className="hero-globe-ball">
         <canvas ref={ref} width={HERO_PX} height={HERO_PX} role="img" aria-label={label} tabIndex={0}
           className={grabbing ? "grabbing" : undefined} />
-        {tip && (
-          <div className="hero-tip" role="status" style={{ left: tip.x, top: tip.y }}>
-            <b className="num">{fmtCoord(tip.lon, tip.lat)}</b>
-            {!tip.land ? <span>Ocean. This globe colours land only.</span>
-              : !t ? <span>No data here.</span>
-              : <>
-                  <span className="num" style={{ color: t.slope >= 0 ? "var(--up-2)" : "var(--down-2)", fontWeight: 800 }}>
-                    {t.slope >= 0 ? "+" : "−"}{Math.abs(t.slope).toFixed(2)} °C per decade</span>
-                  <span>{t.slope >= 0 ? "Warmed" : "Cooled"}, 2001 to 2025 · {t.sig ? "clear trend" : "not proven yet"}</span>
-                </>}
-          </div>
-        )}
       </div>
       <div className="hero-mascot"><Terra size={120} label="Terra, the Earth detective" /></div>
     </figure>

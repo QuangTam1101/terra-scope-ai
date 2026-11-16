@@ -138,14 +138,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     api.health().then((h) => setBackendVersion(h.version)).catch(() => undefined);
-    Promise.all([api.variables(), api.regions()])
+    // The hosted backend sleeps when idle and restarts after a crash; the first calls can fail for a few seconds.
+    // Retry with growing waits before showing an error, instead of staying on "Connecting" forever.
+    let stop = false, timer = 0;
+    const load = (attempt: number): Promise<[Variable[], Awaited<ReturnType<typeof api.regions>>]> =>
+      Promise.all([api.variables(), api.regions()]).catch((e) => {
+        if (stop || attempt >= 7) throw e;
+        return new Promise((ok) => { timer = window.setTimeout(ok, Math.min(15000, 1000 * 2 ** attempt)); }).then(() => load(attempt + 1));
+      });
+    load(0)
       .then(([v, r]) => {
+        if (stop) return;
         setVariables(v); setRegions(r.regions); setGridCell(r.limits.cell_size_deg); setReady(true);
         // default period = everything the data covers (the backend pre-computes maps for exactly this period)
         const end = v.find((x) => x.id === "merra2_air_temperature_2m")?.coverage?.end;
         if (end) setSelState((s) => ({ ...s, endYear: Number(end.slice(0, 4)), endMonth: 12 }));
       })
-      .catch(showError);
+      .catch((e) => { if (!stop) showError(e); });
+    return () => { stop = true; window.clearTimeout(timer); };
   }, [showError]);
 
   const setSel = useCallback((patch: Partial<Selection>) => {

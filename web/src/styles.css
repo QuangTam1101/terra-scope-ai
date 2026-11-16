@@ -968,7 +968,8 @@ select.select::-ms-expand { display: none; }
 .guide-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
 .guide-card { border: 2px solid transparent; padding: 18px; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; color: var(--ink); }
 .guide-card.on { border-color: var(--coral); }
-.guide-card .btn { align-self: flex-start; min-height: 36px; }
+.guide-card .btn { align-self: flex-start; min-height: 36px; margin-top: auto; }
+.guide-card .small { margin-bottom: 8px; }
 .guide-q { font: 700 18px/1.25 var(--display); }
 .guide-how { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
 .guide-how li { display: flex; align-items: flex-start; gap: 10px; padding: 14px; border-radius: 20px; background: var(--lavender-2); font: 700 15px/1.4 var(--body); }
@@ -1105,3 +1106,8 @@ select.select::-ms-expand { display: none; }
 .demo-stamp.np { background: var(--np-bg); color: var(--np-ink); }
 .demo-stamp.ne { background: var(--ne-bg); color: var(--muted); }
 @media (max-width: 560px) { .demo-q { font-size: 21px; } .demo-lbl { display: none; } }
+/* Terra mascot / logo in dark mode: the drawing keeps its own colours; a light sticker outline is traced around the
+   whole shape so it stands out on the dark background (report paper and print stay as drawn). */
+[data-theme="dark"] .terra-mascot { filter: drop-shadow(2px 0 0 #f3eefe) drop-shadow(-2px 0 0 #f3eefe) drop-shadow(0 2px 0 #f3eefe) drop-shadow(0 -2px 0 #f3eefe); }
+[data-theme="dark"] .rpage .terra-mascot { filter: none; }
+@media print { [data-theme="dark"] .terra-mascot { filter: none; } }

@@ -73,7 +73,9 @@ def _clean(x):
     return None if isinstance(x, float) and not math.isfinite(x) else x
 
 
-@lru_cache(maxsize=None)
+# Bounded (6 = the forecast's 5 auxiliary cubes + the one being analysed): an unbounded cache of every 1° cube (~80 MB
+# each in RAM) exceeds the hosted container's memory once many datasets have been opened.
+@lru_cache(maxsize=6)
 def load_cube(variable):
     if variable not in VARIABLES:
         raise ValueError(f"Biến không hỗ trợ: {variable}. Có: {list(VARIABLES)}")

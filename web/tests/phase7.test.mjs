@@ -56,16 +56,16 @@ try {
     const ids = ob.TOUR_STEPS.map((s) => s.id);
     assert.equal(new Set(ids).size, ids.length);
     assert.equal(ids[0], 'welcome'); assert.equal(ids.at(-1), 'finish');
-    assert.equal(ob.TOUR_STEPS.length, 12);
+    assert.equal(ob.TOUR_STEPS.length, 14);
     for (const s of ob.TOUR_STEPS) {
-      assert.ok(['explore', 'hunt', 'detective', 'report'].includes(s.page), s.id);
+      assert.ok(['explore', 'hunt', 'forecast', 'detective', 'report'].includes(s.page), s.id);
       if (s.target) assert.match(s.target, /^\[data-tour="[\w-]+"\]$/, s.id);
       assert.ok(s.title && s.body.length > 20, s.id);
     }
-    assert.equal(ob.clampStep(-3), 0); assert.equal(ob.clampStep(99), 11);
+    assert.equal(ob.clampStep(-3), 0); assert.equal(ob.clampStep(99), 13);
   });
   test('tutorial: every highlighted target exists on its page (no pointing at nothing)', async () => {
-    const file = { explore: 'Explore', hunt: 'Hunt', detective: 'Detective', report: 'Report' };
+    const file = { explore: 'Explore', hunt: 'Hunt', forecast: 'Forecast', detective: 'Detective', report: 'Report' };
     for (const s of ob.TOUR_STEPS.filter((x) => x.target)) {
       const id = s.target.match(/data-tour="([\w-]+)"/)[1];
       const src = await readFile(new URL(`../src/pages/${file[s.page]}.tsx`, import.meta.url), 'utf8');

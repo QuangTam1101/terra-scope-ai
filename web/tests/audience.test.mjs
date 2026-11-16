@@ -55,7 +55,7 @@ try {
     const steps = ob.tourSteps('scientist');
     assert.notEqual(steps, ob.tourSteps('explorer'));
     assert.equal(steps[0].id, 'welcome'); assert.equal(steps.at(-1).id, 'finish');
-    const file = { explore: 'Explore', hunt: 'Hunt', detective: 'Detective', report: 'Report' };
+    const file = { explore: 'Explore', hunt: 'Hunt', forecast: 'Forecast', detective: 'Detective', report: 'Report' };
     for (const s of steps) {
       assert.ok(!s.body.includes('—') && s.body.length > 20, s.id);
       if (!s.target) continue;
