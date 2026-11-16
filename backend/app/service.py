@@ -250,12 +250,18 @@ def series(req: SeriesRequest) -> dict:
 
 
 # ---------------------------------------------------------------- /trends
+def _rate_units(u: str) -> tuple[int, str]:
+    """Đếm sự kiện / tháng → tốc độ đổi theo năm (×12, đúng vì độ dốc tính trên TB năm); khớp web/src/units.ts PER_YEAR."""
+    return (12, u.replace("/month", " a year")) if u in ("storms/month", "fires/month") else (1, u)
+
+
 def _trend_summary(v, region, start, end, slope, p, significant, sufficient) -> str:
     where, period = _region_label(region), f"{start[:4]}–{end[:4]}"
     if slope is None:
         return f"No trend could be estimated for {v.name.lower()} in {where} ({period})."
     change = "increased" if slope > 0 else "decreased" if slope < 0 else "did not change"
-    s1 = f"{v.name} in {where} {change} by about {_fmt(abs(slope))} {v.display_units} per decade ({period})."
+    k, u = _rate_units(v.display_units)
+    s1 = f"{v.name} in {where} {change} by about {_fmt(abs(slope) * k)} {u} per decade ({period})."
     if not sufficient or p is None:
         return s1 + " There is not enough data to test whether this trend is statistically significant."
     if significant:

@@ -6,6 +6,7 @@ import type { Topology } from "topojson-specification";
 import countriesTopo from "world-atlas/countries-110m.json";
 import type { SeriesResponse, TrendResponse } from "../api";
 import { Terra } from "../ui";
+import { rateOf, rateUnit } from "../units";
 import { num, pText, signedNum, type AnalysisEntry, type ComparisonEntry, type ReportModel } from "./model";
 
 const topo = countriesTopo as unknown as Topology;
@@ -117,16 +118,16 @@ function AnalysisPages({ m, a, i }: { m: ReportModel; a: AnalysisEntry; i: numbe
         <p className="rlead">{a.finding}</p>
         <div className="rrow">
           <span className={`badge ${sigCls}`}>{a.verdict}</span>
-          <span className="rbig">{signedNum(a.slope)} {a.units} <small>per decade (Sen slope)</small></span>
+          <span className="rbig">{signedNum(a.rate)} {a.rateUnits} <small>per decade (Sen slope)</small></span>
         </div>
         <ReportChart units={a.units} lines={[{ series: a.series, trend: a.trend, color: "#3d3850" }]} />
         <p className="rcap">Thin line: monthly anomalies (each month minus its long-term average for that calendar month). Thick line: seasonal Sen slope
           drawn through the mean anomaly, {a.significant ? "solid because the trend is significant" : "dashed because the trend is not significant"}. Orange = increase, blue = decrease. Estimated past trend, not a forecast.</p>
         <KV rows={[
-          ["Sen slope", `${signedNum(a.slope)} ${a.units} per decade (${a.slopeMethod})`],
+          ["Sen slope", `${signedNum(a.rate)} ${a.rateUnits} per decade (${a.slopeMethod})`],
           ["Raw Seasonal MK p", `${pText(a.pRaw)}: decision basis, significant when below α = ${a.alpha}`],
           ["Autocorrelation-adjusted p", `${pText(a.pAdjusted)}: separate diagnostic (Hamed-Rao on anomalies), does not change the verdict`],
-          ["OLS anomaly slope, 95% interval", a.olsInterval ? `${num(a.olsInterval[0])} to ${num(a.olsInterval[1])} ${a.units} per decade. Different estimator from Sen; not a Sen confidence interval.` : "n/a"],
+          ["OLS anomaly slope, 95% interval", a.rateInterval ? `${num(a.rateInterval[0])} to ${num(a.rateInterval[1])} ${a.rateUnits} per decade. Different estimator from Sen; not a Sen confidence interval.` : "n/a"],
           ["Sample", `${a.nMonths} months with data, ${a.missingMonths} missing (${a.start} to ${a.end}); on average ${a.coveragePct}% of the area has data`],
           ["Data sufficiency", a.sufficient ? "Sufficient (at least 10 years and 70% of months)" : "Insufficient: not tested"],
           ["Method", `${a.method} + ${a.slopeMethod}; interval ${a.ciMethod}; backend ${m.backendVersion}; trend ID ${a.trendId}`],
@@ -158,7 +159,7 @@ function ComparisonPage({ m, c }: { m: ReportModel; c: ComparisonEntry }) {
       <table className="rtable">
         <thead><tr><th scope="col">Item</th><th scope="col">A: {c.a.label} ({c.a.dataset})</th><th scope="col">B: {c.b.label} ({c.b.dataset})</th></tr></thead>
         <tbody>
-          <tr><th scope="row">Sen slope per decade</th><td>{signedNum(c.a.trend.slope_per_decade)} {c.units}</td><td>{signedNum(c.b.trend.slope_per_decade)} {c.units}</td></tr>
+          <tr><th scope="row">Sen slope per decade</th><td>{signedNum(rateOf(c.a.trend.slope_per_decade, c.units))} {rateUnit(c.units)}</td><td>{signedNum(rateOf(c.b.trend.slope_per_decade, c.units))} {rateUnit(c.units)}</td></tr>
           <tr><th scope="row">Raw Seasonal MK p</th><td>{pText(c.a.trend.p_value)}</td><td>{pText(c.b.trend.p_value)}</td></tr>
           <tr><th scope="row">Period</th><td>{c.a.trend.start} to {c.a.trend.end}</td><td>{c.b.trend.start} to {c.b.trend.end}</td></tr>
           <tr><th scope="row">Months with data</th><td>{c.a.trend.quality.n_months}</td><td>{c.b.trend.quality.n_months}</td></tr>

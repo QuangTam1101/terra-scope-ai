@@ -5,6 +5,7 @@
 // Every number comes from the ReportModel (backend evidence). User-authored text (title, author, finding titles,
 // notes) is printed as plain text (React escapes it) and labelled as the author's, never as evidence.
 import { Terra } from "../ui";
+import { rateOf, rateUnit } from "../units";
 import { Head, KV, LocatorMap, ReportChart } from "./ReportDoc";
 import { num, pText, signedNum, type AnalysisEntry, type ComparisonEntry, type ReportModel } from "./model";
 import {
@@ -150,7 +151,7 @@ function RateBox({ a, size, wide, projection }: { a: AnalysisEntry; size: number
     <div className={`xrate ${dirIcon(a)}${wide ? " wide" : ""}`}>
       <XIcon name={dirIcon(a)} size={size} />
       {a.slope !== null && a.sufficient
-        ? <div><span className="xrate-k">{dirWord(a)} · estimated rate</span><span className="xrate-v">{signedNum(a.slope)} <small>{a.units} every 10 years</small></span>
+        ? <div><span className="xrate-k">{dirWord(a)} · estimated rate</span><span className="xrate-v">{signedNum(a.rate)} <small>{a.rateUnits} every 10 years</small></span>
           {projection && <span className="xproj">{projection}</span>}</div>
         : <div><span className="xrate-k">No rate estimated</span><span className="xrate-v"><small>at least 10 years and 70% of months are needed</small></span></div>}
     </div>
@@ -271,8 +272,8 @@ function ExplorerComparison({ p, c, i }: { p: EditionProps; c: ComparisonEntry; 
       <h2>{c.a.label} compared with {c.b.label}</h2>
       <p className="rlead">{plainCompare(c)}</p>
       <div className="rcols">
-        <div className="rcard"><span>{c.a.label} ({c.a.dataset})</span><div className="rbig">{signedNum(c.a.trend.slope_per_decade)} <small>{c.units} every 10 years</small></div></div>
-        <div className="rcard"><span>{c.b.label} ({c.b.dataset})</span><div className="rbig">{signedNum(c.b.trend.slope_per_decade)} <small>{c.units} every 10 years</small></div></div>
+        <div className="rcard"><span>{c.a.label} ({c.a.dataset})</span><div className="rbig">{signedNum(rateOf(c.a.trend.slope_per_decade, c.units))} <small>{rateUnit(c.units)} every 10 years</small></div></div>
+        <div className="rcard"><span>{c.b.label} ({c.b.dataset})</span><div className="rbig">{signedNum(rateOf(c.b.trend.slope_per_decade, c.units))} <small>{rateUnit(c.units)} every 10 years</small></div></div>
       </div>
       {c.kind === "regions" && <LocatorMap height={170} boxes={[{ bbox: c.a.trend.region.bbox, label: "A", color: "#c4621a" }, { bbox: c.b.trend.region.bbox, label: "B", color: "#2f6fb3" }]} />}
       <h3>What this comparison cannot tell us</h3>
@@ -369,8 +370,8 @@ function ExplorerAppendix({ m }: { m: ReportModel }) {
       <table className="rtable">
         <thead><tr><th scope="col" style={{ width: "30%" }}>Finding</th><th scope="col">Sen slope per decade</th><th scope="col">Raw p (verdict)</th><th scope="col">Adjusted p (diagnostic)</th><th scope="col">95% CI for the OLS anomaly slope</th><th scope="col">Months</th></tr></thead>
         <tbody>{m.analyses.map((a) => (
-          <tr key={a.key}><td>{a.parameter}, {a.place} ({a.dataset}, {a.start} to {a.end})</td><td>{signedNum(a.slope)} {a.units}</td><td>{pText(a.pRaw)}</td>
-            <td>{pText(a.pAdjusted)}</td><td>{a.olsInterval ? `${num(a.olsInterval[0])} to ${num(a.olsInterval[1])}` : "n/a"}</td><td>{a.nMonths}</td></tr>
+          <tr key={a.key}><td>{a.parameter}, {a.place} ({a.dataset}, {a.start} to {a.end})</td><td>{signedNum(a.rate)} {a.rateUnits}</td><td>{pText(a.pRaw)}</td>
+            <td>{pText(a.pAdjusted)}</td><td>{a.rateInterval ? `${num(a.rateInterval[0])} to ${num(a.rateInterval[1])}` : "n/a"}</td><td>{a.nMonths}</td></tr>
         ))}</tbody>
       </table>
       <h3>Glossary</h3>
@@ -414,7 +415,7 @@ function ScientistCover({ p }: { p: EditionProps }) {
         <thead><tr><th scope="col" style={{ width: "40%" }}>Finding</th><th scope="col">Sen slope per decade</th><th scope="col">Raw p</th><th scope="col">n (months)</th><th scope="col" style={{ width: "19%" }}>Verdict</th></tr></thead>
         <tbody>
           {m.analyses.map((a) => (
-            <tr key={a.key}><td>{a.parameter}, {a.place} ({a.dataset}, {a.start} to {a.end})</td><td>{signedNum(a.slope)} {a.units}</td><td>{pText(a.pRaw)}</td><td>{a.nMonths}</td><td><StampTag s={trendStamp(a)} /></td></tr>
+            <tr key={a.key}><td>{a.parameter}, {a.place} ({a.dataset}, {a.start} to {a.end})</td><td>{signedNum(a.rate)} {a.rateUnits}</td><td>{pText(a.pRaw)}</td><td>{a.nMonths}</td><td><StampTag s={trendStamp(a)} /></td></tr>
           ))}
           {m.comparisons.map((c) => (
             <tr key={c.key}><td>{c.title}</td><td>{c.test ? `${signedNum(c.test.difference.slope_diff_per_decade)} ${c.units} (A minus B)` : "n/a"}</td><td>{c.test ? pText(c.test.difference.p_value) : "n/a"}</td><td>n/a</td><td><StampTag s={compareStamp(c)} /></td></tr>
@@ -434,7 +435,7 @@ function ScientistFinding({ p, a, i }: { p: EditionProps; a: AnalysisEntry; i: n
       <Head m={p.m} title={`Result ${i + 1}`} />
       <div className="rrow" style={{ justifyContent: "space-between" }}><span className="rkicker">Result {i + 1}</span><StampTag s={trendStamp(a)} /></div>
       <h2 className="ruser">{headOf(p, a)}</h2>
-      <div className="rhero"><div className="rbig">{signedNum(a.slope)} <small>{a.units} per decade (seasonal Sen slope)</small></div>
+      <div className="rhero"><div className="rbig">{signedNum(a.rate)} <small>{a.rateUnits} per decade (seasonal Sen slope)</small></div>
         <span className="rbig" style={{ fontSize: "15pt" }}>p {pText(a.pRaw)} <small>raw Seasonal MK</small></span></div>
       <p>{resultStatement(a)}</p>
       <figure className="rfig">
@@ -447,14 +448,14 @@ function ScientistFinding({ p, a, i }: { p: EditionProps; a: AnalysisEntry; i: n
         <div>
           <h3>Used for the verdict</h3>
           <KV rows={[
-            ["Seasonal Sen slope", `${signedNum(a.slope)} ${a.units} per decade`],
+            ["Seasonal Sen slope", `${signedNum(a.rate)} ${a.rateUnits} per decade`],
             ["Raw Seasonal MK p", `${pText(a.pRaw)}; decision: p < α = ${a.alpha}`],
             ["Sufficiency", a.sufficient ? `met: n = ${a.nMonths} months, ${a.missingMonths} missing (needs 10 years and 70% of months)` : `not met (n = ${a.nMonths})`],
           ]} />
           <h3>Diagnostic or context only</h3>
           <KV rows={[
             ["Adjusted p (Hamed-Rao, anomalies)", `${pText(a.pAdjusted)}; does not change the verdict`],
-            ["95% CI for the OLS anomaly slope", a.olsInterval ? `${num(a.olsInterval[0])} to ${num(a.olsInterval[1])} ${a.units} per decade; targets the OLS slope, not the Sen slope` : "n/a"],
+            ["95% CI for the OLS anomaly slope", a.rateInterval ? `${num(a.rateInterval[0])} to ${num(a.rateInterval[1])} ${a.rateUnits} per decade; targets the OLS slope, not the Sen slope` : "n/a"],
           ]} />
         </div>
         <figure className="rfig">
@@ -482,7 +483,7 @@ function ScientistComparison({ p, c, i }: { p: EditionProps; c: ComparisonEntry;
         <div className="rnote"><b>Criteria for a significant difference (both required)</b>
           <ul>
             <li>{pOk ? "Met" : "Not met"}: Hamed-Rao Mann-Kendall p on the anomaly difference = {pText(d.p_value)} (required below 0.05).</li>
-            <li>{ivOk ? "Met" : "Not met"}: the 95% interval of the difference{d.ci ? ` (${num(d.ci[0])} to ${num(d.ci[1])} ${c.units} per decade)` : ""} {ivOk ? "excludes" : "includes"} zero.</li>
+            <li>{ivOk ? "Met" : "Not met"}: the 95% interval of the difference{d.ci ? ` (${num(rateOf(d.ci[0], c.units)!)} to ${num(rateOf(d.ci[1], c.units)!)} ${rateUnit(c.units)} per decade)` : ""} {ivOk ? "excludes" : "includes"} zero.</li>
           </ul></div>
       ) : <div className="rnote"><b>Descriptive comparison.</b> {c.kind === "periods" ? "No statistical test of a change of trend between two periods is implemented; window choice can drive the result." : "No statistical test of a difference between two datasets is implemented; neither product is treated as ground truth."}</div>}
       <p>{compareStatement(c)}</p>
@@ -494,7 +495,7 @@ function ScientistComparison({ p, c, i }: { p: EditionProps; c: ComparisonEntry;
       <table className="rtable">
         <thead><tr><th scope="col">Statistic</th><th scope="col">A: {c.a.label}</th><th scope="col">B: {c.b.label}</th></tr></thead>
         <tbody>
-          <tr><th scope="row">Sen slope per decade</th><td>{signedNum(c.a.trend.slope_per_decade)} {c.units}</td><td>{signedNum(c.b.trend.slope_per_decade)} {c.units}</td></tr>
+          <tr><th scope="row">Sen slope per decade</th><td>{signedNum(rateOf(c.a.trend.slope_per_decade, c.units))} {rateUnit(c.units)}</td><td>{signedNum(rateOf(c.b.trend.slope_per_decade, c.units))} {rateUnit(c.units)}</td></tr>
           <tr><th scope="row">Raw Seasonal MK p</th><td>{pText(c.a.trend.p_value)}</td><td>{pText(c.b.trend.p_value)}</td></tr>
           <tr><th scope="row">Period</th><td>{c.a.trend.start} to {c.a.trend.end}</td><td>{c.b.trend.start} to {c.b.trend.end}</td></tr>
           <tr><th scope="row">n (months)</th><td>{c.a.trend.quality.n_months}</td><td>{c.b.trend.quality.n_months}</td></tr>

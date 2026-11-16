@@ -1,6 +1,7 @@
 // Form D report: pure helpers (no React). Academic wording built ONLY from backend verdicts and values;
 // nothing here decides significance. Yearly means are a drawing aid for the Simple edition, never a test.
 import type { SeriesResponse } from "../api";
+import { rateOf, rateUnit } from "../units";
 import { num, pText, signedNum, toMarkdown, type AnalysisEntry, type ComparisonEntry, type ReportModel } from "./model";
 
 export type Edition = "simple" | "scientist";
@@ -37,7 +38,7 @@ export function resultStatement(a: AnalysisEntry): string {
   if (!a.sufficient || a.slope === null) {
     return `The record contains ${a.nMonths} valid months, which does not meet the sufficiency criterion (at least 10 years and 70% of months); no trend test was performed.`;
   }
-  const est = `The seasonal Sen slope estimate is ${signedNum(a.slope)} ${a.units} per decade (${period(a)}, ${a.nMonths} months).`;
+  const est = `The seasonal Sen slope estimate is ${signedNum(a.rate)} ${a.rateUnits} per decade (${period(a)}, ${a.nMonths} months).`;
   const p = a.pRaw === null ? "n/a" : a.pRaw < 0.001 ? "p < 0.001" : `p = ${pText(a.pRaw)}`;
   return a.significant
     ? `${est} The raw Seasonal Mann-Kendall test yields ${p}, below α = ${a.alpha}; the null hypothesis of no monotonic trend is rejected. Statistical significance does not by itself establish practical importance or causality.`
@@ -57,8 +58,8 @@ export function compareHeadline(c: ComparisonEntry): string {
 export function compareStatement(c: ComparisonEntry): string {
   const d = c.test?.difference;
   if (c.kind !== "regions" || !d) return c.strength;
-  const iv = d.ci ? `${num(d.ci[0])} to ${num(d.ci[1])} ${c.units} per decade` : "not available";
-  return `The trend of the anomaly difference series (A minus B) is ${signedNum(d.slope_diff_per_decade)} ${c.units} per decade (Sen slope). The Hamed-Rao Mann-Kendall test on that series yields p = ${pText(d.p_value)} `
+  const iv = d.ci ? `${num(rateOf(d.ci[0], c.units)!)} to ${num(rateOf(d.ci[1], c.units)!)} ${rateUnit(c.units)} per decade` : "not available";
+  return `The trend of the anomaly difference series (A minus B) is ${signedNum(rateOf(d.slope_diff_per_decade, c.units))} ${rateUnit(c.units)} per decade (Sen slope). The Hamed-Rao Mann-Kendall test on that series yields p = ${pText(d.p_value)} `
     + `and a moving-block bootstrap gives a 95% interval of ${iv}. A difference is reported as significant only when p < 0.05 and the interval excludes zero. ${c.strength}`;
 }
 
@@ -68,7 +69,7 @@ export function abstractText(m: ReportModel): string {
   const parts = [
     `This report examines ${m.analyses.length} monthly time series${m.comparisons.length ? ` and ${m.comparisons.length} comparison${m.comparisons.length === 1 ? "" : "s"}` : ""} derived from ${products}, `
     + "using the Seasonal Mann-Kendall test for monotonic trend and the seasonal Sen slope estimator.",
-    ...m.analyses.map((a) => `${defaultHeadline(a)} (${signedNum(a.slope)} ${a.units} per decade, p ${pText(a.pRaw)}).`),
+    ...m.analyses.map((a) => `${defaultHeadline(a)} (${signedNum(a.rate)} ${a.rateUnits} per decade, p ${pText(a.pRaw)}).`),
     ...m.comparisons.map((c) => `${compareHeadline(c)}.`),
     "The results describe past change only; they are not forecasts and do not attribute causes. All results are preliminary and have not been peer reviewed.",
   ];
@@ -188,15 +189,15 @@ export function explorerHeadline(a: AnalysisEntry): string {
 /** The rate in everyday terms: per decade only. A total over the period is a separate, clearly labelled projection. */
 export function plainRate(a: AnalysisEntry): string | null {
   if (a.slope === null || !a.sufficient) return null;
-  return `About ${signedNum(a.slope)} ${a.units} every 10 years (estimated rate).`;
+  return `About ${signedNum(a.rate)} ${a.rateUnits} every 10 years (estimated rate).`;
 }
 
 /** Straight-line projection of the estimated rate over the selected years. Shown only for significant trends, and always
  *  labelled as a projection: it is not the measured difference between the first and the last year. */
 export function linearProjection(a: AnalysisEntry): string | null {
   if (a.slope === null || !a.sufficient || !a.significant) return null;
-  const n = years(a), total = (a.slope * n) / 10;
-  return `If this estimated rate had held steadily for all ${n} years, it would add up to about ${signedNum(total)} ${a.units}. `
+  const n = years(a), total = (a.rate! * n) / 10;
+  return `If this estimated rate had held steadily for all ${n} years, it would add up to about ${signedNum(total)} ${a.rateUnits}. `
     + "This is a straight-line projection of the rate, not a measured difference between the first and the last year.";
 }
 

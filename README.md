@@ -61,7 +61,8 @@ The Outlook uses NOAA climate indices and NASA GISS GISTEMP v4 as a reality chec
 1. Area mean of the grid cells in the region, weighted by cos(latitude).
 2. Monthly anomalies (value minus the mean of the same calendar month).
 3. Seasonal Mann-Kendall test with the seasonal Sen slope, reported per decade; p below 0.05 is a clear trend.
-   Event counts with a short season (fires, storms, drought weeks) use the Sen slope of yearly averages instead.
+   Event counts with a short season (fires, storms, drought weeks) use the Sen slope of yearly averages instead;
+   storm and fire-count rates are shown per year (×12), while monthly values stay per month.
    A result needs at least 10 years and 70% of months.
 4. Extra checks shown alongside: Hamed-Rao autocorrelation-adjusted p-value and an OLS confidence interval.
 5. Maps test every 0.5° cell and mark a cell significant only after Benjamini-Hochberg false discovery rate control.

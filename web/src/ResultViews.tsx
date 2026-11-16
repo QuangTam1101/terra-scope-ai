@@ -7,6 +7,7 @@ import type { Run } from "./store";
 import { Term } from "./Term";
 import { InfoButton } from "./InfoButton";
 import { ci, pval, signed, Stat, VerdictBadge } from "./ui";
+import { rateCi, rateOf, rateUnit } from "./units";
 import { periodText } from "./period";
 
 const METHOD: Record<string, string> = {
@@ -67,7 +68,7 @@ export function ExplorerResult({ run, actions }: { run: Run; actions: ReactNode 
       </Section>
       <Section title="What does the data show?">
         {q.sufficient && t.slope_per_decade !== null ? (
-          <div><span className="num" style={{ font: "600 42px/1 var(--display)" }}>{signed(t.slope_per_decade)} {u}</span>{" "}
+          <div><span className="num" style={{ font: "600 42px/1 var(--display)" }}>{signed(rateOf(t.slope_per_decade, u))} {rateUnit(u)}</span>{" "}
             <span style={{ font: "800 15px var(--body)" }}>per decade, {periodText(t.start, t.end)}</span> <InfoButton id="rate-per-decade" /></div>
         ) : <p className="warn" style={{ margin: 0 }}>Not enough data to test this place and period. Try a longer period.</p>}
         <span className="small muted">This is the typical change per decade (<Term id="sen_slope">Sen slope</Term>). The monthly chart below shows every month.</span>
@@ -100,9 +101,9 @@ export function ExplorerResult({ run, actions }: { run: Run; actions: ReactNode 
           <span className="small">Monthly NASA values are averaged over the area, normal seasons are set aside (<Term id="anomaly">anomaly</Term>), and the{" "}
             <Term id="seasonal_mk">Seasonal Mann-Kendall</Term> test decides whether the trend is clear.</span>
           <div className="grid2">
-            <Stat value={signed(t.slope_per_decade)} label={<>Sen's slope per decade ({u}) <InfoButton id="sens-slope" /></>} />
+            <Stat value={signed(rateOf(t.slope_per_decade, u))} label={<>Sen's slope per decade ({rateUnit(u)}) <InfoButton id="sens-slope" /></>} />
             <Stat value={pval(t.p_value)} label={<>p-value used for the verdict <InfoButton id="p-value" /></>} />
-            <Stat value={ci(t.slope_ci)} label={<>95% range (OLS on anomalies, not for Sen) <InfoButton id="confidence-interval" /></>} />
+            <Stat value={ci(rateCi(t.slope_ci, u))} label={<>95% range (OLS on anomalies, not for Sen) <InfoButton id="confidence-interval" /></>} />
             <Stat value={pval(t.p_value_autocorr_adjusted)} label={<>Adjusted p (extra check only) <InfoButton id="autocorrelation" /></>} />
           </div>
         </div>
@@ -139,10 +140,10 @@ export function ScientistResult({ run, actions }: { run: Run; actions: ReactNode
       </Section>
       <Section title="Statistical estimates">
         <div className="grid2">
-          <Stat value={`${signed(t.slope_per_decade)} ${u}`} label={<>Seasonal Sen slope per decade <InfoButton id="sens-slope" /></>} />
+          <Stat value={`${signed(rateOf(t.slope_per_decade, u))} ${rateUnit(u)}`} label={<>Seasonal Sen slope per decade <InfoButton id="sens-slope" /></>} />
           <Stat value={pval(t.p_value)} label={<>Raw Seasonal MK p (decision, α = {alpha}) <InfoButton id="mann-kendall" /></>} />
           <Stat value={pval(t.p_value_autocorr_adjusted)} label={<>Hamed-Rao adjusted p (diagnostic) <InfoButton id="autocorrelation" /></>} />
-          <Stat value={ci(t.slope_ci)} label={<>95% OLS anomaly interval (not a Sen CI) <InfoButton id="confidence-interval" /></>} />
+          <Stat value={ci(rateCi(t.slope_ci, u))} label={<>95% OLS anomaly interval (not a Sen CI) <InfoButton id="confidence-interval" /></>} />
         </div>
       </Section>
       <Section title="Significance and uncertainty">

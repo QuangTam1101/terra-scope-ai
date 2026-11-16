@@ -108,7 +108,9 @@ không bị bỏ (bỏ thì backend lỗi 500).
   p = 0,035). Vì vậy 5 biến này (`pipeline.api.ANNUAL_SLOPE`) lấy độ dốc = Sen trên trung bình dị thường từng năm
   (`trend_one`/`grid_trend` với `annual=True`, `slope_method` = `sen_annual`); p vẫn của Seasonal MK. Kiểm 16/11: bão Việt Nam
   +0,047 [0,008; 0,095], cháy Sahel 17°W–20°E, 10–18°N −5,84 [−8,3; −3,8] điểm/tháng/thập kỷ. Trên bản đồ, ô bão vẫn ~90 % là 0
-  (đa số năm không có cơn nào đi qua ô) và không ô nào qua FDR: đúng với sự kiện hiếm.
+  (đa số năm không có cơn nào đi qua ô) và không ô nào qua FDR: đúng với sự kiện hiếm; ô độ dốc 0 vẽ màu trung tính.
+  Web hiện tốc độ đổi của bão và số điểm cháy theo năm (×12, `web/src/units.ts` `rateOf`/`rateUnit`): bão Việt Nam
+  +0,57 cơn/năm mỗi thập kỷ. Theo lưu vực 2001–2025: Tây Thái Bình Dương −0,24 (p = 0,004), Việt Nam +0,57 (p = 0,035).
 - IBTrACS: 69/117 cơn của 2025 còn tạm (`track_type` = `US-PROVISIONAL`/`PROVISIONAL`); chỉ lấy `main` thì 2025 gần như trống
   (Manila 0 cơn), nên lấy mọi track trừ `*spur`. Gió: `usa_wind` (1 phút), thiếu thì `wmo_wind`.
 - FIRMS 2025 thấp hơn 2024 (07–09: −36 % Aqua, −46 % Terra): chủ yếu do 2024 là năm cháy kỷ lục ở Nam Mỹ (09/2024: 245 nghìn

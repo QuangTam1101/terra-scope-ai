@@ -128,6 +128,8 @@ it with air temperature as if they were the same quantity.
   headline rate, reported **per decade** (`slope_per_decade`), in the variable's units. For event counts that come in
   a short season (fires, storms, drought weeks, MiCASA fire carbon), `slope_method` is `sen_annual`: Sen's slope of
   the yearly averages, because the seasonal version reads 0 when most months have no events. The p-value is unchanged.
+  The site shows storm and fire-count rates per year (×12): 0.047 storms/month per decade = 0.57 storms a year per
+  decade. Say it that way too; monthly values stay per month.
 - **Hamed-Rao modified Mann-Kendall test** on the anomalies: a second p-value (`p_value_autocorr_adjusted`) that
   corrects for months that depend on each other (autocorrelation). Climate series are often autocorrelated, which can
   make the first p-value look more confident than it should.

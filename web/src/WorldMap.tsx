@@ -5,6 +5,7 @@ import type { Topology } from "topojson-specification";
 import landTopo from "world-atlas/land-110m.json";
 import type { BBox, TrendGrid, ValueGrid } from "./api";
 import { plain, signed } from "./ui";
+import { rateOf, rateUnit } from "./units";
 import { Globe } from "./Globe";
 import { cellKey, gridCell } from "./places";
 
@@ -142,7 +143,7 @@ export function WorldMap({ layer, trend, values, loading, loadingInfo, selected,
   const lookup = useMemo(() => {
     const m = new Map<string, string>();
     if (layer === "trend" && trend) for (const c of trend.cells)
-      m.set(cellKey(c.lon, c.lat, trend.cell_size_deg), c.valid ? `${signed(c.slope_per_decade)} ${units} per decade${c.significant_fdr ? "" : " (not significant)"}` : "No data");
+      m.set(cellKey(c.lon, c.lat, trend.cell_size_deg), c.valid ? `${signed(rateOf(c.slope_per_decade, units))} ${rateUnit(units)} per decade${c.significant_fdr ? "" : " (not significant)"}` : "No data");
     if (layer === "values" && values) for (const c of values.cells)
       m.set(cellKey(c.lon, c.lat, values.cell_size_deg), c.value === null ? "No data" : `Mean ${plain(c.value, Math.abs(c.value) < 1 ? 3 : 1)} ${units}`);
     return m;
@@ -353,7 +354,7 @@ const Chip = ({ bg, striped, size = 22 }: { bg: string; striped?: boolean; size?
 
 function TrendLegend({ trend, units }: { trend: TrendGrid | null; units: string }) {
   const sc = trend ? trendScale(trend) : null;
-  const half = sc !== null ? sc / 2 : null;
+  const half = sc !== null ? rateOf(sc / 2, units) : null;   // legend in yearly rate for counts; classes use sc
   const n = { downFast: 0, downSlow: 0, upSlow: 0, upFast: 0, downNs: 0, upNs: 0, none: 0 };
   for (const c of trend?.cells ?? []) {
     const v = c.slope_per_decade;
@@ -382,7 +383,7 @@ function TrendLegend({ trend, units }: { trend: TrendGrid | null; units: string 
     <div className="col" style={{ gap: 10 }}>
       <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
         <span style={{ font: "800 14px var(--body)" }}>How is it changing?</span>
-        <span className="small muted">change per decade, in {units}</span>
+        <span className="small muted">change per decade, in {rateUnit(units)}</span>
       </div>
 
       {/* reliable trends: 4 classes, blue to orange */}

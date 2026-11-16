@@ -5,7 +5,8 @@ import { periodEnd, periodStart } from "../period";
 import { planChatNavigation } from "../chatNavigation";
 import { countryPlace } from "../places";
 import { AnswerCard } from "../chat/AnswerCard";
-import { Terra } from "../ui";
+import { signed, Terra } from "../ui";
+import { rateOf, rateUnit } from "../units";
 
 export const EXPLORER_QUESTIONS = ["What does this result mean?", "Is the trend clear?", "Can you explain the p-value?",
   "Why do these datasets disagree?", "What should I investigate next?"];
@@ -105,7 +106,7 @@ export function Detective() {
         {matchesRun && run ? (
           <>
             <div className="grid2">
-              <div className="stat"><b>{run.trend.slope_per_decade === null ? "n/a" : `${run.trend.slope_per_decade > 0 ? "+" : ""}${run.trend.slope_per_decade.toFixed(2)}`}</b><small>{run.variable.display_units} per decade</small></div>
+              <div className="stat"><b>{run.trend.slope_per_decade === null ? "n/a" : signed(rateOf(run.trend.slope_per_decade, run.variable.display_units), 2)}</b><small>{rateUnit(run.variable.display_units)} per decade</small></div>
               <div className="stat"><b>{run.trend.p_value === null ? "n/a" : run.trend.p_value < 0.001 ? "<0.001" : run.trend.p_value.toFixed(3)}</b><small>Mann–Kendall p</small></div>
             </div>
           </>
