@@ -18,7 +18,7 @@ const clampView = (v: View): View => {
   return { k, cx: Math.min(W - W / k, Math.max(0, v.cx)), cy: Math.min(H - H / k, Math.max(0, v.cy)) };
 };
 
-export function OutlookMap({ variableId, mode, months, unitsLabel, onPick }: { variableId: string; mode: Mode; months: string[]; unitsLabel: string; onPick: (lat: number, lon: number) => void }) {
+export function OutlookMap({ variableId, mode, months, unitsLabel, onPick, onArea }: { variableId: string; mode: Mode; months: string[]; unitsLabel: string; onPick: (lat: number, lon: number) => void; onArea?: (bbox: [number, number, number, number]) => void }) {
   const [month, setMonth] = useState(months[Math.min(2, months.length - 1)]);
   useEffect(() => { if (!months.includes(month)) setMonth(months[Math.min(2, months.length - 1)]); }, [months, month]);
   const [data, setData] = useState<ForecastMap | null>(null);
@@ -29,7 +29,11 @@ export function OutlookMap({ variableId, mode, months, unitsLabel, onPick }: { v
   const cv = useRef<HTMLCanvasElement>(null);
   const [cssW, setCssW] = useState(760);
   const [view, setView] = useState<View>({ k: 1, cx: 0, cy: 0 });
-  const drag = useRef<{ x: number; y: number; cx: number; cy: number; moved: boolean } | null>(null);
+  // Same controls as the Explore map (WorldMap): left click picks a square, left drag draws an area, right drag moves
+  // the map, wheel or + / - zoom around the pointer, 1:1 shows the whole world.
+  const pan = useRef<{ x: number; y: number; cx: number; cy: number } | null>(null);
+  const left = useRef<{ px: number; py: number; lon: number; lat: number } | null>(null);
+  const [box, setBox] = useState<{ x0: number; y0: number; x1: number; y1: number; lon0: number; lat0: number } | null>(null);
   const [grabbing, setGrabbing] = useState(false);
 
   useEffect(() => {
@@ -88,7 +92,7 @@ export function OutlookMap({ variableId, mode, months, unitsLabel, onPick }: { v
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const r = c.getBoundingClientRect();
-      zoomAt(e.deltaY < 0 ? 1.25 : 1 / 1.25, e.clientX - r.left, e.clientY - r.top);
+      zoomAt(e.deltaY < 0 ? 1.25 : 0.8, e.clientX - r.left, e.clientY - r.top);
     };
     c.addEventListener("wheel", onWheel, { passive: false });
     return () => c.removeEventListener("wheel", onWheel);
@@ -101,8 +105,10 @@ export function OutlookMap({ variableId, mode, months, unitsLabel, onPick }: { v
     const lat = Math.floor(90 - (m.y / H) * 180) + 0.5;
     return { lon, lat, px, py };
   };
-  const iconBtn = { width: 40, height: 40, borderRadius: 12, border: 0, background: "var(--surface)", boxShadow: "var(--shadow)",
-    font: "800 18px var(--body)", color: "var(--ink)", cursor: "pointer" } as const;
+  const iconBtn = { width: 44, height: 44, borderRadius: 14, border: 0, background: "var(--surface)", boxShadow: "var(--shadow)",
+    font: "800 20px var(--body)", color: "var(--ink)", cursor: "pointer" } as const;
+  // map units -> lon/lat (not snapped), for drawing an area
+  const rawLonLat = (px: number, py: number) => { const m = toMap(px, py); return { lon: (m.x / W) * 360 - 180, lat: 90 - (m.y / H) * 180 }; };
 
   return (
     <section className="card pad col" aria-label="Global outlook map">
@@ -116,33 +122,52 @@ export function OutlookMap({ variableId, mode, months, unitsLabel, onPick }: { v
       </div>
       <span className="small muted">
         Each square is 1° wide. <b style={{ color: "#c4621a" }}>Orange</b> = tilted toward above-normal {unitsLabel}, <b style={{ color: "#2f6fb3" }}>blue</b> = tilted toward below-normal,
-        pale = no clear tilt. Hover for the probabilities, click a square to forecast that place. Scroll or use + and − to zoom, drag to move.
+        pale = no clear tilt. Hover for the probabilities, click a square to forecast that place or drag to draw an area. Scroll or use + and − to zoom, drag with the right button to move the map.
       </span>
       <div style={{ position: "relative", width: "100%" }}>
-        <canvas ref={cv} style={{ width: cssW, height: cssW / 2, borderRadius: 14, cursor: grabbing ? "grabbing" : view.k > 1 ? "grab" : "crosshair", display: "block", opacity: loading ? 0.5 : 1, touchAction: view.k > 1 ? "none" : "pan-y" }}
-          role="img" aria-label={`Forecast outlook map for ${data?.t ?? month}. Scroll or use the buttons to zoom, drag to move.`}
-          onPointerDown={(e) => { drag.current = { x: e.clientX, y: e.clientY, cx: view.cx, cy: view.cy, moved: false }; }}
+        <canvas ref={cv} style={{ width: cssW, height: cssW / 2, borderRadius: 14, cursor: grabbing ? "grabbing" : box ? "crosshair" : "pointer", display: "block", opacity: loading ? 0.5 : 1, touchAction: "none" }}
+          role="img" aria-label={`Forecast outlook map for ${data?.t ?? month}, zoom ${view.k.toFixed(1)} times.`}
+          onContextMenu={(e) => e.preventDefault()}
+          onPointerDown={(e) => {
+            try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* pointer already released */ }
+            if (e.button === 2) { pan.current = { x: e.clientX, y: e.clientY, cx: view.cx, cy: view.cy }; setGrabbing(true); setHover(null); return; }
+            if (e.button === 0) { const p = locate(e), ll = rawLonLat(p.px, p.py); left.current = { px: p.px, py: p.py, lon: ll.lon, lat: ll.lat }; }
+          }}
           onPointerMove={(e) => {
-            const d = drag.current;
-            if (d && e.buttons === 1 && view.k > 1) {
-              const dx = e.clientX - d.x, dy = e.clientY - d.y;
-              if (Math.abs(dx) + Math.abs(dy) > 4) { d.moved = true; setGrabbing(true); setHover(null); e.currentTarget.setPointerCapture(e.pointerId); }
-              if (d.moved) { const u = W / (cssW * view.k); setView(clampView({ k: view.k, cx: d.cx - dx * u, cy: d.cy - dy * u })); return; }
+            const st = pan.current;
+            if (st) { const u = W / (cssW * view.k); setView(clampView({ k: view.k, cx: st.cx - (e.clientX - st.x) * u, cy: st.cy - (e.clientY - st.y) * u })); return; }
+            const p = locate(e), l = left.current;
+            if (l && (box || Math.hypot(p.px - l.px, p.py - l.py) > 5)) {   // moved more than a few pixels: it is a drag, draw a box
+              setBox({ x0: l.px, y0: l.py, x1: p.px, y1: p.py, lon0: l.lon, lat0: l.lat }); setHover(null); return;
             }
-            const p = locate(e); const c = lookup.get(`${p.lon},${p.lat}`); setHover(c ? { px: p.px, py: p.py, c } : null);
+            const c = lookup.get(`${p.lon},${p.lat}`); setHover(c ? { px: p.px, py: p.py, c } : null);
           }}
           onPointerUp={(e) => {
-            const d = drag.current; drag.current = null; setGrabbing(false);
-            if (d && !d.moved) { const p = locate(e); if (lookup.has(`${p.lon},${p.lat}`)) onPick(p.lat, p.lon); }
+            if (e.button === 2 || pan.current) { pan.current = null; setGrabbing(false); return; }
+            const p = locate(e);
+            if (e.button === 0 && left.current) {
+              if (box && onArea) {
+                const ll = rawLonLat(p.px, p.py);
+                const w = Math.max(-180, Math.floor(Math.min(box.lon0, ll.lon))), ea = Math.min(180, Math.ceil(Math.max(box.lon0, ll.lon)));
+                const so = Math.max(-90, Math.floor(Math.min(box.lat0, ll.lat))), n = Math.min(90, Math.ceil(Math.max(box.lat0, ll.lat)));
+                onArea([w, so, Math.max(ea, w + 1), Math.max(n, so + 1)]);
+              } else if (!box && lookup.has(`${p.lon},${p.lat}`)) onPick(p.lat, p.lon);
+            }
+            left.current = null; setBox(null);
           }}
-          onPointerLeave={() => { if (!drag.current) setHover(null); }}
-          onDoubleClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); zoomAt(2, e.clientX - r.left, e.clientY - r.top); }} />
-        <div className="col" style={{ position: "absolute", right: 10, top: 10, gap: 6 }}>
+          onPointerLeave={() => setHover(null)} />
+        {box && (
+          <div aria-hidden="true" style={{ position: "absolute", left: Math.min(box.x0, box.x1), top: Math.min(box.y0, box.y1),
+            width: Math.abs(box.x1 - box.x0), height: Math.abs(box.y1 - box.y0), border: "2.5px solid #e8735a",
+            background: "rgba(232,115,90,.12)", borderRadius: 4, pointerEvents: "none" }} />
+        )}
+        <div className="col" style={{ position: "absolute", right: 12, top: 12, gap: 8 }}>
           <button type="button" aria-label="Zoom in" title="Zoom in" style={iconBtn} disabled={view.k >= MAX_ZOOM} onClick={() => zoomAt(1.6)}>+</button>
           <button type="button" aria-label="Zoom out" title="Zoom out" style={iconBtn} disabled={view.k <= 1} onClick={() => zoomAt(1 / 1.6)}>−</button>
-          <button type="button" aria-label="Show the whole world" title="Show the whole world" style={{ ...iconBtn, fontSize: 12 }} onClick={() => setView({ k: 1, cx: 0, cy: 0 })}>1:1</button>
+          <button type="button" aria-label="Show the whole world" title="Show the whole world" style={{ ...iconBtn, fontSize: 13 }} onClick={() => setView({ k: 1, cx: 0, cy: 0 })}>1:1</button>
         </div>
-        {view.k > 1 && <span className="small" style={{ position: "absolute", left: 10, bottom: 8, background: "var(--surface)", padding: "2px 8px", borderRadius: 999, opacity: 0.92 }}>zoom {view.k.toFixed(1)}× · drag to move</span>}
+        <span className="num" style={{ position: "absolute", left: 10, bottom: 8, font: "700 11px var(--body)", background: "var(--surface)", opacity: 0.92,
+          padding: "2px 8px", borderRadius: 999 }}>1° grid · zoom {view.k.toFixed(1)}×</span>
         {loading && <div className="small" style={{ position: "absolute", top: 10, left: 12, background: "var(--surface)", padding: "4px 10px", borderRadius: 999 }}>Loading the map…</div>}
         {hover && (
           <div className="small" style={{ position: "absolute", left: Math.min(hover.px + 12, cssW - 200), top: hover.py + 12, background: "var(--surface)", padding: "6px 10px", borderRadius: 12, boxShadow: "0 4px 14px rgba(0,0,0,.18)", pointerEvents: "none", whiteSpace: "nowrap" }}>

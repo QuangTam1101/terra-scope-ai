@@ -36,7 +36,9 @@ export function fitDemo(d: Demo, variables: Variable[]): Demo {
   return p ? { ...d, start: p.start, end: p.end } : d;
 }
 
-export function DetectiveGuide() {
+/** The guide's sections (demo cases, how the test works, how we check the numbers, method). Shown on Home;
+ * #guide opens Home and scrolls here (#guide?proof scrolls to "How we know the numbers are right"). */
+export function GuideSections() {
   const { audience, go, variables } = useStore();
   const sci = audience === "scientist";
   const [open, setOpen] = useState<string | null>(null);
@@ -45,15 +47,7 @@ export function DetectiveGuide() {
   const link = (p: Page) => (e: MouseEvent) => { e.preventDefault(); go(p); };
 
   return (
-    <div className="page">
-      <section className="card pad row guide-hero">
-        <Terra size={110} label="Terra, a round Earth detective with a hat and a magnifying glass" />
-        <div className="col guide-intro">
-          <h1>Detective guide</h1>
-          <p>Be a data detective: pick something to investigate, a place and a period. Terra plots it and tests whether the change is real or could be chance.</p>
-        </div>
-      </section>
-
+    <>
       <section className="col" aria-labelledby="guide-cases">
         <h2 id="guide-cases" style={{ fontSize: 22 }}>Watch a case</h2>
         <div className="guide-cards">
@@ -105,6 +99,21 @@ export function DetectiveGuide() {
         </details></section>
       )}
 
+    </>
+  );
+}
+
+export function DetectiveGuide() {
+  return (
+    <div className="page">
+      <section className="card pad row guide-hero">
+        <Terra size={110} label="Terra, a round Earth detective with a hat and a magnifying glass" />
+        <div className="col guide-intro">
+          <h1>Detective guide</h1>
+          <p>Be a data detective: pick something to investigate, a place and a period. Terra plots it and tests whether the change is real or could be chance.</p>
+        </div>
+      </section>
+      <GuideSections />
       <section className="row" aria-label="Good to know" style={{ gap: 10 }}>
         {["Shows what changed, not why", "Past trends, not forecasts"].map((t) => <span key={t} className="guide-chip">{t}</span>)}
       </section>
