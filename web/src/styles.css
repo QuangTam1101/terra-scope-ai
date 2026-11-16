@@ -75,7 +75,8 @@ button { font-family: var(--body); }
 .explore > * { min-width: 0; }
 /* Phase 7C: set-up column on the left, the map takes the rest; result and chart sit under the map. */
 /* the set-up panel fills the window height while it sticks, instead of ending where its content ends */
-.explore > section:first-child { grid-row: 1 / span 3; position: sticky; top: 20px; height: calc(100vh - 40px); overflow-y: auto; }
+.explore > section:first-child { grid-row: 1 / span 3; position: sticky; top: 20px; height: calc(100vh - 40px); overflow-y: auto;
+  container-type: inline-size; }   /* lets an "i" popup inside fit the panel (100cqw) instead of being cut by its scroll box */
 .explore > :not(:first-child), .chartcard { grid-column: 2; }
 .explore > .explore-foot { grid-column: 2; }
 .mapwrap canvas { max-width: 100%; }
@@ -546,9 +547,12 @@ dl.gloss dt { font-weight: 800; font-size: 14.5px; } dl.gloss dd { margin: 2px 0
   align-items: center; justify-content: center; vertical-align: middle; padding: 0; margin-left: 3px; }
 .term-btn::after { content: ""; position: absolute; inset: -11px; }
 .term-btn { position: relative; }
-.term-pop { position: absolute; z-index: 40; width: min(340px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); border-radius: 18px; box-shadow: 0 12px 30px rgba(43,37,64,.22);
-  padding: 14px; display: flex; flex-direction: column; gap: 6px; font: 600 13.5px/1.5 var(--body); text-align: left; white-space: normal; }
-.term-pop b { font: 600 16px var(--display); }
+.term-pop { position: absolute; z-index: 40; width: min(340px, calc(100vw - 32px), 100cqw); background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 12px 30px rgba(43,37,64,.22);
+  padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; font: 500 13px/1.5 var(--body); text-align: left; white-space: normal;
+  text-transform: none; letter-spacing: normal; }   /* the button often sits in an uppercase .label: don't inherit it */
+.term-pop b { font: 700 14px var(--body); }
+.term-pop strong { font-weight: 700; }
+.term-pop .small { font-size: 12px; }
 .term-wrap { position: relative; display: inline; }
 .glossary-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .glossary-list > div { background: var(--hover); border-radius: 16px; padding: 10px 12px; font: 600 13.5px/1.5 var(--body); }
