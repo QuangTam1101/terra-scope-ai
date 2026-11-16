@@ -307,7 +307,8 @@ VARIABLE_PARAMETER = {
     "graceda_drought_groundwater": ("drought", "GRACE-DA: groundwater"),
 }
 # Chat: câu hỏi chung chung ("precipitation", "soil moisture") không nêu dataset/độ sâu thì chọn biến mặc định này.
-DEFAULT_VARIABLE = {"precipitation": "imerg_precip", "soil_moisture": "gldas_soil_moisture_0_10cm"}
+DEFAULT_VARIABLE = {"precipitation": "imerg_precip", "soil_moisture": "gldas_soil_moisture_0_10cm",
+                    "fire": "firms_fire_count", "drought": "graceda_drought_rootzone", "air_haze": "merra2_aerosol"}
 assert set(VARIABLE_PARAMETER) == set(VARIABLES)
 assert {v.pipeline_id for v in _VARS} <= set(papi.VARIABLES), "catalog lệch với pipeline.api.VARIABLES"
 

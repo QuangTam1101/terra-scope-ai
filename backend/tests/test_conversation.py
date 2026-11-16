@@ -131,3 +131,37 @@ def test_answer_style_phrases_are_not_unknown_regions(client, message):
 def test_unknown_place_after_in_is_still_rejected(client):
     b = first(client)
     assert ask(client, 'What about the trend in Atlantis?', b['resolved_context']).status_code == 404
+
+
+@pytest.mark.parametrize('message, variable', [
+    ('Is sea ice shrinking?', 'nsidc_sea_ice'), ('How is snow changing?', 'gldas_snow_water'),
+    ('Are there more fires?', 'firms_fire_count'), ('Is drought getting worse?', 'graceda_drought_rootzone'),
+    ('Is groundwater drought getting worse?', 'graceda_drought_groundwater'), ('Is there more dust?', 'merra2_dust'),
+    ('Is the air hazier?', 'merra2_aerosol'), ('Is land water storage falling?', 'grace_water_storage')])
+def test_newer_topics_switch_the_variable(client, message, variable):
+    # Regression (16/11): topics added after Phase 8 were not recognised, so "Is sea ice shrinking?" on a
+    # Mekong rainfall selection answered with the Mekong rainfall trend.
+    b = first(client)
+    response = ask(client, message, b['resolved_context'])
+    # the test cubes have no such dataset, so the switch shows as DATA_NOT_READY naming it (never a rainfall answer)
+    assert response.status_code == 503 and response.json()['error']['code'] == 'DATA_NOT_READY', response.text
+    assert variable in str(response.json()['error']), response.text
+
+def test_country_names_are_regions(client):
+    b = ask(client, 'Analyze precipitation in Vietnam from 2001 to 2020.')
+    assert b.status_code == 200, b.text
+    region = b.json()['resolved_context']['region']
+    assert (region['type'], region['id']) == ('country', 'Vietnam')
+    assert b.json()['tool_results'][0]['tool'] == 'analyze_trend'
+    # a country inside a preset's full name ("Mekong Delta, Vietnam") is not a second place
+    c = ask(client, 'Compare precipitation in the Mekong Delta, Vietnam with Hanoi from 2001 to 2020.').json()
+    assert (c['resolved_context']['region']['id'], c['resolved_context']['region_b']['id']) == ('mekong_delta', 'hanoi')
+
+
+@pytest.mark.parametrize('message', ['Analyze precipitation in the Arctic from 2001 to 2020.',
+                                     'Analyze precipitation in Russia from 2001 to 2020.'])
+def test_catalog_regions_are_not_too_big_for_chat(client, message):
+    # Regression (16/11): "Is Arctic sea ice shrinking?" got "Select a smaller region" because the 1000 deg² cap
+    # meant for drawn boxes also blocked the polar presets and large countries.
+    b = ask(client, message).json()
+    assert 'smaller region' not in (b.get('answer') or '') + (b.get('clarification') or ''), b

@@ -96,6 +96,8 @@ def _region(ref, variable):
     if converted.type == "preset" and converted.id not in catalog.REGIONS:
         raise ApiError(404, "UNKNOWN_REGION", "Unknown region preset.")
     _, bbox, _ = service.resolve_region(converted)
+    if converted.type == "country" or (converted.type == "preset" and converted.id != "global"):
+        return converted   # fixed catalog places (Arctic, Russia...): Explore runs the same analysis without a cap
     w, s, e, n = bbox
     if (e - w) * (n - s) > MAX_AREA:
         raise ApiError(400, "RESOURCE_LIMIT", "Agent regions are limited to 1000 square degrees; select a smaller area.")

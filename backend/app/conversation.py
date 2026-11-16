@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from . import agent, bridge, catalog, config, service
 from .errors import ApiError
 from .schemas import (ChatContext, ChatResponse, ChatWarning, ChatAction, ChatActionParams,
-                      PresetRegion, TrendResponse, ToolResult)
+                      CountryRegion, PresetRegion, TrendResponse, ToolResult)
 from .tools import MAX_MONTHS, registry, PeriodInput, _region
 from .llm import runtime
 
@@ -76,7 +76,13 @@ def prepare(req):
     if literal_variable and literal_variable[1] not in catalog.VARIABLES:
         raise ApiError(404, "NOT_FOUND", "Unknown variable. Inspect the available-variable catalog.")
     explicit = next((v.id for v in catalog.VARIABLES.values() if re.search(r"\b" + re.escape(v.id) + r"\b", text)), None)
-    family = ("precipitation" if re.search(r"precipitation|rainfall|lượng mưa", text) else
+    family = ("sea_ice" if re.search(r"sea[- ]ice|băng biển", text) else
+              "snow" if re.search(r"\bsnow|tuyết", text) else
+              "drought" if re.search(r"drought|hạn hán", text) else
+              "water_storage" if re.search(r"water storage|terrestrial water|groundwater|\bgrace\b|nước ngầm", text) else
+              "fire" if re.search(r"\bfires?\b|wildfire|\bburn|cháy", text) else
+              "air_haze" if re.search(r"aerosol|\bdust|\bhaz(?:e|y|ier)\b|\baod\b|bụi", text) else
+              "precipitation" if re.search(r"precipitation|rainfall|lượng mưa", text) else
               "root_zone_water" if re.search(r"root[- ]zone", text) else
               "ocean_chlorophyll" if re.search(r"chlorophyll|algae|ocean colou?r", text) else
               "soil_moisture" if re.search(r"soil moisture|ẩm đất", text) else
@@ -95,6 +101,9 @@ def prepare(req):
                   .get(dataset_hint) or ctx.parameter or ("air_temperature" if dataset_hint == "M2IMNXASM" else None))
     candidates = [v for v in catalog.VARIABLES.values() if (not family or catalog.VARIABLE_PARAMETER[v.id][0] == family)
                   and (not dataset_hint or v.product == dataset_hint)]
+    # one family, two datasets told apart by a word: "groundwater drought", "dust"
+    narrowed = [v for v in candidates if ("groundwater" in text and "groundwater" in v.id) or ("dust" in text and v.id.endswith("_dust"))]
+    candidates = narrowed or candidates
     depth = re.search(r"\b(\d+)\s*(?:-|–|to)\s*(\d+)\s*cm\b", text)
     if depth:
         candidates = [v for v in candidates if v.id.endswith(f"_{depth[1]}_{depth[2]}cm")] or candidates
@@ -118,31 +127,39 @@ def prepare(req):
             ctx.variable_id, ctx.dataset_id = candidates[0].id, candidates[0].product
         else:
             ctx.parameter, ctx.variable_id, ctx.dataset_id, ctx.trend_id, ctx.intent = family, None, None, None, "trend"
-            pending_clarification = "Choose a compatible dataset explicitly, for example MERRA-2 or GLDAS air temperature."
-    found = []
+            names = " or ".join(catalog.VARIABLE_PARAMETER[v.id][1] for v in candidates[:3])
+            pending_clarification = f"Several datasets measure this: {names}. Name the one to use."
+    found, covered = [], []
     for region in catalog.REGIONS.values():
         aliases = [region.id, region.id.replace("_", " "), region.name.casefold().split(",")[0]]
         positions = [m.start() for alias in aliases for m in re.finditer(r"\b" + re.escape(alias) + r"\b", text)]
         if positions:
-            found.append((min(positions), region.id))
-    ids = [identifier for _, identifier in sorted(found)]
+            found.append((min(positions), PresetRegion(type="preset", id=region.id)))
+        covered += [m.span() for m in re.finditer(re.escape(region.name.casefold()), text)]
+    for name in sorted(catalog.COUNTRIES, key=len, reverse=True):     # longest first: "Papua New Guinea" before "Guinea"
+        for m in re.finditer(r"\b" + re.escape(name.casefold()) + r"\b", text):
+            if not any(a <= m.start() and m.end() <= b for a, b in covered):
+                found.append((m.start(), CountryRegion(type="country", id=name)))
+                covered.append(m.span())
+    ids = [region for _, region in sorted(found, key=lambda f: f[0])]
     if intent == "compare":
         if len(ids) >= 2:
-            ctx.region, ctx.region_b = PresetRegion(type="preset", id=ids[0]), PresetRegion(type="preset", id=ids[1])
+            ctx.region, ctx.region_b = ids[0], ids[1]
         elif len(ids) == 1:
             if ctx.region:
-                ctx.region_b = PresetRegion(type="preset", id=ids[0])
+                ctx.region_b = ids[0]
             else:
-                ctx.region = PresetRegion(type="preset", id=ids[0])
+                ctx.region = ids[0]
         if "another region" in text and not ids:
             ctx.region_b = None
     elif ids:
-        ctx.region = PresetRegion(type="preset", id=ids[0])
+        ctx.region = ids[0]
     if not ids:
         named = re.search(r"\b(?:in|with|region)\s+([a-z][a-z _-]*?)(?=\s+(?:from|between|during)\b|[?.!,]|$)", text)
         if named and not named[1].startswith(("this", "that", "the current", "another", "the selected", "detail", "plain", "english")) \
                 and not _is_manner_phrase(named[1]):
-            raise ApiError(404, "NOT_FOUND", "Unknown region. Choose a catalog preset or a validated bounding box.")
+            raise ApiError(404, "NOT_FOUND", f"I don't know the place \"{named[1].strip()}\". Click it on the map, or name a country "
+                                             "or one of the listed regions (ask \"list available regions\").")
     months = re.findall(r"\b(?:19|20)\d{2}-\d{2}\b", text)
     years = re.findall(r"\b(?:19|20)\d{2}\b", text)
     if months:
