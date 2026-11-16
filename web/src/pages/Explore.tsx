@@ -127,8 +127,12 @@ export function Explore() {
     cells: globalCells(variable.spatial_resolution_deg), month: month ? MONTHS[month - 1] : undefined,
   }) : null, [gridOp, variable, sel.startYear, sel.endYear, sel.startMonth, sel.endMonth, month]);
 
+  /** Change what to analyse. Once a result is showing (or on its way), re-run it for the same place so the result,
+   * chart and tables never show the previous variable, dataset or period; an impossible period only updates the pickers. */
+  const update = (patch: Partial<typeof sel>) =>
+    (run || running) && periodMonths({ ...sel, ...patch }) >= 1 ? void runAnalysis(patch) : setSel(patch);
   /** Choosing a variable or a dataset resets the period to that dataset's whole record. */
-  const pickVariable = (v: Variable) => setSel({ parameter: v.parameter, variableId: v.id, ...(v.coverage ? periodSel(v.coverage.start, v.coverage.end) : {}) });
+  const pickVariable = (v: Variable) => update({ parameter: v.parameter, variableId: v.id, ...(v.coverage ? periodSel(v.coverage.start, v.coverage.end) : {}) });
   const pickParameter = (p: string) => {
     const first = variables.find((v) => v.parameter === p && v.available) ?? variables.find((v) => v.parameter === p);
     if (first) pickVariable(first);
@@ -235,19 +239,19 @@ export function Explore() {
           <span className="label">{sci ? "3 · Period (monthly series)" : "3 · Which years"}</span>
           <div className="row period-row">
             <span className="small muted">From</span>
-            <select className="select" aria-label="Start month" value={sel.startMonth ?? 1} onChange={(e) => setSel({ startMonth: Number(e.target.value) })}>
+            <select className="select" aria-label="Start month" value={sel.startMonth ?? 1} onChange={(e) => update({ startMonth: Number(e.target.value) })}>
               {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m.slice(0, 3)}</option>)}
             </select>
-            <select className="select" aria-label="Start year" value={sel.startYear} onChange={(e) => setSel({ startYear: Number(e.target.value) })}>
+            <select className="select" aria-label="Start year" value={sel.startYear} onChange={(e) => update({ startYear: Number(e.target.value) })}>
               {years.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
           <div className="row period-row">
             <span className="small muted">to</span>
-            <select className="select" aria-label="End month" value={sel.endMonth ?? 12} onChange={(e) => setSel({ endMonth: Number(e.target.value) })}>
+            <select className="select" aria-label="End month" value={sel.endMonth ?? 12} onChange={(e) => update({ endMonth: Number(e.target.value) })}>
               {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m.slice(0, 3)}</option>)}
             </select>
-            <select className="select" aria-label="End year" value={sel.endYear} onChange={(e) => setSel({ endYear: Number(e.target.value) })}>
+            <select className="select" aria-label="End year" value={sel.endYear} onChange={(e) => update({ endYear: Number(e.target.value) })}>
               {years.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>

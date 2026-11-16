@@ -84,6 +84,16 @@ describe("Terra-scope full feature E2E", { skip: !up && "servers not running", c
     await page.waitFor(`document.querySelector(".shell").dataset.audience === "explorer" && /What did we find/.test(document.querySelector(".result").innerText)`, { label: "explorer view" });
   });
 
+  it("explore: switching topic re-runs the result for the same place (never the previous dataset)", async () => {
+    const result = `document.querySelector(".result")?.innerText ?? ""`;
+    const settled = (re) => `!document.querySelector(".progress-box") && /Mekong Delta/.test(${result}) && ${re}.test(${result})`;
+    await page.click(`document.querySelector('[data-tour="variable"] button[aria-label="Air temperature"]')`);
+    await page.waitFor(settled(/°C/), { timeout: 60000, label: "result follows the new topic" });
+    assert.ok(!/mm\/month/.test(await page.evaluate(`return ${result}`)), "no rainfall numbers left in the result");
+    await page.click(`document.querySelector('[data-tour="variable"] button[aria-label="Precipitation"]')`);
+    await page.waitFor(settled(/mm\/month/), { timeout: 60000, label: "result back on rainfall" });
+  });
+
   it("explore: map overlay names the real grid operation", async () => {
     const from = `[...document.querySelectorAll('[data-tour="years"] select')][0]`;
     await page.evaluate(`const s = ${from}; const set = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set; set.call(s, "2003"); s.dispatchEvent(new Event("change", {bubbles: true})); return true;`);
