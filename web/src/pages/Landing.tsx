@@ -712,7 +712,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
       <section id="data" className="lp-section" aria-labelledby="data-title">
         <span className="lp-eyebrow">Data</span>
         <h2 id="data-title" className="lp-h2">Built on NASA Earth observation data</h2>
-        <p className="lp-lead">Public NASA data from GES DISC, LP DAAC, NSIDC, OB.DAAC, JPL and FIRMS. Records that are not NASA are labelled: GPCC and CRU TS station grids as cross-checks, and NOAA's IBTrACS storm tracks for tropical storms.</p>
+        <p className="lp-lead">Public NASA data from GES DISC, LP DAAC, NSIDC, OB.DAAC, JPL and FIRMS. Records that are not NASA are labelled: GPCC and CRU TS station grids as cross-checks.</p>
         <div className="lp-grid3">
           {SOURCES.map((s) => {
             const Art = SOURCE_ART[s.art];
@@ -772,7 +772,7 @@ export function Landing({ onStart }: { onStart: () => void }) {
             ))}
           </nav>
         </div>
-        <p className="small muted">Data: NASA GES DISC (GPM IMERG, GLDAS Noah, MERRA-2, MiCASA, GRACE-DA), LP DAAC (MODIS), NSIDC DAAC (SMAP), OB.DAAC (SeaWiFS), JPL (GRACE) and FIRMS; not NASA: GPCC (DWD), CRU TS (UEA), IBTrACS (NOAA). Terra-scope AI is not an official NASA product. Not affiliated with or endorsed by NASA.
+        <p className="small muted">Data: NASA GES DISC (GPM IMERG, GLDAS Noah, MERRA-2, MiCASA, GRACE-DA), LP DAAC (MODIS), NSIDC DAAC (SMAP), OB.DAAC (SeaWiFS), JPL (GRACE) and FIRMS; not NASA: GPCC (DWD), CRU TS (UEA). Terra-scope AI is not an official NASA product. Not affiliated with or endorsed by NASA.
           Built for NASA Space Apps Challenge 2026: "Be An Earth System Trend Detective!"</p>
       </footer>
     </div>

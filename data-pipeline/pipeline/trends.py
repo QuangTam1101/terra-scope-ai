@@ -16,7 +16,7 @@ def trend_one(s, min_years=10, min_frac=0.7, annual=False):
     hamed_rao trên chuỗi tháng cho slope / tháng.
     annual=True (chuỗi đếm sự kiện theo mùa, api.ANNUAL_SLOPE): độ dốc = Sen trên trung bình anomaly từng năm.
     Sen theo mùa là trung vị của mọi cặp năm trong 12 tháng, nên ra 0 khi sự kiện chỉ rơi vào vài tháng mỗi năm
-    (bão Việt Nam: 0 dù p = 0,035). p vẫn của Seasonal MK. Dùng anomaly để năm thiếu tháng không lệch theo mùa."""
+    (điểm cháy Sahel: −0,61 so với CI OLS [−24; −12]). p vẫn của Seasonal MK. Dùng anomaly để năm thiếu tháng không lệch theo mùa."""
     present = s.dropna()
     insufficient = present.index.year.nunique() < min_years or s.notna().mean() < min_frac
     smk = mk.seasonal_test(s.to_numpy(dtype="float64"), period=12)

@@ -354,7 +354,7 @@ export function Explore() {
       <MoreYears />
       {!running && <ExploreFurther />}
       <span className="footer explore-foot">
-        <a href="#guide">Numbers checked against an independent recalculation</a> · not peer reviewed · NASA data: GPM IMERG, GLDAS Noah, MERRA-2, MODIS, SMAP, SeaWiFS, GRACE, MiCASA, FIRMS; not NASA: GPCC, CRU TS, IBTrACS ({variable?.spatial_resolution_deg ?? 0.5}° global grid, {years[0]} to {years[years.length - 1]}).{" "}
+        <a href="#guide">Numbers checked against an independent recalculation</a> · not peer reviewed · NASA data: GPM IMERG, GLDAS Noah, MERRA-2, MODIS, SMAP, SeaWiFS, GRACE, MiCASA, FIRMS; not NASA: GPCC, CRU TS ({variable?.spatial_resolution_deg ?? 0.5}° global grid, {years[0]} to {years[years.length - 1]}).{" "}
         <button type="button" className="btn soft" style={{ minHeight: 32, padding: "0 12px", fontSize: 12.5 }} onClick={() => go("report")}>Open report</button>
       </span>
     </div>

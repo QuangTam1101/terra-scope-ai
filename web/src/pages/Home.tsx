@@ -360,7 +360,7 @@ export function Home() {
           <span key={t} style={{ background: "var(--surface)", borderRadius: 999, padding: "8px 14px", font: "800 13px var(--body)", boxShadow: "var(--shadow)" }}>{t}</span>
         ))}
       </section>
-      <span className="footer">Data: NASA GPM IMERG, GLDAS Noah, MERRA-2, MiCASA, GRACE-DA (GES DISC), MODIS (LP DAAC), SMAP (NSIDC), SeaWiFS (OB.DAAC), GRACE (JPL), FIRMS. Not NASA: GPCC (Deutscher Wetterdienst), CRU TS (University of East Anglia), IBTrACS (NOAA).</span>
+      <span className="footer">Data: NASA GPM IMERG, GLDAS Noah, MERRA-2, MiCASA, GRACE-DA (GES DISC), MODIS (LP DAAC), SMAP (NSIDC), SeaWiFS (OB.DAAC), GRACE (JPL), FIRMS. Not NASA: GPCC (Deutscher Wetterdienst), CRU TS (University of East Anglia).</span>
     </div>
   );
 }

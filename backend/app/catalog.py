@@ -230,15 +230,6 @@ _VARS = [
              "https://disc.gsfc.nasa.gov/datasets/MICASA_FLUX_M_1/summary",
              _MODEL_NOTE + " Covers 2001–2024. Fire years are very uneven: one record season (Canada 2023) can "
              "dominate a regional trend, so read Each year as well as the slope." + _ZERO_NOTE),
-    Variable("ibtracs_storms", "storms_ibtracs", "Tropical storms passing within 500 km (IBTrACS)", "storms",
-             "How many tropical storms, typhoons or hurricanes pass within 500 km of a place each month.",
-             "IBTrACS v04r01 best tracks (NOAA NCEI): distinct tropical cyclones of at least tropical-storm strength "
-             "(34 knots or more) whose centre passed within 500 km of each 1° cell centre, per month.",
-             "storms/month", 1.0, "IBTrACS", "v04r01", "NOAA NCEI",
-             "https://www.ncei.noaa.gov/products/international-best-track-archive",
-             "Not NASA data: the official storm tracks of the world's weather agencies, combined by NOAA. Places no "
-             "storm reached in 2001–2025 have no data. 2025 tracks are still provisional (not yet re-analysed). "
-             "Storms are rare and come in lucky and unlucky years, so a 25-year trend is hard to prove." + _ZERO_NOTE),
     Variable("graceda_drought_rootzone", "drought_rtz_grace", "Drought in the root zone (GRACE-DA)", "drought",
              "How much of each month the soil where plants drink is in drought.",
              "GRACE-DA-DM Global v3.0 (NASA GSFC, Catchment land model assimilating GRACE/GRACE-FO): share of weekly "
@@ -273,7 +264,6 @@ PARAMETERS = {
     "air_haze": "Air haze (aerosols)",
     "fire": "Fire activity",
     "drought": "Drought",
-    "tropical_storms": "Tropical storms",
 }
 # variable id → (parameter, tên dataset ngắn để hiển thị)
 VARIABLE_PARAMETER = {
@@ -303,7 +293,6 @@ VARIABLE_PARAMETER = {
     "cru_tmin": ("air_temperature", "CRU TS night-time lows (stations, not NASA)"),
     "firms_fire_count": ("fire", "MODIS active fires: number of fires"),
     "micasa_fire": ("fire", "MiCASA: carbon released (from burned area)"),
-    "ibtracs_storms": ("tropical_storms", "IBTrACS storm tracks (not NASA)"),
     "graceda_drought_rootzone": ("drought", "GRACE-DA: root-zone soil"),
     "graceda_drought_groundwater": ("drought", "GRACE-DA: groundwater"),
 }

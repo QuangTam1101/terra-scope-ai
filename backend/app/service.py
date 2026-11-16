@@ -252,7 +252,7 @@ def series(req: SeriesRequest) -> dict:
 # ---------------------------------------------------------------- /trends
 def _rate_units(u: str) -> tuple[int, str]:
     """Đếm sự kiện / tháng → tốc độ đổi theo năm (×12, đúng vì độ dốc tính trên TB năm); khớp web/src/units.ts PER_YEAR."""
-    return (12, u.replace("/month", " a year")) if u in ("storms/month", "fires/month") else (1, u)
+    return (12, u.replace("/month", " a year")) if u == "fires/month" else (1, u)
 
 
 def _trend_summary(v, region, start, end, slope, p, significant, sufficient) -> str:

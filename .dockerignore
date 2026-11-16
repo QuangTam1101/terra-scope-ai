@@ -40,7 +40,6 @@
 !data-pipeline/processed_data/grid/cube_tmin_cru.nc
 !data-pipeline/processed_data/grid/cube_fire_micasa.nc
 !data-pipeline/processed_data/grid/cube_fire_count_firms.nc
-!data-pipeline/processed_data/grid/cube_storms_ibtracs.nc
 !data-pipeline/processed_data/grid/cube_drought_rtz_grace.nc
 !data-pipeline/processed_data/grid/cube_drought_gws_grace.nc
 !data-pipeline/processed_data/indices/

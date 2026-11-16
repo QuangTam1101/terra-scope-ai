@@ -32,7 +32,6 @@ const MERRA2_AER: Source = { product: "M2TMNXAER 5.12.4", provider: "NASA GMAO /
 const CRU_T: Source = { product: "CRU TS 4.10 tmx / tmn", provider: "University of East Anglia, Climatic Research Unit, not NASA",
   url: "https://crudata.uea.ac.uk/cru/data/hrg/cru_ts_4.10/", license: "Open Database License (ODbL)" };
 const FIRMS: Source = { product: "MCD14ML Collection 6.1 (FIRMS)", provider: "NASA FIRMS (LANCE)", url: "https://firms.modaps.eosdis.nasa.gov/download/" };
-const IBTRACS: Source = { product: "IBTrACS v04r01", provider: "NOAA NCEI, not NASA", url: "https://www.ncei.noaa.gov/products/international-best-track-archive" };
 const GRACE_DA: Source = { product: "GRACEDADM_CLSM025GL_7D v3.0", provider: "NASA GSFC / GES DISC", url: "https://disc.gsfc.nasa.gov/datasets/GRACEDADM_CLSM025GL_7D_3.0/summary" };
 const MICASA: Source = { product: "MICASA_FLUX_M v1 (0.1°)", provider: "NASA GES DISC", url: "https://disc.gsfc.nasa.gov/datasets/MICASA_FLUX_M_1/summary" };
 
@@ -155,11 +154,6 @@ export const DEFINITIONS: Record<string, Definition> = {
     science: "NASA FIRMS active-fire detections from MODIS on Terra and Aqua (Collection 6.1), vegetation fires only (type 0), confidence at least 30 %, counted per 1° cell per month from 2003.",
     why: "Counts fires directly, so it shows whether fire seasons bring more fires or fewer.",
     units: "fires per month", source: FIRMS },
-  ibtracs_storms: { title: "Tropical storms passing nearby",
-    simple: "Not NASA data: how many tropical storms, typhoons or hurricanes pass within 500 km of a place each month.",
-    science: "Not NASA data. IBTrACS v04r01 best tracks (NOAA NCEI): distinct tropical cyclones of at least 34 knots whose centre passed within 500 km of each 1° cell centre, per month. 2025 tracks are provisional.",
-    why: "Shows whether a coast is being hit by storms more often than before.",
-    units: "storms per month", source: IBTRACS },
   graceda_drought_rootzone: { title: "Drought in the root zone",
     simple: "How much of each month the soil where plants drink is in drought: drier than four in five past years.",
     science: "GRACE-DA-DM Global v3.0 (NASA GSFC): Catchment land model assimilating GRACE and GRACE-FO. Share of weekly maps in the month with root-zone soil moisture at or below the 20th percentile of 1948–2012, averaged to 1°.",
@@ -248,11 +242,6 @@ export const DEFINITIONS: Record<string, Definition> = {
     science: "Fire Information for Resource Management System: MODIS Collection 6.1 thermal-anomaly detections (MCD14ML), 1 km pixels, four overpasses a day. Counted here from 2003, when both Terra and Aqua fly; Terra drifts since 2020, Aqua since 2022.",
     why: "Real detections of each fire, not a model estimate.",
     source: FIRMS },
-  "dataset:ibtracs": { title: "IBTrACS (storm tracks)",
-    simple: "Not NASA data: the official paths of every tropical storm on Earth, collected from weather agencies by the United States weather agency.",
-    science: "Not NASA data. International Best Track Archive for Climate Stewardship v04r01, NOAA NCEI: positions every 3 hours merged from all regional agencies; wind from US agencies (1-minute), else the official agency.",
-    why: "The standard record scientists use to count storms.",
-    source: IBTRACS },
   "dataset:graceda": { title: "GRACE drought indicator",
     simple: "A NASA drought map made by feeding gravity measurements from the twin water-weighing satellites into a model of soil and groundwater.",
     science: "GRACE-DA-DM Global v3.0, NASA Goddard: the Catchment land surface model assimilates GRACE and GRACE-FO water storage; weekly wetness percentiles at 0.25° for surface soil, root zone and groundwater against 1948–2012. Drought: 20th percentile or lower.",

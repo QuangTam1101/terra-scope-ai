@@ -20,7 +20,6 @@ from pipeline.grid import bin_to_grid, global_coords
 RAW = Path(os.environ.get("TERRA_RAW", "../../data/raw")).resolve()
 OUT = Path("processed_data/grid")
 FIRE_MIN_CONF = 30       # độ tin cậy FIRMS MODIS < 30 % = "low", hay là báo nhầm
-STORM_KM = 500           # bão "đi qua" một ô khi tâm bão cách tâm ô ≤ 500 km
 DROUGHT_PCT = 20         # phần trăm vị ≤ 20 = hạn vừa trở lên (ngưỡng D1 của US Drought Monitor)
 SWE_ICE_MM = 10          # ô có tuyết ≥ 10 mm nước ở mọi tháng 2001–2025 = băng vĩnh cửu (1.167 ô 1°)
 
@@ -113,35 +112,6 @@ def fire_count():
     return cube.fillna(0).where(_land()).assign_attrs(units="fires/month", dataset="FIRMS MODIS C6.1 MCD14ML")
 
 
-def storms():
-    """IBTrACS v04r01 (NOAA, không phải NASA): số cơn xoáy thuận nhiệt đới (mọi track trừ spur, nature TS, gió ≥ 34 kt: bão nhiệt
-    đới trở lên) có tâm đi qua trong 500 km quanh tâm ô 1°, mỗi tháng. Gió: usa_wind (1 phút), thiếu thì wmo_wind.
-    Ô chưa từng có bão đi qua 2001–2025 = NaN (không có dữ liệu); ô có bão thì tháng không bão = 0."""
-    ds = xr.open_dataset(RAW / "ibtracs" / "IBTrACS.ALL.v04r01.nc", decode_times=False)
-    tt = ds["track_type"].values                              # main, PROVISIONAL, US-PROVISIONAL (2025: 69/117 cơn chưa
-    ds = ds.isel(storm=np.nonzero((ds["season"].values >= 2000) & ~np.char.endswith(tt, b"spur"))[0])   # chốt); bỏ spur
-    wind = ds["usa_wind"].fillna(ds["wmo_wind"]).values
-    ok = (ds["nature"].values == b"TS") & (wind >= 34) & np.isfinite(ds["lat"].values)
-    sid, _ = np.nonzero(ok)
-    t = pd.DatetimeIndex(pd.Timestamp("1858-11-17") + pd.to_timedelta(ds["time"].values[ok], unit="D"))
-    month = (t.year - 2001) * 12 + t.month - 1
-    keep = (month >= 0) & (month < 300)
-    glat, glon = global_coords()
-    keys = []
-    for la, lo, m, s in zip(ds["lat"].values[ok][keep], ds["lon"].values[ok][keep], month[keep], sid[keep]):
-        rows = np.nonzero(np.abs(glat - la) <= STORM_KM / 111.2 + 0.5)[0]
-        a, b = np.radians(glat[rows])[:, None], np.radians(la)
-        d = 6371 * 2 * np.arcsin(np.sqrt(np.sin((a - b) / 2) ** 2 + np.cos(a) * np.cos(b)
-                                         * np.sin(np.radians(glon[None, :] - lo) / 2) ** 2))
-        r, c = np.nonzero(d <= STORM_KM)
-        keys.append((m * 64800 + rows[r] * 360 + c) * 100000 + s)
-    cell = np.unique(np.concatenate(keys)) // 100000            # mỗi (cơn, tháng, ô) đếm một lần
-    cnt = np.bincount(cell, minlength=300 * 64800).reshape(300, 180, 360).astype("float32")
-    cnt[:, cnt.sum(0) == 0] = np.nan
-    return xr.DataArray(cnt, {"time": pd.date_range("2001-01-01", periods=300, freq="MS"), "lat": glat, "lon": glon},
-                        ("time", "lat", "lon")).assign_attrs(units="storms/month", dataset="IBTrACS v04r01")
-
-
 def _drought_month(args):
     month, files, var = args
     weeks = xr.concat([xr.open_dataset(f)[var] for f in files], "time")
@@ -174,7 +144,6 @@ BUILDERS = {
     "tmin_cru": lambda: cru("tmn"),
     "fire_micasa": fire,
     "fire_count_firms": fire_count,
-    "storms_ibtracs": storms,
     "drought_rtz_grace": lambda: drought("rtzsm_inst"),
     "drought_gws_grace": lambda: drought("gws_inst"),
 }

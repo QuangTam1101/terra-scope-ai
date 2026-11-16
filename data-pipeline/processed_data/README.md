@@ -82,7 +82,7 @@ vì backend đọc khoảng thời gian từ trục `time`, nên số tháng kh�
 
 Muốn file vào container backend thì phải thêm tên file vào `.dockerignore` (danh sách cho phép từng file).
 
-### 3.1c Mười một cube 1° thêm ngày 16/11/2026 (cho web: nước trên đất liền, tuyết, sol khí, nhiệt độ cao/thấp nhất, cháy, bão, hạn hán)
+### 3.1c Mười cube 1° thêm ngày 16/11/2026 (cho web: nước trên đất liền, tuyết, sol khí, nhiệt độ cao/thấp nhất, cháy, hạn hán; cube bão IBTrACS đã thêm rồi bỏ theo yêu cầu người dùng 16/11)
 
 Dựng thẳng từ file thô (`data/raw/` của thư mục dự án, giữ nguyên như nhà phát hành giao) bằng `build_extra_cubes.py`, không qua
 `preprocess/clean.py`. Mỗi nguồn một hàm đọc, rồi `bin_to_grid` (trung bình khối về 1°) từng tháng. Trục thời gian là **trục tháng liền**
@@ -99,20 +99,15 @@ không bị bỏ (bỏ thì backend lỗi 500).
 | `grid/cube_tmin_cru.nc` | TB tháng của nhiệt độ thấp nhất ngày, CRU TS 4.10 `tmn` (bỏ ô `stn = 0`; không phải NASA) | 2001-01 → 2025-12 | °C | 17.457 | 13 MB |
 | `grid/cube_fire_micasa.nc` | Carbon phát thải do cháy, MiCASA v1 `FIRE` (từ diện tích cháy MODIS), × 1000 × số giây của tháng; chỉ ô đất liền | 2001-01 → 2024-12 | g C/m²/tháng | 17.392 | 6 MB |
 | `grid/cube_fire_count_firms.nc` | Số điểm cháy thảm thực vật, NASA FIRMS MODIS C6.1 (MCD14ML) Terra + Aqua, `type` = 0, độ tin cậy ≥ 30 %; ô đất liền không có điểm = 0. Từ 2003: trước 07/2002 chỉ có Terra (file 2001: 31,5 MB, các năm sau 65–90 MB) | 2003-01 → 2025-12 | điểm/tháng | 17.392 | 4 MB |
-| `grid/cube_storms_ibtracs.nc` | Số cơn xoáy thuận nhiệt đới (≥ 34 kt, `nature` TS, mọi track trừ spur) có tâm đi qua trong 500 km quanh tâm ô, IBTrACS v04r01 (không phải NASA); ô chưa từng có bão 2001–2025 = NaN | 2001-01 → 2025-12 | cơn/tháng | 17.954 | 1 MB |
 | `grid/cube_drought_rtz_grace.nc` | % số bản đồ tuần trong tháng có phần trăm vị ẩm đất vùng rễ ≤ 20 (so với 1948–2012), GRACE-DA-DM Global v3.0 `rtzsm_inst` | 2003-02 → 2025-12 | % tuần | 16.581 | 6 MB |
 | `grid/cube_drought_gws_grace.nc` | Như trên với nước ngầm `gws_inst` | 2003-02 → 2025-12 | % tuần | 16.581 | 5 MB |
 
-- Chuỗi đếm (cháy, số điểm cháy, bão, tuần hạn) phần lớn là 0 ở nhiều ô và tháng. Sen theo mùa là trung vị độ dốc của mọi cặp
-  năm trong 12 tháng, nên ra 0 hoặc nhỏ hơn nhiều so với CI của OLS dù Mann-Kendall có ý nghĩa (bão Việt Nam 2001–2025: 0 dù
-  p = 0,035). Vì vậy 5 biến này (`pipeline.api.ANNUAL_SLOPE`) lấy độ dốc = Sen trên trung bình dị thường từng năm
-  (`trend_one`/`grid_trend` với `annual=True`, `slope_method` = `sen_annual`); p vẫn của Seasonal MK. Kiểm 16/11: bão Việt Nam
-  +0,047 [0,008; 0,095], cháy Sahel 17°W–20°E, 10–18°N −5,84 [−8,3; −3,8] điểm/tháng/thập kỷ. Trên bản đồ, ô bão vẫn ~90 % là 0
-  (đa số năm không có cơn nào đi qua ô) và không ô nào qua FDR: đúng với sự kiện hiếm; ô độ dốc 0 vẽ màu trung tính.
-  Web hiện tốc độ đổi của bão và số điểm cháy theo năm (×12, `web/src/units.ts` `rateOf`/`rateUnit`): bão Việt Nam
-  +0,57 cơn/năm mỗi thập kỷ. Theo lưu vực 2001–2025: Tây Thái Bình Dương −0,24 (p = 0,004), Việt Nam +0,57 (p = 0,035).
-- IBTrACS: 69/117 cơn của 2025 còn tạm (`track_type` = `US-PROVISIONAL`/`PROVISIONAL`); chỉ lấy `main` thì 2025 gần như trống
-  (Manila 0 cơn), nên lấy mọi track trừ `*spur`. Gió: `usa_wind` (1 phút), thiếu thì `wmo_wind`.
+- Chuỗi đếm (cháy, số điểm cháy, tuần hạn) phần lớn là 0 ở nhiều ô và tháng. Sen theo mùa là trung vị độ dốc của mọi cặp
+  năm trong 12 tháng, nên ra 0 hoặc nhỏ hơn nhiều so với CI của OLS dù Mann-Kendall có ý nghĩa (điểm cháy Sahel: Sen theo mùa
+  −0,61 so với CI [−24; −12] điểm/tháng/thập kỷ). Vì vậy 4 biến này (`pipeline.api.ANNUAL_SLOPE`) lấy độ dốc = Sen trên trung bình dị thường từng năm
+  (`trend_one`/`grid_trend` với `annual=True`, `slope_method` = `sen_annual`); p vẫn của Seasonal MK. Kiểm 16/11: cháy Sahel
+  17°W–20°E, 10–18°N −5,84 [−8,3; −3,8] điểm/tháng/thập kỷ. Trên bản đồ, ô có độ dốc đúng 0 vẽ màu trung tính.
+  Web hiện tốc độ đổi của số điểm cháy theo năm (×12, `web/src/units.ts` `rateOf`/`rateUnit`).
 - FIRMS 2025 thấp hơn 2024 (07–09: −36 % Aqua, −46 % Terra): chủ yếu do 2024 là năm cháy kỷ lục ở Nam Mỹ (09/2024: 245 nghìn
   điểm, 09/2025: 58 nghìn); Terra giảm mạnh hơn, khớp với quỹ đạo Terra trôi từ 2020. Cả chuỗi cùng phiên bản 61.03. Số ngày cực đoan GSOM (`DP1X`/`DX90`) từng có cube, đã bỏ khỏi web theo yêu cầu người dùng (16/11).
 - AOD lưu với `least_significant_digit = 4` (lệch tối đa 3·10⁻⁵ so với float32 đầy đủ; 55 → 27 MB và 16 MB).
@@ -122,8 +117,7 @@ không bị bỏ (bỏ thì backend lỗi 500).
   −0,46 g C/m²/tháng/thập kỷ (p = 7·10⁻⁸); CRU toàn cầu tmax +0,081 °C/thập kỷ (có ý nghĩa), tmin +0,021 (không có ý nghĩa). Sol khí Hoa Đông (110–122°E, 28–40°N) +0,194/thập kỷ
   2001–2011 rồi −0,137 2012–2024 (cả hai p < 10⁻¹²); bụi Sahara −0,016 (p = 1,4·10⁻⁷); tuyết Alps −0,28 kg/m²/thập kỷ (p ≈ 0).
 - Kiểm nhanh chuỗi đếm (16/11/2026, `/api/v1/trends`): điểm cháy toàn cầu −2,57/tháng/thập kỷ (p = 4·10⁻¹³), Indonesia −3,71,
-  Brazil −1,51 (cả hai có ý nghĩa), Canada không (p = 0,79); bão: Việt Nam tăng có ý nghĩa (p = 0,035, CI +0,008…+0,095 cơn/tháng/thập kỷ),
-  Philippines, Nhật Bản, toàn cầu không; hạn vùng rễ toàn cầu +8,5 điểm %/thập kỷ, Amazon (75–50°W, 15°S–5°N) +14,1, châu Âu +10,2;
+  Brazil −1,51 (cả hai có ý nghĩa), Canada không (p = 0,79); hạn vùng rễ toàn cầu +8,5 điểm %/thập kỷ, Amazon (75–50°W, 15°S–5°N) +14,1, châu Âu +10,2;
   hạn nước ngầm toàn cầu +9,0, Bắc Ấn Độ +20,6 (mọi p ≈ 0). Amazon: đỉnh hạn 2005, 2010, 2015–16, 2023–24 (67 % số tuần năm 2024).
 
 **Code:** `build_extra_cubes.py` (`python build_extra_cubes.py [id ...]`, chạy từ `data-pipeline/`; thư mục thô đọc từ biến môi

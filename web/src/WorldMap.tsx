@@ -15,7 +15,7 @@ export const W = 960, H = 480;                                    // logical siz
 const MAX_ZOOM = 12;
 const SEQ = ["#fff4c2", "#c8ecc0", "#7fd1c2", "#4aa6c4", "#5a6fb8", "#4b3a8c"];
 const UP = ["#fbe0c4", "#f2a65a", "#c4621a"], DOWN = ["#cfe1f4", "#7fb2e5", "#2f6fb3"], NODATA = "#a7a3b0";
-const FLAT = "#ece7f3";   // slope exactly 0 (common for rare events such as storms): neither rising nor falling
+const FLAT = "#ece7f3";   // slope exactly 0 (common for rare events, e.g. fire counts where fires are rare): neither rising nor falling
 
 export const topo = landTopo as unknown as Topology;
 export const land = feature(topo, topo.objects.land);

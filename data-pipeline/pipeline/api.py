@@ -43,13 +43,12 @@ VARIABLES = {
     "tmax_cru": ("Nhiệt độ cao nhất ngày (CRU TS)", "degC", "CRU TS 4.10 tmx, University of East Anglia (không phải NASA; nội suy từ trạm)"),
     "tmin_cru": ("Nhiệt độ thấp nhất ngày (CRU TS)", "degC", "CRU TS 4.10 tmn, University of East Anglia (không phải NASA; nội suy từ trạm)"),
     "fire_count_firms": ("Số điểm cháy (MODIS, NASA FIRMS)", "fires/month", "NASA FIRMS MODIS Collection 6.1 active fire detections (MCD14ML, Terra + Aqua); điểm cháy thảm thực vật (type 0), độ tin cậy ≥ 30 %, đếm theo ô 1°, từ 2003"),
-    "storms_ibtracs": ("Số cơn bão nhiệt đới đi qua trong 500 km (IBTrACS)", "storms/month", "IBTrACS v04r01, NOAA NCEI (không phải NASA); Knapp et al. 2010, Bull. Amer. Meteor. Soc. 91, 363–376"),
     "drought_rtz_grace": ("Tỉ lệ tuần hạn hán vùng rễ (GRACE-DA)", "% of weeks", "GRACE-DA-DM Global v3.0 (GRACEDADM_CLSM025GL_7D), NASA GSFC / GES DISC; tuần có rtzsm_inst ≤ phần trăm vị 20 (so với 1948–2012)"),
     "drought_gws_grace": ("Tỉ lệ tuần hạn hán nước ngầm (GRACE-DA)", "% of weeks", "GRACE-DA-DM Global v3.0 (GRACEDADM_CLSM025GL_7D), NASA GSFC / GES DISC; tuần có gws_inst ≤ phần trăm vị 20 (so với 1948–2012)"),
     "fire_micasa": ("Phát thải carbon do cháy (MiCASA)", "gC/m2/month", "MiCASA v1 monthly 0.1° (MICASA_FLUX_M.1) FIRE, tính từ diện tích cháy MODIS MCD64A1, NASA GES DISC"),
 }
 # Chuỗi đếm sự kiện theo mùa: độ dốc = Sen trên trung bình năm (trends.trend_one annual=True), vì Sen theo mùa ra 0.
-ANNUAL_SLOPE = {"fire_count_firms", "storms_ibtracs", "drought_rtz_grace", "drought_gws_grace", "fire_micasa"}
+ANNUAL_SLOPE = {"fire_count_firms", "drought_rtz_grace", "drought_gws_grace", "fire_micasa"}
 METHOD = ("Trung bình vùng trên lưới 1° (trọng số cos vĩ độ); Seasonal Mann-Kendall + Sen's slope theo mùa; "
           "Hamed-Rao MK trên anomaly (hiệu chỉnh tự tương quan); OLS trên anomaly ± CI 95%; FDR Benjamini–Hochberg cho bản đồ")
 LIMITATIONS = [
