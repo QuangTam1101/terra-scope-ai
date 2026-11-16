@@ -1118,5 +1118,3 @@ select.select::-ms-expand { display: none; }
 .globe-look button { border: 0; border-radius: 10px; padding: 7px 12px; background: transparent; color: #dfe6f5; font: 800 12.5px var(--body); cursor: pointer; }
 .globe-look button[aria-pressed="true"] { background: #fff; color: #1d1935; }
 .globe-look button:focus-visible { outline: 3px solid #9cc4ff; outline-offset: 1px; }
-.globe-credit { position: absolute; left: 12px; top: 58px; color: rgba(255, 255, 255, .78); font: 700 11.5px var(--body); pointer-events: none;
-  background: rgba(10, 16, 34, .55); padding: 3px 8px; border-radius: 8px; }

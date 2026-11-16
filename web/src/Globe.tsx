@@ -413,9 +413,6 @@ export function Globe({ layer, trend, values, scale, loading, loadingInfo, selec
         <button type="button" aria-pressed={look === "data"} onClick={() => setLook("data")}>Data colours</button>
         <button type="button" aria-pressed={look === "photo"} onClick={() => setLook("photo")}>Satellite photo</button>
       </div>
-      {look === "photo" && (
-        <span className="globe-credit">{photo ? (layer === "trend" ? "Surface: NASA Blue Marble · strong colour = significant trend, faint tint = could be chance" : "Surface: NASA Blue Marble (Earth Observatory) · data laid over it") : "Loading the NASA Blue Marble photo…"}</span>
-      )}
       <div className="col" style={{ position: "absolute", right: 12, top: 12, gap: 8 }}>
         <button type="button" aria-label="Zoom in" title="Zoom in (+)" style={iconBtn} disabled={rot.k >= MAX_ZOOM} onClick={() => zoomAt(1.5, undefined, undefined, true)}>+</button>
         <button type="button" aria-label="Zoom out" title="Zoom out (-)" style={iconBtn} disabled={rot.k <= 1} onClick={() => zoomAt(1 / 1.5, undefined, undefined, true)}>−</button>
