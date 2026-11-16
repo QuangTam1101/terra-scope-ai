@@ -21,7 +21,7 @@ export const TOUR_STEPS: TourStep[] = [
   { id: "welcome", page: "explore", target: null, title: "Welcome to Terra-scope",
     body: "I'm Terra, your Earth detective. In two minutes I'll show you how to check whether something on Earth is really changing, using NASA data. Nothing will be run or changed during this tour." },
   { id: "variable", page: "explore", target: '[data-tour="variable"]', title: "1. Pick what to check",
-    body: "Choose an environmental variable: precipitation, soil moisture, air temperature or evapotranspiration. Greyed-out options have no data yet." },
+    body: "Tap a tile: rain, soil water, heat, snow, fire, air haze and more, grouped by theme. The line under the tiles explains your choice." },
   { id: "dataset", page: "explore", target: '[data-tour="dataset"]', title: "2. Choose a NASA dataset",
     body: "Some variables come from more than one NASA product (a satellite estimate, a land model or a reanalysis). They can disagree and cover different areas, so compare them." },
   { id: "map", page: "explore", target: '[data-tour="map"]', title: "3. Explore the map",

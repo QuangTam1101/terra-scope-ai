@@ -13,7 +13,7 @@ import { PlacePicker } from "../PlacePicker";
 import { countryPlace, placeShape } from "../places";
 import { Legend, WorldMap, type Layer } from "../WorldMap";
 import { TrendChart } from "../TrendChart";
-import { ParamIcon, Terra } from "../ui";
+import { byTheme, ParamIcon, paramShort, Terra } from "../ui";
 import { ExplorerResult, ScientistResult } from "../ResultViews";
 import { convFor, convTrendGrid, convValueGrid } from "../units";
 import { APPEEARS_URL, giovanniUrl } from "../config/giovanni";
@@ -187,16 +187,25 @@ export function Explore() {
       <section className="card pad col" aria-labelledby="setup">
         <h2 id="setup" style={{ fontSize: 22 }}>{sci ? "Analysis parameters" : "Set up your case"}</h2>
         <div className="col" style={{ gap: 8 }} data-tour="variable">
-          <span className="label">{sci ? "1 · Variable" : "1 · What would you like to investigate?"}</span>
-          <div className="param-tiles" role="group" aria-label={sci ? "Variable" : "What would you like to investigate?"}>
-            {parameters.map(([id, p]) => (
-              <button key={id} type="button" className={`param-tile ${sel.parameter === id ? "on" : ""}`} disabled={!p.available}
-                aria-pressed={sel.parameter === id} title={p.description} onClick={() => pickParameter(id)}>
-                <ParamIcon id={id} /><span>{p.name}{!p.available && <span className="soon">soon</span>}</span>
-              </button>
+          <span className="label">{sci ? "1 · Variable" : "1 · What to investigate"}</span>
+          <div className="col" style={{ gap: 8 }} role="group" aria-label={sci ? "Variable" : "What would you like to investigate?"}>
+            {byTheme(parameters).map(([theme, items]) => (
+              <div key={theme} className="col" style={{ gap: 4 }}>
+                <span className="param-theme">{theme}</span>
+                <div className="param-tiles">
+                  {items.map(([id, p]) => (
+                    <button key={id} type="button" className={`param-tile ${sel.parameter === id ? "on" : ""}`} disabled={!p.available}
+                      aria-pressed={sel.parameter === id} aria-label={p.available ? p.name : `${p.name} (coming soon)`} title={p.description}
+                      onClick={() => pickParameter(id)}>
+                      <ParamIcon id={id} /><span>{paramShort(id, p.name)}{!p.available && <span className="soon">soon</span>}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
-          {variable && <span className="small muted">{sci ? variable.description_technical : variable.description_simple} <InfoButton id={variable.id} /></span>}
+          {variable && <span className="small muted"><b style={{ color: "var(--ink)" }}>{variable.parameter_name}:</b>{" "}
+            {sci ? variable.description_technical : variable.description_simple} <InfoButton id={variable.id} /></span>}
           {(units === "°C" || units === "°F") && (
             <div className="row" style={{ gap: 8 }}>
               <span className="small muted">Show temperature in</span>
@@ -208,7 +217,7 @@ export function Explore() {
           )}
         </div>
         <div className="col" style={{ gap: 8 }} data-tour="dataset">
-          <span className="label">{sci ? "2 · Product" : "2 · Which dataset should we use?"}{variable && <> <InfoButton id={`dataset:${variable.id.split("_")[0]}`} /></>}</span>
+          <span className="label">{sci ? "2 · Product" : "2 · Which dataset"}{variable && <> <InfoButton id={`dataset:${variable.id.split("_")[0]}`} /></>}</span>
           <div className="row" style={{ gap: 6 }}>
             {datasets.map((d) => (
               <button key={d.id} type="button" className={`chip ${sel.variableId === d.id ? "on" : ""}`} disabled={!d.available}
@@ -223,7 +232,7 @@ export function Explore() {
           )}
         </div>
         <div className="col" style={{ gap: 8 }} data-tour="years">
-          <span className="label">{sci ? "3 · Period (monthly series)" : "3 · During which period?"}</span>
+          <span className="label">{sci ? "3 · Period (monthly series)" : "3 · Which years"}</span>
           <div className="row period-row">
             <span className="small muted">From</span>
             <select className="select" aria-label="Start month" value={sel.startMonth ?? 1} onChange={(e) => setSel({ startMonth: Number(e.target.value) })}>
@@ -294,7 +303,7 @@ export function Explore() {
           onPick={(lon, lat) => { const p = cellPlace(lon, lat); runAnalysis({ place: p }); }}
           onArea={(bbox) => runAnalysis({ place: areaPlace(bbox) })} />
         <Legend layer={layer} trend={shownTrend} values={shownValues} units={units} />
-        {variable && (
+        {variable && sci && (
           <span className="small muted">
             Map cells: {variable.spatial_resolution_deg}° processed grid, each cell an area average of the NASA product
             (native resolution {variable.native_resolution_deg}°). Every cell is tested on its own; significance uses
@@ -353,7 +362,7 @@ export function Explore() {
 }
 
 function ChartCard() {
-  const { run, running } = useStore();
+  const { run, running, audience } = useStore();
   const [anomaly, setAnomaly] = useState(true);
   if (running) return <section className="card pad chartcard"><div className="skel" style={{ height: 340 }} /></section>;
   if (!run) return null;
@@ -373,7 +382,7 @@ function ChartCard() {
       <TrendChart lines={[{ series, trend: t }]} anomaly={anomaly} units={v.display_units} />
       <div className="row small muted" style={{ gap: 18 }}>
         <span><b style={{ color: t.slope_per_decade !== null && t.slope_per_decade < 0 ? "#2f6fb3" : "#c4621a" }}>━</b> Theil–Sen trend ({t.significant ? "solid: significant" : "dashed: not significant"})</span>
-        <span>OLS anomaly slope interval is shown numerically; it is not a Sen confidence band.</span>
+        {audience === "scientist" && <span>OLS anomaly slope interval is shown numerically; it is not a Sen confidence band.</span>}
         <span>Thin line: each month{anomaly ? ", minus that month's long-term average" : ""}</span>
         <span>Estimated past trend, not a forecast</span>
       </div>
@@ -385,15 +394,16 @@ function ChartCard() {
 function MoreYears() {
   const { run, running, audience } = useStore();
   const [res, setRes] = useState<SensitivityResponse | null | "error">(null);
+  const settled = audience !== "scientist" && run?.trend.significant === true;   // Explorer: already clear, nothing to add
   useEffect(() => {
-    if (!run) return;
+    if (!run || settled) return;
     const ctrl = new AbortController();
     setRes(null);
     api.sensitivity(run.variable.id, run.place.ref, run.trend.start, run.trend.end, ctrl.signal)
       .then(setRes, () => { if (!ctrl.signal.aborted) setRes("error"); });
     return () => ctrl.abort();
-  }, [run]);
-  if (running || !run || res === "error" || run.trend.significant === null) return null;
+  }, [run, settled]);
+  if (running || !run || settled || res === "error" || run.trend.significant === null) return null;
   if (!res) return <section className="card pad"><div className="skel" style={{ height: 120 }} /></section>;
   const pts = res.points.filter((p) => p.p_value !== null);
   if (pts.length < 2) return null;
@@ -446,15 +456,18 @@ function ResultBody({ share }: { share: ExploreState }) {
         <button type="button" className="btn soft" onClick={() => go("hunt")}>Compare with another place</button>
         {/* Same variable and period: Hunt scans the world map for one place rising and one falling. */}
         <button type="button" className="btn soft" onClick={() => { location.hash = oppositeHash({ variableId: v.id, start: t.start, end: t.end }); }}>Where does it go the other way?</button>
+      </div>
+      <NasaCheck variableId={v.id} provider={v.source.provider} bbox={place.bbox} start={t.start} end={t.end} coverage={v.coverage} />
+      {/* secondary tools as quiet links, so the three next steps above stay the obvious choice */}
+      <div className="result-tools">
         <ShareButton state={share} />
-        <button type="button" className="btn soft" title="The monthly numbers behind the chart, with the test result, as a spreadsheet file" onClick={() => {
+        <button type="button" className="linkbtn" title="The monthly numbers behind the chart, with the test result, as a spreadsheet file" onClick={() => {
           const a = document.createElement("a");
           a.href = URL.createObjectURL(new Blob([seriesCsv(run, new Date())], { type: "text/csv" }));
           a.download = `terra-scope-${v.id}-${t.start}-${t.end}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
         }}>{audience === "scientist" ? "Download data (CSV)" : "Download the numbers"}</button>
+        <span className="footer">Source: {v.source.product} v{v.source.version}, {v.source.provider}.</span>
       </div>
-      <NasaCheck variableId={v.id} provider={v.source.provider} bbox={place.bbox} start={t.start} end={t.end} coverage={v.coverage} />
-      <span className="footer">Source: {v.source.product} v{v.source.version}, {v.source.provider}.</span>
     </>
   );
   return audience === "scientist" ? <ScientistResult run={run} actions={actions} /> : <ExplorerResult run={run} actions={actions} />;
@@ -468,16 +481,22 @@ function NasaCheck({ variableId, provider, bbox, start, end, coverage }: { varia
   const url = giovanniUrl(variableId, bbox, s0, e0);
   const shownEnd = url?.match(/endtime=(\d{4}-\d{2})/)?.[1] ?? e0;
   if (url) return (
+    <details className="disclose">
+      <summary>Check it yourself in NASA Giovanni</summary>
     <div className="nasacheck">
-      <span><b>Check it with NASA Giovanni.</b> Opens the same data, area and months ({s0} to {shownEnd}) as an area-averaged time series. <b>Press Login (top right in Giovanni) first:</b> without a free Earthdata login Giovanni only plots 4 months. Then press Plot Data. Giovanni uses NASA's original units (for example kelvin instead of °C), so the numbers look different but the pattern should match.</span>
+      <span>Opens the same data, area and months ({s0} to {shownEnd}) as an area-averaged time series. <b>Press Login (top right in Giovanni) first:</b> without a free Earthdata login Giovanni only plots 4 months. Then press Plot Data. Giovanni uses NASA's original units (for example kelvin instead of °C), so the numbers look different but the pattern should match.</span>
       <a className="btn soft" href={url} target="_blank" rel="noreferrer">Open in Giovanni ↗</a>
     </div>
+    </details>
   );
   if (provider.includes("AppEEARS")) return (
+    <details className="disclose">
+      <summary>Get the same data from NASA AppEEARS</summary>
     <div className="nasacheck">
-      <span><b>From NASA AppEEARS.</b> These MODIS values were extracted with AppEEARS; you can request the same product for any area there.</span>
+      <span>These MODIS values were extracted with AppEEARS; you can request the same product for any area there.</span>
       <a className="btn soft" href={APPEEARS_URL} target="_blank" rel="noreferrer">Open AppEEARS ↗</a>
     </div>
+    </details>
   );
   return null;
 }

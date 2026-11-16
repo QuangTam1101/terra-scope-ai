@@ -82,7 +82,12 @@ export function ExplorerResult({ run, actions }: { run: Run; actions: ReactNode 
           <span className="small muted num">{q.n_months} of {q.n_months + q.missing_months} months have data · {Math.round(q.coverage_fraction * 100)}% of the area</span>
         </div>
       </Section>
-      {t.warnings.length > 0 && <div className="col" style={{ gap: 6 }}>{t.warnings.map((w) => <div key={w} className="warn">{w}</div>)}</div>}
+      {t.warnings.length > 0 && (
+        <details className="disclose notes">
+          <summary>Good to know about this data{t.warnings.length > 1 ? ` (${t.warnings.length} notes)` : ""}</summary>
+          {t.warnings.map((w) => <div key={w} className="warn">{w}</div>)}
+        </details>
+      )}
       <details className="disclose">
         <summary>Why might this matter?</summary>
         <p style={{ margin: 0, font: "600 14px/1.5 var(--body)" }}>A trend shows what changed in the past, not why, and it is not a forecast (<Term id="forecast_vs_trend">trend vs forecast</Term>).
