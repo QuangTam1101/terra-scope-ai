@@ -103,7 +103,7 @@ export function PolarMap({ layer, trend, values, loading, loadingInfo, units, se
       {loading && (
         <div role="status" aria-live="polite" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", background: "rgba(251,246,236,.55)", borderRadius: 20,
           font: "800 15px var(--body)", textAlign: "center", padding: 20, pointerEvents: "none" }}>
-          <span>{loadingInfo?.title ?? "Loading the map…"}{loadingInfo?.detail && <><br /><span style={{ font: "600 13px var(--body)" }}>{loadingInfo.detail}</span></>}</span>
+          <span style={{ background: "rgba(255,255,255,.94)", color: "#1d1935", padding: "12px 18px", borderRadius: 14, maxWidth: 560, boxShadow: "0 6px 20px rgba(20,16,40,.25)" }}>{loadingInfo?.title ?? "Loading the map…"}{loadingInfo?.detail && <><br /><span style={{ font: "600 13px var(--body)" }}>{loadingInfo.detail}</span></>}</span>
         </div>
       )}
       <span className="small muted">NSIDC 25 km polar grids, centred on each pole. Click a spot of sea ice to analyse it.</span>
